@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+
+    function userExists() {
+      return isSignedIn() && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+
+    function getUserRole() {
+      return userExists() ? userDoc().data.role : null;
+    }
+
+    function isAdmin() {
+      return getUserRole() == "admin";
+    }
+
+    function isEditor() {
+      return getUserRole() == "editor";
+    }
+
+    function isViewer() {
+      return getUserRole() == "viewer";
+    }
+
+    function isActiveUser() {
+      return userExists() && userDoc().data.status == "active";
+    }
+
+    function bootstrapRole() {
+      return request.auth.token.email == "mathnicacio@hotmail.com"
+        ? "admin"
+        : request.auth.token.email == "teste@teste.com"
+          ? "editor"
+          : "viewer";
+    }
+
+    function canCreateOwnUserDoc(uid) {
+      return isSignedIn()
+        && request.auth.uid == uid
+        && !exists(/databases/$(database)/documents/usuarios/$(uid))
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == bootstrapRole()
+        && request.resource.data.status == "active";
+    }
+
+    match /usuarios/{uid} {
+      allow read: if isSignedIn();
+      allow create: if canCreateOwnUserDoc(uid) || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    match /obra/{docId} {
+      allow read: if isSignedIn() && isActiveUser();
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    match /funcionarios/{docId} {
+      allow read: if isSignedIn() && isActiveUser();
+      allow write: if isSignedIn() && isActiveUser() && (isAdmin() || isEditor());
+    }
+
+    match /empresas/{docId} {
+      allow read: if isSignedIn() && isActiveUser();
+      allow write: if isSignedIn() && isActiveUser() && (isAdmin() || isEditor());
+    }
+
+    match /frequencia/{docId} {
+      allow read: if isSignedIn() && isActiveUser();
+      allow write: if isSignedIn() && isActiveUser() && (isAdmin() || isEditor());
+    }
+  }
+}
