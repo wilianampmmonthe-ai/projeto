@@ -6,6 +6,7 @@
 window.__FIREBASE_CONFIG__ = {
     apiKey: "AIzaSyDV88yaFxYsyk-Dy5kwFZkZHAgUJMHVBL4",
     authDomain: "novo-atacarejo---projeto.firebaseapp.com",
+    databaseURL: "https://novo-atacarejo---projeto-default-rtdb.firebaseio.com",
     projectId: "novo-atacarejo---projeto",
     storageBucket: "novo-atacarejo---projeto.firebasestorage.app",
     messagingSenderId: "907592607926",

@@ -145,28 +145,40 @@ function ouvirFrequencia(periodoKey, cb) {
   const docId = String(periodoKey);
   dbLog("listener frequencia:start", { periodoKey: docId });
 
-  return firebase.firestore()
-    .collection(COL_FREQUENCIA)
-    .doc(docId)
-    .onSnapshot((snap) => {
-      const payload = snap.exists ? { ...snap.data(), id: snap.id } : null;
-      dbLog("listener frequencia:received", { periodoKey: docId, hasData: Boolean(payload?.data) });
+  const ref = firebase.database().ref(`${COL_FREQUENCIA}/${docId}`);
+  const handler = ref.on("value", (snap) => {
+      const data = snap.exists() ? snap.val() : null;
+      const payload = data ? { id: docId, data } : null;
+      dbLog("listener frequencia:received", { periodoKey: docId, hasData: Boolean(data) });
       cb(payload);
     }, (error) => {
       console.error("[db] listener frequencia:error", error);
       cb(null);
     });
+
+  return () => ref.off("value", handler);
 }
 
 async function salvarFrequencia(periodoKey, data) {
   const docId = String(periodoKey);
-  const ref = firebase.firestore().collection(COL_FREQUENCIA).doc(docId);
-  const payload = await dbBuildPayload(ref, { data }, { periodoKey: docId, data });
+  const ref = firebase.database().ref(`${COL_FREQUENCIA}/${docId}`);
+  const payload = data || {};
 
   dbLog("salvar frequencia", { periodoKey: docId });
-  await ref.set(payload, { merge: true });
+  await ref.set(payload);
 
   return docId;
+}
+
+async function obterUltimoPeriodoComFrequencia() {
+  const snap = await firebase.database().ref(COL_FREQUENCIA).get();
+  if (!snap.exists()) return "";
+
+  const keys = Object.keys(snap.val() || {})
+    .filter((key) => /^\d{4}-\d{2}$/.test(key))
+    .sort();
+
+  return keys[keys.length - 1] || "";
 }
 
 async function garantirUsuarioPerfil(user) {
@@ -282,6 +294,10 @@ async function setObra(obra) {
 
 async function saveFrequencia(periodoKey, data) {
   return salvarFrequencia(periodoKey, data);
+}
+
+async function getLatestFrequenciaPeriodoKey() {
+  return obterUltimoPeriodoComFrequencia();
 }
 
 async function ensureUsuarioProfile(user) {
