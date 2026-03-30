@@ -1,0 +1,39 @@
+{
+  "name": "sistema-atacarejo",
+  "version": "1.0.0",
+  "description": "Sistema de Liberação - Novo Atacarejo Igarassu",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^37.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.atacarejo.sistema",
+    "productName": "Sistema Atacarejo",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/*",
+      "!node_modules/.cache/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
