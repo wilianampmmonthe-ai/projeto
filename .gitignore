@@ -9,6 +9,7 @@ win-unpacked/
 *.asar
 
 firebase-config.js
+!js/firebase-config.js
 
 .env
 .vercel
