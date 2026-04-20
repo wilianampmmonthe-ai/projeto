@@ -34,7 +34,8 @@ function normalizeUiText(msg) {
     ["Ã“", "Ó"], ["Ã’", "Ò"], ["Ã”", "Ô"], ["Ã•", "Õ"], ["Ã–", "Ö"],
     ["Ãš", "Ú"], ["Ã™", "Ù"], ["Ã›", "Û"], ["Ãœ", "Ü"],
     ["Ã§", "ç"], ["Ã‡", "Ç"], ["Ã±", "ñ"], ["Ã‘", "Ñ"],
-    ["Â·", "·"], ["Âº", "º"], ["Âª", "ª"], ["Â", ""]
+    [" Â· ", " • "], ["Â·", "•"], ["Â •", " •"], ["•Â", "•"],
+    [" Â ", " "], ["Âº", "º"], ["Âª", "ª"], ["Â", ""]
   ];
 
   replacements.forEach(([from, to]) => {
@@ -261,7 +262,7 @@ function updateUserIdentityUI() {
   if (roleEl) {
     const role = roleLabels[profile.role] || "Visualizador";
     const status = statusLabels[profile.status] || "Ativo";
-    roleEl.textContent = `${role} Â· ${status}`;
+    roleEl.textContent = normalizeUiText(`${role} • ${status}`);
   }
 }
 
