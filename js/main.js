@@ -1174,11 +1174,29 @@ function syncFrequenciaListener() {
   const pk = window.freqGetPeriodoKey();
   if (!pk) return;
 
+  console.log("[freq] listener:start", {
+    obraAtivaId: window.APP_CTX?.obraAtivaId || null,
+    periodoKey: pk,
+    source: window.APP_CTX?.obraAtivaId ? "firestore-multiobra" : "fallback-legado",
+  });
+
   unsubFreq = ouvirFrequencia(pk, (payload) => {
     const freqState = ensureFreqState();
     freqState.data[pk] = cloneData(payload?.data || createEmptyFreqPeriod(), createEmptyFreqPeriod());
     persistFreqCacheState(freqState.data);
-    if (typeof window.freqRender === "function") window.freqRender();
+    console.log("[freq] listener:received", {
+      obraAtivaId: window.APP_CTX?.obraAtivaId || null,
+      periodoKey: pk,
+      hasData: Boolean(payload?.data),
+      funcionarios: Array.isArray(window.DB?.funcionarios) ? window.DB.funcionarios.length : 0,
+    });
+    if (typeof window.freqRender === "function") {
+      try {
+        window.freqRender();
+      } catch (error) {
+        console.error("[freq] listener:render-error", error);
+      }
+    }
   });
 }
 
@@ -1192,6 +1210,11 @@ function wireRealtimeForUser() {
 
   unsubFuncionarios = listenFuncionarios((rows) => {
     window.DB.funcionarios = rows;
+    console.log("[freq] funcionarios:received", {
+      obraAtivaId: window.APP_CTX?.obraAtivaId || null,
+      quantidade: Array.isArray(rows) ? rows.length : 0,
+      source: window.APP_CTX?.obraAtivaId ? "firestore-multiobra" : "fallback-legado",
+    });
     if (typeof window.refreshAll === "function") window.refreshAll();
   });
 
