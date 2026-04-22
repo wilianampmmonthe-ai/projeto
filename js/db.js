@@ -4,6 +4,82 @@ const DOC_OBRA = "obra/atual";
 const COL_FREQUENCIA = "frequencia";
 const COL_USUARIOS = "usuarios";
 
+function dbNormalizeObraId(obraId) {
+  return String(obraId || "").trim().toLowerCase();
+}
+
+function ensureAppCtx() {
+  const ctx = window.APP_CTX || (window.APP_CTX = {
+    userId: null,
+    obraAtivaId: null,
+    obrasPermitidas: [],
+  });
+
+  if (!Object.prototype.hasOwnProperty.call(ctx, "userId")) ctx.userId = null;
+  if (!Array.isArray(ctx.obrasPermitidas)) ctx.obrasPermitidas = [];
+
+  if (!Object.prototype.hasOwnProperty.call(ctx, "obraAtivaId") || ctx.obraAtivaId === undefined) {
+    try {
+      ctx.obraAtivaId = dbNormalizeObraId(localStorage.getItem("obraAtivaId")) || null;
+    } catch (error) {
+      ctx.obraAtivaId = null;
+    }
+  }
+
+  ctx.obraAtivaId = dbNormalizeObraId(ctx.obraAtivaId) || null;
+
+  return ctx;
+}
+
+function dbGetObraAtivaId() {
+  return dbNormalizeObraId(ensureAppCtx().obraAtivaId);
+}
+
+function dbHasObraAtiva() {
+  return Boolean(dbGetObraAtivaId());
+}
+
+function dbGetObraDocRef() {
+  if (!dbHasObraAtiva()) {
+    return firebase.firestore().doc(DOC_OBRA);
+  }
+
+  return firebase.firestore().collection("obras").doc(dbGetObraAtivaId());
+}
+
+function dbGetObraCollection(subcollection) {
+  if (!dbHasObraAtiva()) {
+    return firebase.firestore().collection(subcollection);
+  }
+
+  return dbGetObraDocRef().collection(subcollection);
+}
+
+function dbGetFrequenciaDocRef(periodoKey) {
+  return dbGetObraCollection(COL_FREQUENCIA).doc(String(periodoKey));
+}
+
+function dbNormalizeFrequenciaData(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return {};
+  if (data.data && typeof data.data === "object" && !Array.isArray(data.data)) {
+    return data.data;
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(data, "feriados") ||
+    Object.prototype.hasOwnProperty.call(data, "terceirizados") ||
+    Object.prototype.hasOwnProperty.call(data, "novoAtacarejo")
+  ) {
+    return data;
+  }
+
+  return {};
+}
+
+window.getObraPath = function getObraPath(subcollection) {
+  return dbGetObraCollection(subcollection);
+};
+
 function dbLog(evento, detalhes) {
   if (detalhes === undefined) {
     console.log(`[db] ${evento}`);
@@ -51,8 +127,7 @@ async function dbBuildPayload(ref, row, extraFields) {
 function ouvirFuncionarios(cb) {
   dbLog("listener funcionarios:start");
 
-  const q = firebase.firestore()
-    .collection(COL_FUNCIONARIOS)
+  const q = dbGetObraCollection(COL_FUNCIONARIOS)
     .orderBy("createdAt", "desc");
 
   return q.onSnapshot((snap) => {
@@ -67,7 +142,7 @@ function ouvirFuncionarios(cb) {
 
 async function salvarFuncionario(row) {
   const id = row?.id ? String(row.id) : crypto.randomUUID();
-  const ref = firebase.firestore().collection(COL_FUNCIONARIOS).doc(id);
+  const ref = dbGetObraCollection(COL_FUNCIONARIOS).doc(id);
   const payload = await dbBuildPayload(ref, row);
 
   dbLog("salvar funcionario", { id, tipo: payload.tipo });
@@ -79,14 +154,13 @@ async function salvarFuncionario(row) {
 async function removerFuncionario(id) {
   const docId = String(id);
   dbLog("remover funcionario", { id: docId });
-  await firebase.firestore().collection(COL_FUNCIONARIOS).doc(docId).delete();
+  await dbGetObraCollection(COL_FUNCIONARIOS).doc(docId).delete();
 }
 
 function ouvirEmpresas(cb) {
   dbLog("listener empresas:start");
 
-  const q = firebase.firestore()
-    .collection(COL_EMPRESAS)
+  const q = dbGetObraCollection(COL_EMPRESAS)
     .orderBy("nome", "asc");
 
   return q.onSnapshot((snap) => {
@@ -101,7 +175,7 @@ function ouvirEmpresas(cb) {
 
 async function salvarEmpresa(row) {
   const id = row?.id ? String(row.id) : crypto.randomUUID();
-  const ref = firebase.firestore().collection(COL_EMPRESAS).doc(id);
+  const ref = dbGetObraCollection(COL_EMPRESAS).doc(id);
   const payload = await dbBuildPayload(ref, row);
 
   dbLog("salvar empresa", { id, nome: payload.nome || "" });
@@ -113,14 +187,13 @@ async function salvarEmpresa(row) {
 async function removerEmpresa(id) {
   const docId = String(id);
   dbLog("remover empresa", { id: docId });
-  await firebase.firestore().collection(COL_EMPRESAS).doc(docId).delete();
+  await dbGetObraCollection(COL_EMPRESAS).doc(docId).delete();
 }
 
 function ouvirObra(cb) {
   dbLog("listener obra:start");
 
-  return firebase.firestore()
-    .doc(DOC_OBRA)
+  return dbGetObraDocRef()
     .onSnapshot((snap) => {
       const obra = snap.exists ? { ...snap.data(), id: snap.id } : null;
       dbLog("listener obra:received", obra ? obra.id : null);
@@ -132,7 +205,7 @@ function ouvirObra(cb) {
 }
 
 async function salvarObra(obra) {
-  const ref = firebase.firestore().doc(DOC_OBRA);
+  const ref = dbGetObraDocRef();
   const payload = await dbBuildPayload(ref, obra);
 
   dbLog("salvar obra", { id: payload.id, nome: payload.nome || "" });
@@ -145,32 +218,67 @@ function ouvirFrequencia(periodoKey, cb) {
   const docId = String(periodoKey);
   dbLog("listener frequencia:start", { periodoKey: docId });
 
-  const ref = firebase.database().ref(`${COL_FREQUENCIA}/${docId}`);
-  const handler = ref.on("value", (snap) => {
-      const data = snap.exists() ? snap.val() : null;
+  if (dbHasObraAtiva()) {
+    return dbGetFrequenciaDocRef(docId).onSnapshot((snap) => {
+      const raw = snap.exists ? snap.data() || {} : null;
+      const data = raw ? dbNormalizeFrequenciaData(raw) : null;
       const payload = data ? { id: docId, data } : null;
-      dbLog("listener frequencia:received", { periodoKey: docId, hasData: Boolean(data) });
+      dbLog("listener frequencia:received", { periodoKey: docId, hasData: Boolean(data), source: "firestore" });
       cb(payload);
     }, (error) => {
       console.error("[db] listener frequencia:error", error);
       cb(null);
     });
+  }
+
+  const ref = firebase.database().ref(`${COL_FREQUENCIA}/${docId}`);
+  const handler = ref.on("value", (snap) => {
+    const data = snap.exists() ? snap.val() : null;
+    const payload = data ? { id: docId, data } : null;
+    dbLog("listener frequencia:received", { periodoKey: docId, hasData: Boolean(data), source: "rtdb" });
+    cb(payload);
+  }, (error) => {
+    console.error("[db] listener frequencia:error", error);
+    cb(null);
+  });
 
   return () => ref.off("value", handler);
 }
 
 async function salvarFrequencia(periodoKey, data) {
   const docId = String(periodoKey);
-  const ref = firebase.database().ref(`${COL_FREQUENCIA}/${docId}`);
   const payload = data || {};
 
   dbLog("salvar frequencia", { periodoKey: docId });
+
+  if (dbHasObraAtiva()) {
+    const ref = dbGetFrequenciaDocRef(docId);
+    const snap = await ref.get();
+    await ref.set({
+      data: payload,
+      updatedAt: dbServerTimestamp(),
+      createdAt: snap.exists ? (snap.data()?.createdAt || dbServerTimestamp()) : dbServerTimestamp(),
+    }, { merge: true });
+    return docId;
+  }
+
+  const ref = firebase.database().ref(`${COL_FREQUENCIA}/${docId}`);
   await ref.set(payload);
 
   return docId;
 }
 
 async function obterUltimoPeriodoComFrequencia() {
+  if (dbHasObraAtiva()) {
+    const snap = await dbGetObraCollection(COL_FREQUENCIA)
+      .orderBy(firebase.firestore.FieldPath.documentId(), "desc")
+      .limit(1)
+      .get();
+
+    if (snap.empty) return "";
+    return snap.docs[0]?.id || "";
+  }
+
   const snap = await firebase.database().ref(COL_FREQUENCIA).get();
   if (!snap.exists()) return "";
 

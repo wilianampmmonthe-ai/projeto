@@ -2,6 +2,526 @@
   return document.getElementById(id);
 }
 
+const PAGE_TITLES = {
+  dashboard: "Dashboard",
+  terceirizados: "Funcionários Terceirizados",
+  atacarejo: "Funcionários Novo Atacarejo",
+  empresas: "Gestão de Empresas",
+  "ata-terc": "Ata de Liberação de Terceiros",
+  "ata-atac": "Ata de Liberação - Novo Atacarejo",
+  frequencia: "Controle de Frequência",
+  admin: "Admin",
+};
+
+const obraSelectorState = window.__obraSelectorState || (window.__obraSelectorState = {
+  namesById: {},
+  metaById: {},
+  availableObras: [],
+});
+
+function normalizeObraId(obraId) {
+  return String(obraId || "").trim().toLowerCase();
+}
+
+function normalizeRole(role) {
+  const normalized = String(role || "").trim().toLowerCase();
+  return ["admin", "editor", "viewer"].includes(normalized) ? normalized : "";
+}
+
+function ensureAppContext() {
+  const ctx = window.APP_CTX || (window.APP_CTX = {
+    userId: null,
+    obraAtivaId: null,
+    obrasPermitidas: [],
+    obraNome: "",
+    obraCidade: "",
+    obraUF: "",
+    activeRole: null,
+    accessSource: "none",
+    canViewCurrentObra: false,
+    accessEntry: null,
+  });
+
+  if (!Object.prototype.hasOwnProperty.call(ctx, "userId")) ctx.userId = null;
+  if (!Array.isArray(ctx.obrasPermitidas)) ctx.obrasPermitidas = [];
+  if (!Object.prototype.hasOwnProperty.call(ctx, "obraNome")) ctx.obraNome = "";
+  if (!Object.prototype.hasOwnProperty.call(ctx, "obraCidade")) ctx.obraCidade = "";
+  if (!Object.prototype.hasOwnProperty.call(ctx, "obraUF")) ctx.obraUF = "";
+  if (!Object.prototype.hasOwnProperty.call(ctx, "activeRole")) ctx.activeRole = null;
+  if (!Object.prototype.hasOwnProperty.call(ctx, "accessSource")) ctx.accessSource = "none";
+  if (!Object.prototype.hasOwnProperty.call(ctx, "canViewCurrentObra")) ctx.canViewCurrentObra = false;
+  if (!Object.prototype.hasOwnProperty.call(ctx, "accessEntry")) ctx.accessEntry = null;
+
+  if (!Object.prototype.hasOwnProperty.call(ctx, "obraAtivaId") || ctx.obraAtivaId === undefined) {
+    try {
+      ctx.obraAtivaId = normalizeObraId(localStorage.getItem("obraAtivaId")) || null;
+    } catch (error) {
+      ctx.obraAtivaId = null;
+    }
+  }
+
+  ctx.obraAtivaId = normalizeObraId(ctx.obraAtivaId) || null;
+
+  return ctx;
+}
+
+function getStoredObraAtivaId() {
+  try {
+    return normalizeObraId(localStorage.getItem("obraAtivaId")) || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function persistObraAtivaId(obraAtivaId) {
+  try {
+    const normalized = normalizeObraId(obraAtivaId);
+    if (normalized) {
+      localStorage.setItem("obraAtivaId", normalized);
+    } else {
+      localStorage.removeItem("obraAtivaId");
+    }
+  } catch (error) {
+    console.warn("Não foi possível persistir obraAtivaId no localStorage.", error);
+  }
+}
+
+function normalizeAllowedObras(rawObras) {
+  if (Array.isArray(rawObras)) {
+    return rawObras
+      .map((obraId) => normalizeObraId(obraId))
+      .filter(Boolean);
+  }
+
+  if (rawObras && typeof rawObras === "object") {
+    return Object.keys(rawObras)
+      .filter((obraId) => Boolean(rawObras[obraId]))
+      .map((obraId) => normalizeObraId(obraId))
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function getEnabledObrasFromAcessos(profile) {
+  if (!profile?.acessos || typeof profile.acessos !== "object" || Array.isArray(profile.acessos)) {
+    return [];
+  }
+
+  const enabled = new Set();
+  Object.entries(profile.acessos).forEach(([obraId, entry]) => {
+    const normalizedObraId = normalizeObraId(obraId);
+    if (!normalizedObraId) return;
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return;
+    if (entry.enabled === true) enabled.add(normalizedObraId);
+  });
+
+  return Array.from(enabled);
+}
+
+function normalizeAccessMap(rawAcessos) {
+  if (!rawAcessos || typeof rawAcessos !== "object" || Array.isArray(rawAcessos)) return {};
+
+  return Object.entries(rawAcessos).reduce((acc, [obraId, entry]) => {
+    const normalizedObraId = normalizeObraId(obraId);
+    if (!normalizedObraId || !entry || typeof entry !== "object" || Array.isArray(entry)) return acc;
+
+    acc[normalizedObraId] = {
+      enabled: entry.enabled !== false,
+      role: normalizeRole(entry.role) || "viewer",
+    };
+    return acc;
+  }, {});
+}
+
+function getLegacyObrasMap(rawObras) {
+  return normalizeAllowedObras(rawObras).reduce((acc, obraId) => {
+    acc[obraId] = true;
+    return acc;
+  }, {});
+}
+
+function getPermittedObras(profile) {
+  const permitted = new Set(Object.keys(getLegacyObrasMap(profile?.obras)));
+
+  getEnabledObrasFromAcessos(profile).forEach((obraId) => {
+    permitted.add(obraId);
+  });
+
+  Object.entries(normalizeAccessMap(profile?.acessos)).forEach(([obraId, entry]) => {
+    if (!entry.enabled) permitted.delete(obraId);
+  });
+
+  return Array.from(permitted);
+}
+
+function getAccessEntryForObraId(obraId, profile) {
+  const normalizedObraId = normalizeObraId(obraId);
+  if (!normalizedObraId) return null;
+
+  const currentProfile = profile || ensureCurrentUserProfile();
+  return normalizeAccessMap(currentProfile.acessos)[normalizedObraId] || null;
+}
+
+function resolveLegacyAccessForObra(profile, obraId) {
+  const normalizedObraId = normalizeObraId(obraId);
+  if (!normalizedObraId) return null;
+
+  const legacyObras = getLegacyObrasMap(profile?.obras);
+  const hasLegacyObras = Object.keys(legacyObras).length > 0;
+  const globalRole = normalizeRole(profile?.role) || "viewer";
+
+  if (hasLegacyObras && !legacyObras[normalizedObraId]) {
+    return null;
+  }
+
+  return {
+    enabled: true,
+    role: globalRole,
+    source: hasLegacyObras ? "fallback:obras+role" : "fallback:role-global",
+  };
+}
+
+function resolveAccessForObra(profile, obraId) {
+  const normalizedObraId = normalizeObraId(obraId);
+  if (!normalizedObraId) {
+    return { canView: false, role: "", source: "none", entry: null };
+  }
+
+  const accessEntry = getAccessEntryForObraId(normalizedObraId, profile);
+  if (accessEntry) {
+    if (!accessEntry.enabled) {
+      return { canView: false, role: "", source: "acessos:disabled", entry: accessEntry };
+    }
+
+    return {
+      canView: true,
+      role: accessEntry.role || "viewer",
+      source: "acessos",
+      entry: accessEntry,
+    };
+  }
+
+  const legacyEntry = resolveLegacyAccessForObra(profile, normalizedObraId);
+  if (legacyEntry) {
+    return {
+      canView: true,
+      role: legacyEntry.role || "viewer",
+      source: legacyEntry.source,
+      entry: legacyEntry,
+    };
+  }
+
+  return { canView: false, role: "", source: "none", entry: null };
+}
+
+function humanizeObraId(obraId) {
+  return normalizeObraId(obraId)
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function resolveObraAtivaId(profile, obrasPermitidas) {
+  const allowed = Array.isArray(obrasPermitidas) ? obrasPermitidas : [];
+  const saved = getStoredObraAtivaId();
+  const preferred = normalizeObraId(profile?.obraAtivaId);
+
+  if (saved && allowed.includes(saved) && resolveAccessForObra(profile, saved).canView) return saved;
+
+  for (const obraId of allowed) {
+    if (resolveAccessForObra(profile, obraId).canView) return obraId;
+  }
+
+  const fallbackCandidates = [preferred, saved]
+    .map((obraId) => normalizeObraId(obraId))
+    .filter(Boolean)
+    .filter((obraId, index, list) => list.indexOf(obraId) === index);
+
+  for (const obraId of fallbackCandidates) {
+    if (resolveAccessForObra(profile, obraId).canView) return obraId;
+  }
+
+  return null;
+}
+
+function logPermissionDebug(evento, detalhes) {
+  console.log(`[perm] ${evento}`, {
+    obraAtivaId: ensureAppContext().obraAtivaId,
+    activeRole: ensureAppContext().activeRole,
+    source: ensureAppContext().accessSource,
+    ...(detalhes || {}),
+  });
+}
+
+function syncAppContext(user, profile) {
+  const ctx = ensureAppContext();
+  const obrasPermitidas = getPermittedObras(profile);
+  const obrasDisponiveis = getAvailableObrasForUser(profile);
+  const obraAtivaId = normalizeObraId(resolveObraAtivaId(profile, obrasPermitidas));
+  const accessResolution = resolveAccessForObra(profile, obraAtivaId);
+
+  ctx.userId = String(user?.uid || "");
+  ctx.obrasPermitidas = obrasPermitidas;
+  ctx.obraAtivaId = obraAtivaId;
+  ctx.activeRole = accessResolution.role || null;
+  ctx.accessSource = accessResolution.source || "none";
+  ctx.canViewCurrentObra = Boolean(accessResolution.canView);
+  ctx.accessEntry = accessResolution.entry ? JSON.parse(JSON.stringify(accessResolution.entry)) : null;
+
+  persistObraAtivaId(obraAtivaId);
+  logPermissionDebug("contexto-resolvido", {
+    obrasPermitidas,
+    canViewCurrentObra: ctx.canViewCurrentObra,
+  });
+  console.debug("[obra-selector] obras disponiveis", {
+    userId: ctx.userId,
+    obraIds: obrasDisponiveis,
+  });
+  console.debug("[obra-selector] obra ativa resolvida", {
+    obraAtivaId,
+  });
+  return ctx;
+}
+
+function getCurrentPageId() {
+  const activePage = document.querySelector(".page.active")?.id || "";
+  return activePage.replace(/^page-/, "") || "dashboard";
+}
+
+function updateTopbarTitle(pageId) {
+  const topbarTitle = document.getElementById("topbarTitle");
+  if (!topbarTitle) return;
+
+  const targetPageId = pageId || getCurrentPageId();
+  const baseTitle = PAGE_TITLES[targetPageId] || targetPageId;
+
+  topbarTitle.textContent = baseTitle;
+  topbarTitle.setAttribute("title", baseTitle);
+
+  if (typeof window.updateObraSelectorLabel === "function") {
+    window.updateObraSelectorLabel();
+  }
+}
+
+window.updateTopbarTitle = updateTopbarTitle;
+
+function getObraSelectorElements() {
+  return {
+    wrapper: document.getElementById("obra-switcher"),
+    label: document.querySelector("#obra-switcher .topbar-obra-label"),
+    select: document.getElementById("obra-selector"),
+    currentName: document.getElementById("obra-current-name"),
+  };
+}
+
+function getAvailableObrasForUser(profile) {
+  const enabledFromAcessos = getEnabledObrasFromAcessos(profile);
+  if (enabledFromAcessos.length) return enabledFromAcessos;
+  return getPermittedObras(profile);
+}
+
+function getFriendlyObraName(obraId) {
+  const normalizedObraId = normalizeObraId(obraId);
+  if (!normalizedObraId) return "";
+
+  const cachedMeta = obraSelectorState.metaById[normalizedObraId] || null;
+  const cachedName = cachedMeta?.nome || obraSelectorState.namesById[normalizedObraId];
+  const activeObraId = normalizeObraId(ensureAppContext().obraAtivaId);
+  if (normalizedObraId === activeObraId && typeof window.getObraDisplayName === "function") {
+    const liveName = String(window.getObraDisplayName() || "").trim();
+    if (window.DB?.obra?.nome && liveName) return liveName;
+    if (!cachedName && liveName) return liveName;
+  }
+
+  return cachedName || humanizeObraId(normalizedObraId);
+}
+
+async function loadFriendlyObraNames(obraIds) {
+  const uniqueObras = Array.isArray(obraIds)
+    ? obraIds
+      .map((obraId) => normalizeObraId(obraId))
+      .filter(Boolean)
+      .filter((obraId, index, list) => list.indexOf(obraId) === index)
+    : [];
+
+  if (!uniqueObras.length || !window.firebase?.firestore) return obraSelectorState.namesById;
+
+  await Promise.all(uniqueObras.map(async (obraId) => {
+    if (obraSelectorState.metaById[obraId]?.nome) return;
+
+    try {
+      const snap = await firebase.firestore().collection("obras").doc(obraId).get();
+      const data = snap.data() || {};
+      const nome = String(data.nome || "").trim();
+      const municipio = String(data.municipio || "").trim();
+      const uf = String(data.uf || "").trim();
+      if (snap.exists && nome) {
+        obraSelectorState.namesById[obraId] = nome;
+        obraSelectorState.metaById[obraId] = { nome, municipio, uf };
+
+        const activeObraId = normalizeObraId(ensureAppContext().obraAtivaId);
+        if (obraId === activeObraId) {
+          const ctx = ensureAppContext();
+          ctx.obraNome = nome;
+          ctx.obraCidade = municipio;
+          ctx.obraUF = uf;
+          if (typeof window.updateObraInterface === "function") {
+            window.updateObraInterface();
+          }
+        }
+      }
+    } catch (error) {
+      console.debug("[obra-selector] nome-amigavel indisponivel", { obraId, error });
+    }
+  }));
+
+  return obraSelectorState.namesById;
+}
+
+function resetObraSelectorUI() {
+  const { wrapper, label, select, currentName } = getObraSelectorElements();
+  if (wrapper) wrapper.hidden = true;
+  if (label) label.hidden = false;
+  if (currentName) {
+    currentName.hidden = true;
+    currentName.textContent = "";
+  }
+  if (select) {
+    select.hidden = true;
+    select.disabled = true;
+    select.replaceChildren();
+    select.value = "";
+  }
+  obraSelectorState.availableObras = [];
+}
+
+window.getCachedObraMeta = function getCachedObraMeta(obraId) {
+  const normalizedObraId = normalizeObraId(obraId);
+  if (!normalizedObraId) return null;
+  return obraSelectorState.metaById[normalizedObraId] || null;
+};
+
+function updateObraSelectorLabel() {
+  const { wrapper, select, currentName } = getObraSelectorElements();
+  if (!wrapper || wrapper.hidden || !currentName) return;
+
+  const activeObraId = normalizeObraId(ensureAppContext().obraAtivaId);
+  const activeObraName = getFriendlyObraName(activeObraId);
+
+  currentName.textContent = activeObraName;
+  currentName.title = activeObraName ? `Obra ativa: ${activeObraName}` : "Obra ativa";
+
+  if (select && !select.hidden && activeObraId && Array.isArray(obraSelectorState.availableObras)) {
+    if (obraSelectorState.availableObras.includes(activeObraId)) {
+      select.value = activeObraId;
+    }
+  }
+}
+
+window.updateObraSelectorLabel = updateObraSelectorLabel;
+
+function handleObraSelectorChange(event) {
+  const nextObraId = normalizeObraId(event?.target?.value);
+  const ctx = ensureAppContext();
+  const currentObraId = normalizeObraId(ctx.obraAtivaId);
+
+  if (!nextObraId || nextObraId === currentObraId) return;
+
+  persistObraAtivaId(nextObraId);
+  ctx.obraAtivaId = nextObraId;
+
+  console.debug("[obra-selector] troca de obra realizada", {
+    from: currentObraId,
+    to: nextObraId,
+  });
+
+  updateObraSelectorLabel();
+  updateTopbarTitle();
+  window.location.reload();
+}
+
+async function refreshObraSelector(profile) {
+  const { wrapper, label, select, currentName } = getObraSelectorElements();
+  const user = fb.auth.currentUser;
+
+  if (!wrapper || !select || !currentName || !user) {
+    resetObraSelectorUI();
+    return;
+  }
+
+  const availableObras = getAvailableObrasForUser(profile);
+  obraSelectorState.availableObras = availableObras.slice();
+
+  console.debug("[obra-selector] obras disponiveis", {
+    userId: String(user.uid || ""),
+    obraIds: availableObras,
+  });
+
+  if (!availableObras.length) {
+    resetObraSelectorUI();
+    return;
+  }
+
+  await loadFriendlyObraNames(availableObras);
+
+  wrapper.hidden = false;
+  if (label) label.hidden = availableObras.length < 2;
+  currentName.hidden = availableObras.length > 1;
+  select.hidden = availableObras.length < 2;
+  select.disabled = availableObras.length < 2;
+  select.onchange = handleObraSelectorChange;
+
+  select.replaceChildren();
+  if (availableObras.length > 1) {
+    availableObras.forEach((obraId) => {
+      const option = document.createElement("option");
+      option.value = obraId;
+      option.textContent = getFriendlyObraName(obraId);
+      select.appendChild(option);
+    });
+  }
+
+  updateObraSelectorLabel();
+
+  console.debug("[obra-selector] obra ativa resolvida", {
+    obraAtivaId: normalizeObraId(ensureAppContext().obraAtivaId),
+  });
+}
+
+window.getAccessEntryForActiveObra = function getAccessEntryForActiveObra() {
+  return ensureAppContext().accessEntry || null;
+};
+
+window.getActiveObraRole = function getActiveObraRole() {
+  return normalizeRole(ensureAppContext().activeRole);
+};
+
+window.canViewCurrentObra = function canViewCurrentObra() {
+  return Boolean(ensureAppContext().canViewCurrentObra);
+};
+
+window.canEditDadosObra = function canEditDadosObra() {
+  return window.canViewCurrentObra() && window.getActiveObraRole() === "admin";
+};
+
+window.canManageAccess = function canManageAccess() {
+  return window.canViewCurrentObra() && window.getActiveObraRole() === "admin";
+};
+
+function persistFreqCacheState(data) {
+  try {
+    if (typeof window.writeFreqCache === "function") {
+      window.writeFreqCache(data);
+      return;
+    }
+
+    localStorage.setItem("frequencia", JSON.stringify(data || {}));
+  } catch (e) {
+    console.error("Erro ao persistir frequencia localmente:", e);
+  }
+}
+
 function setLoggedIn(isLoggedIn) {
   const login = $("loginScreen");
   const app = $("app");
@@ -20,7 +540,7 @@ function safeToast(msg, type) {
 
 function normalizeUiText(msg) {
   let text = String(msg || "");
-  if (!/[ÃÂ]/.test(text)) return text;
+  if (!/[ÃÂâ]/.test(text)) return text;
 
   const replacements = [
     ["Ã¡", "á"], ["Ã ", "à"], ["Ã¢", "â"], ["Ã£", "ã"], ["Ã¤", "ä"],
@@ -34,16 +554,144 @@ function normalizeUiText(msg) {
     ["Ã“", "Ó"], ["Ã’", "Ò"], ["Ã”", "Ô"], ["Ã•", "Õ"], ["Ã–", "Ö"],
     ["Ãš", "Ú"], ["Ã™", "Ù"], ["Ã›", "Û"], ["Ãœ", "Ü"],
     ["Ã§", "ç"], ["Ã‡", "Ç"], ["Ã±", "ñ"], ["Ã‘", "Ñ"],
+    ["Ãƒ", "Ã"], ["Ã‚", "Â"],
+    ["â€”", "—"], ["â€“", "–"], ["â€¢", "•"], ["â—", "●"], ["â˜°", "☰"], ["Ã—", "×"],
+    ["Ã¢Å“ÂÃ¯Â¸Â", ""], ["Ã°Å¸â€”â€˜Ã¯Â¸Â", ""],
     [" Â· ", " • "], ["Â·", "•"], ["Â •", " •"], ["•Â", "•"],
     [" Â ", " "], ["Âº", "º"], ["Âª", "ª"], ["Â", ""]
   ];
 
-  replacements.forEach(([from, to]) => {
-    text = text.split(from).join(to);
-  });
+  for (let pass = 0; pass < 4; pass += 1) {
+    const before = text;
+    replacements.forEach(([from, to]) => {
+      text = text.split(from).join(to);
+    });
+    if (text === before) break;
+  }
 
   return text;
 }
+
+function normalizeDocumentText(root) {
+  const targetRoot = root || document.body;
+  if (!targetRoot) return;
+
+  const textWalker = document.createTreeWalker(targetRoot, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parentTag = node.parentElement?.tagName || "";
+      if (["SCRIPT", "STYLE"].includes(parentTag)) return NodeFilter.FILTER_REJECT;
+      return /[ÃÂâ]/.test(node.nodeValue || "") ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+    },
+  });
+
+  const textNodes = [];
+  while (textWalker.nextNode()) textNodes.push(textWalker.currentNode);
+  textNodes.forEach((node) => {
+    node.nodeValue = normalizeUiText(node.nodeValue);
+  });
+
+  targetRoot.querySelectorAll("*").forEach((el) => {
+    ["placeholder", "title", "aria-label"].forEach((attr) => {
+      const current = el.getAttribute(attr);
+      if (current && /[ÃÂâ]/.test(current)) {
+        el.setAttribute(attr, normalizeUiText(current));
+      }
+    });
+  });
+
+  document.title = normalizeUiText(document.title);
+}
+
+window.normalizeDocumentText = normalizeDocumentText;
+
+const CONFIRM_MODAL_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.6 19a1 1 0 0 0 .86 1.5h17.08a1 1 0 0 0 .86-1.5Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+const confirmModalState = window.__confirmModalState || (window.__confirmModalState = {
+  resolve: null,
+  lastFocused: null,
+});
+
+function getConfirmModalElements() {
+  return {
+    overlay: $("confirmModal"),
+    icon: $("confirmModalIcon"),
+    title: $("confirmModalTitle"),
+    message: $("confirmModalMessage"),
+    confirmButton: $("confirmModalConfirmBtn"),
+    cancelButton: $("confirmModalCancelBtn"),
+  };
+}
+
+window.resolveConfirmModal = function resolveConfirmModal(confirmed) {
+  const elements = getConfirmModalElements();
+  if (elements.overlay) {
+    elements.overlay.classList.remove("open");
+    elements.overlay.setAttribute("aria-hidden", "true");
+  }
+
+  const resolve = confirmModalState.resolve;
+  confirmModalState.resolve = null;
+
+  if (confirmModalState.lastFocused && typeof confirmModalState.lastFocused.focus === "function") {
+    confirmModalState.lastFocused.focus();
+  }
+  confirmModalState.lastFocused = null;
+
+  if (typeof resolve === "function") {
+    resolve(Boolean(confirmed));
+  }
+};
+
+window.openConfirmModal = function openConfirmModal(options = {}) {
+  const elements = getConfirmModalElements();
+  if (!elements.overlay || !elements.title || !elements.message || !elements.confirmButton || !elements.cancelButton || !elements.icon) {
+    console.error("Modal de confirmação não encontrado.");
+    return Promise.resolve(false);
+  }
+
+  if (typeof confirmModalState.resolve === "function") {
+    window.resolveConfirmModal(false);
+  }
+
+  const variant = String(options.variant || "default").toLowerCase();
+  const isDanger = variant === "danger";
+  const title = normalizeUiText(options.title || "Confirmar ação");
+  const message = normalizeUiText(options.message || "Tem certeza que deseja continuar?");
+  const confirmText = normalizeUiText(options.confirmText || "Confirmar");
+  const cancelText = normalizeUiText(options.cancelText || "Cancelar");
+
+  elements.title.textContent = title;
+  elements.message.textContent = message;
+  elements.confirmButton.textContent = confirmText;
+  elements.cancelButton.textContent = cancelText;
+  elements.confirmButton.className = isDanger ? "btn btn-danger" : "btn btn-primary";
+  elements.icon.className = `confirm-modal__icon${isDanger ? " is-danger" : ""}`;
+  elements.icon.innerHTML = CONFIRM_MODAL_ICON;
+  elements.overlay.classList.add("open");
+  elements.overlay.setAttribute("aria-hidden", "false");
+  confirmModalState.lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+  return new Promise((resolve) => {
+    confirmModalState.resolve = resolve;
+    setTimeout(() => {
+      (elements.cancelButton || elements.confirmButton)?.focus?.();
+    }, 0);
+  });
+};
+
+document.addEventListener("click", (event) => {
+  const overlay = $("confirmModal");
+  if (overlay && overlay.classList.contains("open") && event.target === overlay) {
+    window.resolveConfirmModal(false);
+  }
+}, true);
+
+document.addEventListener("keydown", (event) => {
+  const overlay = $("confirmModal");
+  if (event.key === "Escape" && overlay && overlay.classList.contains("open")) {
+    event.preventDefault();
+    window.resolveConfirmModal(false);
+  }
+}, true);
 
 const fb = {
   get auth() {
@@ -162,11 +810,14 @@ function ensureCurrentUserProfile() {
   if (!profile.status) profile.status = "active";
   if (!profile.email) profile.email = "";
   if (!profile.id) profile.id = "";
+  if (!Object.prototype.hasOwnProperty.call(profile, "obras")) profile.obras = {};
+  if (!Object.prototype.hasOwnProperty.call(profile, "acessos")) profile.acessos = {};
+  if (!Object.prototype.hasOwnProperty.call(profile, "obraAtivaId")) profile.obraAtivaId = "";
   return profile;
 }
 
 function getUserRole() {
-  return String(window.currentUserProfile?.role || "viewer");
+  return window.getActiveObraRole();
 }
 
 window.isAdmin = function isAdmin() {
@@ -182,42 +833,47 @@ window.isViewer = function isViewer() {
 };
 
 window.canManageUsers = function canManageUsers() {
-  return window.isAdmin();
+  return window.canManageAccess();
 };
 
 window.canEditObra = function canEditObra() {
-  return window.isAdmin();
+  return window.canEditDadosObra();
 };
 
 window.canEditFuncionarios = function canEditFuncionarios() {
-  return window.isAdmin() || window.isEditor();
+  return window.canViewCurrentObra() && (window.isAdmin() || window.isEditor());
 };
 
 window.canEditEmpresas = function canEditEmpresas() {
-  return window.isAdmin() || window.isEditor();
+  return window.canViewCurrentObra() && (window.isAdmin() || window.isEditor());
 };
 
 window.canEditFrequencia = function canEditFrequencia() {
-  return window.isAdmin() || window.isEditor();
+  return window.canViewCurrentObra() && (window.isAdmin() || window.isEditor());
 };
 
 window.canExportDocumentos = function canExportDocumentos() {
-  return window.isAdmin() || window.isEditor();
+  return window.canViewCurrentObra();
 };
 
 window.nlGetSessao = function nlGetSessao() {
   const user = fb.auth.currentUser;
   const profile = ensureCurrentUserProfile();
+  const appCtx = ensureAppContext();
   return user ? {
     uid: String(user.uid),
     email: profile.email || user.email || "",
-    tipoUsuario: profile.role || "viewer",
+    tipoUsuario: window.getActiveObraRole() || profile.role || "viewer",
     status: profile.status || "active",
+    obraAtivaId: appCtx.obraAtivaId || "",
   } : null;
 };
 
 function requirePermission(check, message) {
   if (typeof check === "function" && check()) return true;
+  logPermissionDebug("acao-bloqueada", {
+    message: message || "Permissão insuficiente.",
+  });
   safeToast(message || "VocÃª nÃ£o tem permissÃ£o para esta aÃ§Ã£o.", "error");
   return false;
 }
@@ -260,22 +916,24 @@ function updateUserIdentityUI() {
 
   const roleEl = document.querySelector(".u-role");
   if (roleEl) {
-    const role = roleLabels[profile.role] || "Visualizador";
+    const currentRole = window.getActiveObraRole();
+    const role = roleLabels[currentRole] || (window.canViewCurrentObra() ? "Visualizador" : "Sem acesso");
     const status = statusLabels[profile.status] || "Ativo";
     roleEl.textContent = normalizeUiText(`${role} • ${status}`);
   }
 }
 
 function updatePermissionUI() {
+  const canView = window.canViewCurrentObra();
   const canAdmin = window.canManageUsers();
-  const canObra = window.canEditObra();
+  const canObra = window.canEditDadosObra();
   const canFuncionarios = window.canEditFuncionarios();
   const canEmpresas = window.canEditEmpresas();
   const canFreq = window.canEditFrequencia();
   const canExport = window.canExportDocumentos();
 
   setElementVisible("#nav-admin-section", canAdmin);
-  setElementVisible("#nav-obra-item", canObra);
+  setElementVisible("#nav-obra-item", canView);
   setElementVisible("#adminBackupSection", canAdmin);
 
   setElementVisible("#btnNovoFuncionarioDashboard", canFuncionarios);
@@ -283,7 +941,10 @@ function updatePermissionUI() {
   setElementVisible("#btnNovoAtacarejo", canFuncionarios);
   setElementVisible("#btnNovaEmpresa", canEmpresas);
   setElementVisible("#btnSalvarObraModal", canObra);
+  setElementVisible(".edit-btn", canFuncionarios);
+  setElementVisible(".delete-btn", canFuncionarios || canEmpresas);
 
+  setElementVisible("#page-frequencia .ctx-item", canFreq);
   setElementsDisabled("#page-frequencia .ctx-item", !canFreq);
   setElementsDisabled("#btnFreqFeriadosMes", !canFreq);
   setElementsDisabled("#btnFreqFeriadoTodos", !canFreq);
@@ -311,8 +972,11 @@ function normalizeUserProfile(profile, fallbackUser) {
   return {
     id: String(profile?.id || fallbackUser?.uid || ""),
     email,
-    role: String(profile?.role || "viewer"),
+    role: normalizeRole(profile?.role) || "viewer",
     status: String(profile?.status || "active"),
+    obras: getLegacyObrasMap(profile?.obras),
+    acessos: normalizeAccessMap(profile?.acessos),
+    obraAtivaId: normalizeObraId(profile?.obraAtivaId),
     createdAt: profile?.createdAt || null,
     updatedAt: profile?.updatedAt || null,
   };
@@ -322,6 +986,10 @@ async function loadCurrentUserProfile(user) {
   const profile = await ensureUsuarioProfile(user);
   const normalized = normalizeUserProfile(profile, user);
   window.currentUserProfile = normalized;
+  syncAppContext(user, normalized);
+  refreshObraSelector(normalized).catch((error) => {
+    console.warn("[obra-selector] erro ao montar seletor", error);
+  });
   updatePermissionUI();
   return normalized;
 }
@@ -432,12 +1100,7 @@ function createEmptyFreqPeriod() {
 
 async function persistFreqStateSnapshot(periodoKey) {
   const state = ensureFreqState();
-
-  try {
-    localStorage.setItem("frequencia", JSON.stringify(state.data));
-  } catch (e) {
-    console.error("Erro ao persistir frequencia localmente:", e);
-  }
+  persistFreqCacheState(state.data);
 
   if (!fb.auth.currentUser || typeof window.freqGetPeriodoKey !== "function") return;
 
@@ -514,11 +1177,7 @@ function syncFrequenciaListener() {
   unsubFreq = ouvirFrequencia(pk, (payload) => {
     const freqState = ensureFreqState();
     freqState.data[pk] = cloneData(payload?.data || createEmptyFreqPeriod(), createEmptyFreqPeriod());
-    try {
-      localStorage.setItem("frequencia", JSON.stringify(freqState.data));
-    } catch (e) {
-      console.error("Erro ao atualizar cache local da frequencia:", e);
-    }
+    persistFreqCacheState(freqState.data);
     if (typeof window.freqRender === "function") window.freqRender();
   });
 }
@@ -526,7 +1185,9 @@ function syncFrequenciaListener() {
 window.syncFrequenciaListener = syncFrequenciaListener;
 
 function wireRealtimeForUser() {
+  stopRealtime();
   ensureDB();
+  ensureAppContext();
   window.appUsers = window.appUsers || [];
 
   unsubFuncionarios = listenFuncionarios((rows) => {
@@ -562,8 +1223,18 @@ watchSession(async (user) => {
     stopRealtime();
     window.currentUserProfile = null;
     window.appUsers = [];
+    const appCtx = ensureAppContext();
+    appCtx.userId = null;
+    appCtx.obrasPermitidas = [];
+    appCtx.obraAtivaId = getStoredObraAtivaId();
+    appCtx.activeRole = null;
+    appCtx.accessSource = "none";
+    appCtx.canViewCurrentObra = false;
+    appCtx.accessEntry = null;
+    resetObraSelectorUI();
     setLoggedIn(false);
     updatePermissionUI();
+    updateTopbarTitle();
     return;
   }
 
@@ -578,6 +1249,15 @@ watchSession(async (user) => {
 
     if (profile.status === "suspended") {
       alert("Acesso suspenso");
+      await logout();
+      return;
+    }
+
+    if (!window.canViewCurrentObra()) {
+      logPermissionDebug("sem-acesso-a-obra", {
+        userId: user.uid,
+      });
+      safeToast("Você não possui acesso à obra ativa.", "error");
       await logout();
       return;
     }
@@ -730,7 +1410,14 @@ window.removeFuncionario = async function removeFuncionario(id) {
       return;
     }
 
-    if (!confirm("Remover este funcionÃ¡rio permanentemente?")) return;
+    const confirmed = await window.openConfirmModal({
+      title: "Excluir funcionário",
+      message: "Tem certeza que deseja remover este funcionário permanentemente?",
+      confirmText: "Excluir",
+      cancelText: "Cancelar",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     console.log("[ui] remover funcionario", { id: String(id) });
     await removerFuncionario(id);
@@ -808,7 +1495,14 @@ window.removeEmpresa = async function removeEmpresa(id) {
       return;
     }
 
-    if (!confirm("Remover esta empresa? Os funcionÃ¡rios vinculados nÃ£o serÃ£o afetados.")) return;
+    const confirmed = await window.openConfirmModal({
+      title: "Excluir empresa",
+      message: "Tem certeza que deseja remover esta empresa? Os funcionários vinculados não serão afetados.",
+      confirmText: "Excluir",
+      cancelText: "Cancelar",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     console.log("[ui] remover empresa", { id: String(id) });
     await removerEmpresa(id);
@@ -907,19 +1601,7 @@ window.showPage = function showPage(id, el) {
   const page = document.getElementById('page-' + id);
   if (page) page.classList.add('active');
   if (el) el.classList.add('active');
-
-  const titles = {
-    'dashboard': 'Dashboard',
-    'terceirizados': 'Funcion\u00e1rios Terceirizados',
-    'atacarejo': 'Funcion\u00e1rios Novo Atacarejo',
-    'empresas': 'Gest\u00e3o de Empresas',
-    'ata-terc': 'Ata de Libera\u00e7\u00e3o de Terceiros',
-    'ata-atac': 'Ata de Libera\u00e7\u00e3o - Novo Atacarejo',
-    'frequencia': 'Controle de Frequ\u00eancia'
-  };
-
-  const topbarTitle = document.getElementById('topbarTitle');
-  if (topbarTitle) topbarTitle.textContent = titles[id] || id;
+  updateTopbarTitle(id);
 
   if (id === 'ata-terc' && typeof window.renderAta === 'function') {
     window.renderAta('terceirizado');
@@ -978,7 +1660,7 @@ window.openEmpresaModal = function openEmpresaModalWithPermission(id) {
 
 const originalOpenObraModal = window.openObraModal;
 window.openObraModal = function openObraModalWithPermission() {
-  if (!requirePermission(window.canEditObra, "Apenas administradores podem editar a obra.")) return;
+  if (!requirePermission(window.canViewCurrentObra, "Seu perfil não pode visualizar os dados da obra.")) return;
   return typeof originalOpenObraModal === "function" ? originalOpenObraModal() : undefined;
 };
 
@@ -1096,15 +1778,22 @@ window.refreshAll = function refreshAll() {
   if (atacTitle) {
     atacTitle.textContent = `FuncionÃ¡rios ${obraName}`;
   }
+
+  updatePermissionUI();
+  updateTopbarTitle();
+  if (typeof window.normalizeDocumentText === "function") window.normalizeDocumentText();
 };
 
 // InicializaÃ§Ã£o
 document.addEventListener("DOMContentLoaded", () => {
   ensureDB();
   ensureCurrentUserProfile();
+  ensureAppContext();
   updatePermissionUI();
   renderAdminUsers();
   if (typeof window.initDarkMode === "function") window.initDarkMode();
+  updateTopbarTitle();
+  if (typeof window.normalizeDocumentText === "function") window.normalizeDocumentText();
 });
 
 window.__mainLoaded = true;
