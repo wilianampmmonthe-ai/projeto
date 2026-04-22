@@ -1,4 +1,4 @@
-﻿function $(id) {
+function $(id) {
   return document.getElementById(id);
 }
 
@@ -696,19 +696,19 @@ document.addEventListener("keydown", (event) => {
 const fb = {
   get auth() {
     if (!window.firebase || !firebase.apps?.length) {
-      throw new Error("Firebase nÃ£o inicializado.");
+      throw new Error("Firebase não inicializado.");
     }
     return firebase.auth();
   },
   get db() {
     if (!window.firebase || !firebase.apps?.length) {
-      throw new Error("Firebase nÃ£o inicializado.");
+      throw new Error("Firebase não inicializado.");
     }
     return firebase.firestore();
   },
   get storage() {
     if (!window.firebase || !firebase.apps?.length) {
-      throw new Error("Firebase nÃ£o inicializado.");
+      throw new Error("Firebase não inicializado.");
     }
     return firebase.storage();
   }
@@ -737,7 +737,7 @@ window.doLogin = async function doLogin() {
     ) {
       msg = "E-mail ou senha incorretos.";
     } else if (e.code === "auth/invalid-email") {
-      msg = "E-mail invÃ¡lido.";
+      msg = "E-mail inválido.";
     } else if (e?.message) {
       msg = e.message;
     }
@@ -750,7 +750,7 @@ globalThis.doLogin = window.doLogin;
 window.doLogout = async function doLogout() {
   try {
     await logout();
-    safeToast("SessÃ£o encerrada.", "success");
+    safeToast("Sessão encerrada.", "success");
   } catch (e) {
     console.error("ERRO LOGOUT:", e);
   }
@@ -874,7 +874,7 @@ function requirePermission(check, message) {
   logPermissionDebug("acao-bloqueada", {
     message: message || "Permissão insuficiente.",
   });
-  safeToast(message || "VocÃª nÃ£o tem permissÃ£o para esta aÃ§Ã£o.", "error");
+  safeToast(message || "Você não tem permissão para esta ação.", "error");
   return false;
 }
 
@@ -897,7 +897,7 @@ function setElementsDisabled(selector, disabled) {
 function updateUserIdentityUI() {
   const user = fb.auth.currentUser;
   const profile = ensureCurrentUserProfile();
-  const email = profile.email || user?.email || "UsuÃ¡rio";
+  const email = profile.email || user?.email || "Usu?rio";
   const roleLabels = { admin: "Administrador", editor: "Editor", viewer: "Visualizador" };
   const statusLabels = { active: "Ativo", blocked: "Bloqueado", suspended: "Suspenso" };
   const initials = email
@@ -1005,7 +1005,7 @@ function renderAdminUsers() {
 
   const users = Array.isArray(window.appUsers) ? window.appUsers : [];
   if (!users.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><p>Nenhum usuÃ¡rio encontrado.</p></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><p>Nenhum usuário encontrado.</p></td></tr>';
     return;
   }
 
@@ -1035,12 +1035,12 @@ function renderAdminUsers() {
 }
 
 window.saveAdminUser = async function saveAdminUser(uid) {
-  if (!requirePermission(window.canManageUsers, "Apenas administradores podem alterar usuÃ¡rios.")) return;
+  if (!requirePermission(window.canManageUsers, "Apenas administradores podem alterar usuários.")) return;
 
   try {
     const existing = (window.appUsers || []).find((user) => String(user.id) === String(uid));
     if (!existing) {
-      safeToast("UsuÃ¡rio nÃ£o encontrado.", "error");
+      safeToast("Usuário não encontrado.", "error");
       return;
     }
 
@@ -1049,10 +1049,10 @@ window.saveAdminUser = async function saveAdminUser(uid) {
 
     console.log("[ui] salvar usuario", { uid: String(uid), role, status });
     await salvarUsuario(uid, { email: existing.email, role, status });
-    safeToast("UsuÃ¡rio atualizado com sucesso.", "success");
+    safeToast("Usuário atualizado com sucesso.", "success");
   } catch (e) {
-    console.error("ERRO AO SALVAR USUÃRIO:", e);
-    safeToast(e?.message || "Erro ao salvar usuÃ¡rio", "error");
+    console.error("ERRO AO SALVAR USUÁRIO:", e);
+    safeToast(e?.message || "Erro ao salvar usu?rio", "error");
   }
 };
 
@@ -1217,7 +1217,7 @@ function wireRealtimeForUser() {
   updatePermissionUI();
 }
 
-// --- SESSÃƒO ---
+// --- SESSÃO ---
 watchSession(async (user) => {
   if (!user) {
     stopRealtime();
@@ -1265,28 +1265,28 @@ watchSession(async (user) => {
     setLoggedIn(true);
     wireRealtimeForUser();
     renderAdminUsers();
-    safeToast("SessÃ£o autenticada.", "success");
+    safeToast("Sessão autenticada.", "success");
   } catch (e) {
     console.error("ERRO AO CARREGAR PERFIL:", e);
-    safeToast(e?.message || "Erro ao carregar permissÃµes do usuÃ¡rio.", "error");
+    safeToast(e?.message || "Erro ao carregar permiss?es do usu?rio.", "error");
     await logout();
   }
 });
 /*
-  safeToast("SessÃ£o autenticada.", "success");
+  safeToast("Sessão autenticada.", "success");
 });
 
-// --- FREQUÃŠNCIA ---
+// --- FREQUÊNCIA ---
   } catch (e) {
     console.error("ERRO AO CARREGAR PERFIL:", e);
-    safeToast(e?.message || "Erro ao carregar permissÃµes do usuÃ¡rio.", "error");
+    safeToast(e?.message || "Erro ao carregar permiss?es do usu?rio.", "error");
     await logout();
   }
 });
 
 */
 window.freqSaveData = function () {
-  if (!requirePermission(window.canEditFrequencia, "Seu perfil nÃ£o pode editar a frequÃªncia.")) return;
+  if (!requirePermission(window.canEditFrequencia, "Seu perfil não pode editar a frequência.")) return;
   if (!fb.auth.currentUser) return;
   if (!window.freqState || typeof window.freqGetPeriodoKey !== "function") return;
 
@@ -1297,18 +1297,18 @@ window.freqSaveData = function () {
 
   console.log("[ui] salvar frequencia", { periodoKey: pk });
   salvarFrequencia(pk, data).catch((e) => {
-    console.error("ERRO AO SALVAR FREQUÃŠNCIA:", e);
-    safeToast(e?.message || "Erro ao salvar frequÃªncia", "error");
+    console.error("ERRO AO SALVAR FREQUÊNCIA:", e);
+    safeToast(e?.message || "Erro ao salvar frequ?ncia", "error");
   });
 };
 
-// --- FUNCIONÃRIO: SALVAR ---
+// --- FUNCIONÁRIO: SALVAR ---
 window.saveFuncionario = async function () {
   try {
     const db = ensureDB();
-    if (!requirePermission(window.canEditFuncionarios, "Seu perfil nÃ£o pode salvar funcionÃ¡rios.")) return;
+    if (!requirePermission(window.canEditFuncionarios, "Seu perfil não pode salvar funcionários.")) return;
     if (!fb.auth.currentUser) {
-      safeToast("VocÃª precisa estar autenticado.", "error");
+      safeToast("Você precisa estar autenticado.", "error");
       return;
     }
 
@@ -1335,7 +1335,7 @@ window.saveFuncionario = async function () {
     const email = $("f-email")?.value || "";
 
     if (!nome || !cpf || !tipo || !empresa || !funcao) {
-      safeToast("Preencha todos os campos obrigatÃ³rios.", "error");
+      safeToast("Preencha todos os campos obrigatórios.", "error");
       return;
     }
 
@@ -1356,14 +1356,14 @@ window.saveFuncionario = async function () {
       window.closeModal("modalCadastro");
     }
 
-    safeToast("FuncionÃ¡rio salvo!", "success");
+    safeToast("Funcionário salvo!", "success");
   } catch (e) {
-    console.error("ERRO AO SALVAR FUNCIONÃRIO:", e);
-    safeToast(e?.message || "Erro ao salvar funcionÃ¡rio", "error");
+    console.error("ERRO AO SALVAR FUNCIONÁRIO:", e);
+    safeToast(e?.message || "Erro ao salvar funcion?rio", "error");
   }
 };
 
-// --- FUNCIONÃRIO: EDITAR ---
+// --- FUNCIONÁRIO: EDITAR ---
 window.editFuncionario = function(id) {
   const db = ensureDB();
   const func = db.funcionarios.find(f => String(f.id) === String(id));
@@ -1372,7 +1372,7 @@ window.editFuncionario = function(id) {
   db.currentEditId = id;
   db.tempDocs = {};
   
-  document.getElementById('modalCadastroTitle').textContent = 'Editar FuncionÃ¡rio';
+  document.getElementById('modalCadastroTitle').textContent = 'Editar Funcionário';
   document.getElementById('f-nome').value = func.nome || '';
   document.getElementById('f-cpf').value = func.cpf || '';
   document.getElementById('f-tipo').value = func.tipo || '';
@@ -1400,19 +1400,19 @@ window.editFuncionario = function(id) {
   }
 };
 
-// --- FUNCIONÃRIO: REMOVER (APENAS UMA VERSÃƒO) ---
+// --- FUNCIONÁRIO: REMOVER (APENAS UMA VERSÃO) ---
 window.removeFuncionario = async function removeFuncionario(id) {
   try {
     const db = ensureDB();
-    if (!requirePermission(window.canEditFuncionarios, "Seu perfil nÃ£o pode remover funcionÃ¡rios.")) return;
+    if (!requirePermission(window.canEditFuncionarios, "Seu perfil não pode remover funcionários.")) return;
     if (!fb.auth.currentUser) {
-      safeToast("VocÃª precisa estar autenticado.", "error");
+      safeToast("Você precisa estar autenticado.", "error");
       return;
     }
 
     const confirmed = await window.openConfirmModal({
       title: "Excluir funcionário",
-      message: "Tem certeza que deseja remover este funcionário permanentemente?",
+      message: "Tem certeza que deseja remover este funcion?rio permanentemente?",
       confirmText: "Excluir",
       cancelText: "Cancelar",
       variant: "danger",
@@ -1429,10 +1429,10 @@ window.removeFuncionario = async function removeFuncionario(id) {
 
     await pruneFuncionarioReferences(id);
 
-    safeToast("FuncionÃ¡rio removido com sucesso.", "success");
+    safeToast("Funcionário removido com sucesso.", "success");
   } catch (e) {
-    console.error("ERRO AO REMOVER FUNCIONÃRIO:", e);
-    safeToast(e?.message || "Erro ao remover funcionÃ¡rio", "error");
+    console.error("ERRO AO REMOVER FUNCIONÁRIO:", e);
+    safeToast(e?.message || "Erro ao remover funcion?rio", "error");
   }
 };
 
@@ -1440,10 +1440,10 @@ window.removeFuncionario = async function removeFuncionario(id) {
 window.saveEmpresa = async function () {
   try {
     const db = ensureDB();
-    if (!requirePermission(window.canEditEmpresas, "Seu perfil nÃ£o pode salvar empresas.")) return;
+    if (!requirePermission(window.canEditEmpresas, "Seu perfil não pode salvar empresas.")) return;
 
     if (!fb.auth.currentUser) {
-      safeToast("VocÃª precisa estar autenticado.", "error");
+      safeToast("Você precisa estar autenticado.", "error");
       return;
     }
 
@@ -1463,7 +1463,7 @@ window.saveEmpresa = async function () {
     }
 
     if (cnpjDigits.length !== 14) {
-      safeToast("O CNPJ deve conter 14 dÃ­gitos.", "error");
+      safeToast("O CNPJ deve conter 14 dígitos.", "error");
       return;
     }
 
@@ -1489,15 +1489,15 @@ window.saveEmpresa = async function () {
 // --- EMPRESA: REMOVER ---
 window.removeEmpresa = async function removeEmpresa(id) {
   try {
-    if (!requirePermission(window.canEditEmpresas, "Seu perfil nÃ£o pode remover empresas.")) return;
+    if (!requirePermission(window.canEditEmpresas, "Seu perfil não pode remover empresas.")) return;
     if (!fb.auth.currentUser) {
-      safeToast("VocÃª precisa estar autenticado.", "error");
+      safeToast("Você precisa estar autenticado.", "error");
       return;
     }
 
     const confirmed = await window.openConfirmModal({
       title: "Excluir empresa",
-      message: "Tem certeza que deseja remover esta empresa? Os funcionários vinculados não serão afetados.",
+      message: "Tem certeza que deseja remover esta empresa? Os funcion?rios vinculados n?o ser?o afetados.",
       confirmText: "Excluir",
       cancelText: "Cancelar",
       variant: "danger",
@@ -1519,11 +1519,11 @@ window.saveObra = async function () {
   try {
     if (!requirePermission(window.canEditObra, "Apenas administradores podem editar a obra.")) return;
     if (!fb.auth.currentUser) {
-      safeToast("VocÃª precisa estar autenticado.", "error");
+      safeToast("Você precisa estar autenticado.", "error");
       return;
     }
 
-    // Coletar dados do formulÃ¡rio
+    // Coletar dados do formulário
     const cnpj = $("o-cnpj")?.value?.trim() || "";
     const nome = $("o-nome")?.value?.trim() || "";
     const logradouro = $("o-logradouro")?.value?.trim() || "";
@@ -1534,7 +1534,7 @@ window.saveObra = async function () {
     const uf = $("o-uf")?.value || "PE";
 
     if (!cnpj || !nome || !logradouro || !numero || !cep || !bairro || !municipio || !uf) {
-      safeToast("Preencha todos os campos obrigatÃ³rios da empresa.", "error");
+      safeToast("Preencha todos os campos obrigatórios da empresa.", "error");
       return;
     }
 
@@ -1587,11 +1587,11 @@ window.saveObra = async function () {
 };
 
 // ==============================
-// UI NAVEGAÃ‡ÃƒO
+// UI NAVEGAÇÃO
 // ==============================
 
 window.showPage = function showPage(id, el) {
-  if (id === "admin" && !requirePermission(window.canManageUsers, "Aba Admin disponÃ­vel apenas para administradores.")) {
+  if (id === "admin" && !requirePermission(window.canManageUsers, "Aba Admin disponível apenas para administradores.")) {
     return;
   }
 
@@ -1642,19 +1642,19 @@ window.showTab = function showTab(id, el) {
 
 const originalOpenCadastroModal = window.openCadastroModal;
 window.openCadastroModal = function openCadastroModalWithPermission(tipo) {
-  if (!requirePermission(window.canEditFuncionarios, "Seu perfil nÃ£o pode cadastrar funcionÃ¡rios.")) return;
+  if (!requirePermission(window.canEditFuncionarios, "Seu perfil não pode cadastrar funcionários.")) return;
   return typeof originalOpenCadastroModal === "function" ? originalOpenCadastroModal(tipo) : undefined;
 };
 
 const originalEditFuncionario = window.editFuncionario;
 window.editFuncionario = function editFuncionarioWithPermission(id) {
-  if (!requirePermission(window.canEditFuncionarios, "Seu perfil nÃ£o pode editar funcionÃ¡rios.")) return;
+  if (!requirePermission(window.canEditFuncionarios, "Seu perfil não pode editar funcionários.")) return;
   return typeof originalEditFuncionario === "function" ? originalEditFuncionario(id) : undefined;
 };
 
 const originalOpenEmpresaModal = window.openEmpresaModal;
 window.openEmpresaModal = function openEmpresaModalWithPermission(id) {
-  if (!requirePermission(window.canEditEmpresas, "Seu perfil nÃ£o pode cadastrar empresas.")) return;
+  if (!requirePermission(window.canEditEmpresas, "Seu perfil não pode cadastrar empresas.")) return;
   return typeof originalOpenEmpresaModal === "function" ? originalOpenEmpresaModal(id) : undefined;
 };
 
@@ -1666,37 +1666,37 @@ window.openObraModal = function openObraModalWithPermission() {
 
 const originalFreqCtxApply = window.freqCtxApply;
 window.freqCtxApply = function freqCtxApplyWithPermission(status) {
-  if (!requirePermission(window.canEditFrequencia, "Seu perfil nÃ£o pode editar a frequÃªncia.")) return;
+  if (!requirePermission(window.canEditFrequencia, "Seu perfil não pode editar a frequência.")) return;
   return typeof originalFreqCtxApply === "function" ? originalFreqCtxApply(status) : undefined;
 };
 
 const originalOpenFeriadoModal = window.openFeriadoModal;
 window.openFeriadoModal = function openFeriadoModalWithPermission() {
-  if (!requirePermission(window.canEditFrequencia, "Seu perfil nÃ£o pode editar a frequÃªncia.")) return;
+  if (!requirePermission(window.canEditFrequencia, "Seu perfil não pode editar a frequência.")) return;
   return typeof originalOpenFeriadoModal === "function" ? originalOpenFeriadoModal() : undefined;
 };
 
 const originalOpenFeriadoTodosModal = window.openFeriadoTodosModal;
 window.openFeriadoTodosModal = function openFeriadoTodosModalWithPermission() {
-  if (!requirePermission(window.canEditFrequencia, "Seu perfil nÃ£o pode editar a frequÃªncia.")) return;
+  if (!requirePermission(window.canEditFrequencia, "Seu perfil não pode editar a frequência.")) return;
   return typeof originalOpenFeriadoTodosModal === "function" ? originalOpenFeriadoTodosModal() : undefined;
 };
 
 const originalAplicarFolgaFimDeSemana = window.aplicarFolgaFimDeSemana;
 window.aplicarFolgaFimDeSemana = function aplicarFolgaFimDeSemanaWithPermission() {
-  if (!requirePermission(window.canEditFrequencia, "Seu perfil nÃ£o pode editar a frequÃªncia.")) return;
+  if (!requirePermission(window.canEditFrequencia, "Seu perfil não pode editar a frequência.")) return;
   return typeof originalAplicarFolgaFimDeSemana === "function" ? originalAplicarFolgaFimDeSemana() : undefined;
 };
 
 const originalExportBackup = window.exportBackup;
 window.exportBackup = function exportBackupWithPermission() {
-  if (!requirePermission(window.canManageUsers, "Backup disponÃ­vel apenas para administradores.")) return;
+  if (!requirePermission(window.canManageUsers, "Backup disponível apenas para administradores.")) return;
   return typeof originalExportBackup === "function" ? originalExportBackup() : undefined;
 };
 
 const originalImportBackup = window.importBackup;
 window.importBackup = function importBackupWithPermission(inputEl) {
-  if (!requirePermission(window.canManageUsers, "ImportaÃ§Ã£o disponÃ­vel apenas para administradores.")) {
+  if (!requirePermission(window.canManageUsers, "Importação disponível apenas para administradores.")) {
     if (inputEl) inputEl.value = "";
     return;
   }
@@ -1705,25 +1705,25 @@ window.importBackup = function importBackupWithPermission(inputEl) {
 
 const originalExportAtaPDF = window.exportAtaPDF;
 window.exportAtaPDF = function exportAtaPDFWithPermission(tipo) {
-  if (!requirePermission(window.canExportDocumentos, "Seu perfil nÃ£o pode exportar atas.")) return;
+  if (!requirePermission(window.canExportDocumentos, "Seu perfil não pode exportar atas.")) return;
   return typeof originalExportAtaPDF === "function" ? originalExportAtaPDF(tipo) : undefined;
 };
 
 const originalExportAtaExcel = window.exportAtaExcel;
 window.exportAtaExcel = function exportAtaExcelWithPermission(tipo) {
-  if (!requirePermission(window.canExportDocumentos, "Seu perfil nÃ£o pode exportar atas.")) return;
+  if (!requirePermission(window.canExportDocumentos, "Seu perfil não pode exportar atas.")) return;
   return typeof originalExportAtaExcel === "function" ? originalExportAtaExcel(tipo) : undefined;
 };
 
 const originalFreqExportPDF = window.freqExportPDF;
 window.freqExportPDF = function freqExportPDFWithPermission() {
-  if (!requirePermission(window.canExportDocumentos, "Seu perfil nÃ£o pode exportar frequÃªncia.")) return;
+  if (!requirePermission(window.canExportDocumentos, "Seu perfil não pode exportar frequência.")) return;
   return typeof originalFreqExportPDF === "function" ? originalFreqExportPDF() : undefined;
 };
 
 const originalFreqExportExcel = window.freqExportExcel;
 window.freqExportExcel = function freqExportExcelWithPermission() {
-  if (!requirePermission(window.canExportDocumentos, "Seu perfil nÃ£o pode exportar frequÃªncia.")) return;
+  if (!requirePermission(window.canExportDocumentos, "Seu perfil não pode exportar frequência.")) return;
   return typeof originalFreqExportExcel === "function" ? originalFreqExportExcel() : undefined;
 };
 
@@ -1776,7 +1776,7 @@ window.refreshAll = function refreshAll() {
 
   const atacTitle = document.getElementById("atacarejoTitle");
   if (atacTitle) {
-    atacTitle.textContent = `FuncionÃ¡rios ${obraName}`;
+    atacTitle.textContent = `Funcionários ${obraName}`;
   }
 
   updatePermissionUI();
@@ -1784,7 +1784,7 @@ window.refreshAll = function refreshAll() {
   if (typeof window.normalizeDocumentText === "function") window.normalizeDocumentText();
 };
 
-// InicializaÃ§Ã£o
+// Inicialização
 document.addEventListener("DOMContentLoaded", () => {
   ensureDB();
   ensureCurrentUserProfile();
@@ -1798,20 +1798,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
 window.__mainLoaded = true;
 /*
-    safeToast("SessÃ£o autenticada.", "success");
+    safeToast("Sessão autenticada.", "success");
   } catch (e) {
     console.error("ERRO AO CARREGAR PERFIL:", e);
-    safeToast(e?.message || "Erro ao carregar permissÃµes do usuÃ¡rio.", "error");
+    safeToast(e?.message || "Erro ao carregar permiss?es do usu?rio.", "error");
     await logout();
   }
   } catch (e) {
     console.error("ERRO AO CARREGAR PERFIL:", e);
-    safeToast(e?.message || "Erro ao carregar permissÃµes do usuÃ¡rio.", "error");
+    safeToast(e?.message || "Erro ao carregar permiss?es do usu?rio.", "error");
     await logout();
   }
   } catch (e) {
     console.error("ERRO AO CARREGAR PERFIL:", e);
-    safeToast(e?.message || "Erro ao carregar permissÃµes do usuÃ¡rio.", "error");
+    safeToast(e?.message || "Erro ao carregar permiss?es do usu?rio.", "error");
     await logout();
   }
 });
