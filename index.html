@@ -613,6 +613,165 @@ tr.row-yellow td { background: rgba(234,179,8,0.04); }
   color: var(--text); border-radius: 6px; padding: 4px 8px;
   font-size: 12px; cursor: pointer; outline: none;
 }
+.status-dropdown {
+  position: relative;
+  min-width: 190px;
+}
+.status-dropdown__native { display: none; }
+.status-dropdown__button {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px 6px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.18);
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(15,23,42,0.02)), var(--bg2);
+  color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+}
+.status-dropdown__button:hover {
+  border-color: rgba(96,165,250,0.42);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(15,23,42,0.16);
+}
+.status-dropdown__button:focus-visible {
+  border-color: rgba(96,165,250,0.62);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.18), 0 12px 26px rgba(15,23,42,0.14);
+}
+.status-dropdown__button-label {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.status-dropdown__chevron {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text2);
+  flex: 0 0 auto;
+  transition: transform 0.22s ease, color 0.22s ease;
+}
+.status-dropdown.is-open .status-dropdown__chevron {
+  transform: rotate(180deg);
+  color: var(--text);
+}
+.status-dropdown__menu {
+  position: fixed;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,0.18);
+  background: var(--card);
+  box-shadow: 0 22px 38px rgba(15,23,42,0.24);
+  opacity: 0;
+  transform: translateY(var(--status-dropdown-hidden-offset, -6px)) scale(0.98);
+  transform-origin: top center;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 260;
+  min-width: 190px;
+  max-height: min(280px, calc(100vh - 24px));
+  overflow-y: auto;
+}
+.status-dropdown__menu[data-placement="top"] {
+  --status-dropdown-hidden-offset: 6px;
+  transform-origin: bottom center;
+}
+.status-dropdown__menu.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.status-dropdown__option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+.status-dropdown__option:hover,
+.status-dropdown__option:focus-visible {
+  background: rgba(59,130,246,0.08);
+  border-color: rgba(96,165,250,0.2);
+  outline: none;
+}
+.status-dropdown__option.is-selected {
+  background: rgba(59,130,246,0.12);
+  border-color: rgba(96,165,250,0.24);
+}
+.status-dropdown__check {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 2px solid rgba(148,163,184,0.35);
+  background: transparent;
+  flex: 0 0 auto;
+  transition: all 0.18s ease;
+}
+.status-dropdown__option.is-selected .status-dropdown__check {
+  border-color: rgba(96,165,250,0.95);
+  background: rgba(96,165,250,0.95);
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.14);
+}
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.status-badge--pendente {
+  background: rgba(245,158,11,0.14);
+  color: #fbbf24;
+  border-color: rgba(245,158,11,0.26);
+}
+.status-badge--conforme {
+  background: rgba(34,197,94,0.14);
+  color: #4ade80;
+  border-color: rgba(34,197,94,0.24);
+}
+.status-badge--nao-conforme {
+  background: rgba(239,68,68,0.14);
+  color: #f87171;
+  border-color: rgba(239,68,68,0.24);
+}
+.status-badge--tipo-default {
+  background: rgba(148,163,184,0.14);
+  color: #cbd5e1;
+  border-color: rgba(148,163,184,0.22);
+}
+.status-badge--tipo-terceirizado {
+  background: rgba(59,130,246,0.14);
+  color: #93c5fd;
+  border-color: rgba(59,130,246,0.24);
+}
+.status-badge--tipo-atacarejo {
+  background: rgba(168,85,247,0.14);
+  color: #d8b4fe;
+  border-color: rgba(168,85,247,0.24);
+}
 .doc-item .doc-deadline { font-size: 11px; color: var(--yellow); }
 .doc-item .doc-expired { font-size: 11px; color: var(--red); font-weight: 600; }
 .doc-item .file-upload-label {
@@ -632,6 +791,40 @@ tr.row-yellow td { background: rgba(234,179,8,0.04); }
   transition: all 0.15s;
 }
 .doc-item .view-doc-btn:hover { background: rgba(59,130,246,0.2); }
+
+#modalEmpresa .doc-section {
+  display: grid;
+  gap: 10px;
+}
+#modalEmpresa .doc-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 220px) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  overflow: visible;
+}
+#modalEmpresa .doc-item .doc-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+#modalEmpresa .doc-item .file-upload-label {
+  min-height: 42px;
+  padding: 0 14px;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+@media (max-width: 640px) {
+  #modalEmpresa .doc-item {
+    grid-template-columns: 1fr;
+  }
+  #modalEmpresa .status-dropdown,
+  #modalEmpresa .doc-item .file-upload-label {
+    width: 100%;
+  }
+}
 
 .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .checkbox-item {
@@ -3718,9 +3911,9 @@ body:not(.light) #freqContextMenu {
         <input type="text" id="globalSearch" placeholder="Buscar por nome, CPF, empresa..." oninput="handleSearch(this.value)">
       </div>
       <!-- Backup buttons -->
-      <button class="backup-btn" style="display:none;" onclick="exportBackup()" title="Exportar backup completo do sistema">ðŸ’¾ Backup</button>
+      <button class="backup-btn" style="display:none;" onclick="exportBackup()" title="Exportar backup completo do sistema">Backup</button>
       <label class="backup-btn restore" style="display:none;" title="Restaurar backup de arquivo .json">
-        ðŸ“‚ Restaurar
+        Restaurar
         <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="importBackup(this)">
       </label>
       <!-- Dark mode toggle -->
@@ -4045,7 +4238,7 @@ body:not(.light) #freqContextMenu {
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalCadastro')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveFuncionario()">💾 Salvar Funcionário</button>
+      <button class="btn btn-primary" onclick="saveFuncionario()">Salvar Funcionário</button>
     </div>
   </div>
 </div>
@@ -4060,7 +4253,7 @@ body:not(.light) #freqContextMenu {
     <div class="modal-body" id="modalDetalheBody"></div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalDetalhe')">Fechar</button>
-      <button class="btn btn-primary" id="btnSaveDetalhe">💾 Salvar Alterações</button>
+      <button class="btn btn-primary" id="btnSaveDetalhe">Salvar Alterações</button>
     </div>
   </div>
 </div>
@@ -4081,23 +4274,23 @@ body:not(.light) #freqContextMenu {
         <div class="doc-item">
           <span class="doc-name">PGR</span>
           <select class="doc-status-sel" id="e-pgr"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option></select>
-          <label class="file-upload-label"><input type="file" accept=".pdf" onchange="handleEmpresaDoc(this,'pgr')">ðŸ“Ž Anexar</label>
+          <label class="file-upload-label"><input type="file" accept=".pdf" onchange="handleEmpresaDoc(this,'pgr')">Anexar</label>
         </div>
         <div class="doc-item">
           <span class="doc-name">PCMSO</span>
           <select class="doc-status-sel" id="e-pcmso"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option></select>
-          <label class="file-upload-label"><input type="file" accept=".pdf" onchange="handleEmpresaDoc(this,'pcmso')">ðŸ“Ž Anexar</label>
+          <label class="file-upload-label"><input type="file" accept=".pdf" onchange="handleEmpresaDoc(this,'pcmso')">Anexar</label>
         </div>
         <div class="doc-item">
           <span class="doc-name">ART dos Programas</span>
           <select class="doc-status-sel" id="e-art"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option></select>
-          <label class="file-upload-label"><input type="file" accept=".pdf" onchange="handleEmpresaDoc(this,'art')">ðŸ“Ž Anexar</label>
+          <label class="file-upload-label"><input type="file" accept=".pdf" onchange="handleEmpresaDoc(this,'art')">Anexar</label>
         </div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalEmpresa')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveEmpresa()">ðŸ’¾ Salvar Empresa</button>
+      <button class="btn btn-primary" onclick="saveEmpresa()">Salvar Empresa</button>
     </div>
   </div>
 </div>
@@ -4169,7 +4362,7 @@ body:not(.light) #freqContextMenu {
               <div class="field"><label>Telefone para Contato *</label><input type="text" class="eng-telefone" placeholder="(00) 00000-0000" oninput="formatPhone(this)"></div>
               <div class="field full-col"><label>Nome Fantasia da Empresa do Engenheiro *</label><input type="text" class="eng-empresa" placeholder="Empresa contratada"></div>
             </div>
-            <button type="button" class="btn btn-danger btn-sm" style="margin-top:12px;" onclick="this.closest('.eng-member').remove()">ðŸ—‘ï¸ Remover Membro</button>
+            <button type="button" class="btn btn-danger btn-sm" style="margin-top:12px;" onclick="this.closest('.eng-member').remove()">Remover Membro</button>
           </div>
         </div>
         <button type="button" class="btn btn-outline btn-sm" onclick="addEngMember()">+ Adicionar Membro da Engenharia</button>
@@ -4203,7 +4396,7 @@ body:not(.light) #freqContextMenu {
               <div class="field"><label>Telefone para Contato *</label><input type="text" class="sst-telefone" placeholder="(00) 00000-0000" oninput="formatPhone(this)"></div>
               <div class="field full-col"><label>Registro no MTE *</label><input type="text" class="sst-mte" placeholder="Número de registro no Ministério do Trabalho"></div>
             </div>
-            <button type="button" class="btn btn-danger btn-sm" style="margin-top:12px;" onclick="this.closest('.sst-member').remove()">ðŸ—‘ï¸ Remover Membro</button>
+            <button type="button" class="btn btn-danger btn-sm" style="margin-top:12px;" onclick="this.closest('.sst-member').remove()">Remover Membro</button>
           </div>
         </div>
         <button type="button" class="btn btn-outline btn-sm" onclick="addSSTMember()">+ Adicionar Membro da SST</button>
@@ -4211,7 +4404,7 @@ body:not(.light) #freqContextMenu {
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalObra')">Cancelar</button>
-      <button class="btn btn-primary" id="btnSalvarObraModal" onclick="saveObra()">ðŸ’¾ Salvar Obra</button>
+      <button class="btn btn-primary" id="btnSalvarObraModal" onclick="saveObra()">Salvar Obra</button>
     </div>
   </div>
 </div>
@@ -4245,18 +4438,18 @@ body:not(.light) #freqContextMenu {
                onkeydown="if(event.key==='Enter') feriadoObsConfirm()">
       </div>
       <div class="feriado-sugestoes" id="feriadoSugestoes">
-        <span class="feriado-sug" onclick="feriadoSug('Ano Novo')">ðŸŽ† Ano Novo</span>
-        <span class="feriado-sug" onclick="feriadoSug('Carnaval')">ðŸŽ­ Carnaval</span>
+        <span class="feriado-sug" onclick="feriadoSug('Ano Novo')">Ano Novo</span>
+        <span class="feriado-sug" onclick="feriadoSug('Carnaval')">Carnaval</span>
         <span class="feriado-sug" onclick="feriadoSug('Sexta-feira Santa')">✝️ Sexta Santa</span>
         <span class="feriado-sug" onclick="feriadoSug('Tiradentes')">⚔️ Tiradentes</span>
-        <span class="feriado-sug" onclick="feriadoSug('Dia do Trabalho')">ðŸ”¨ Dia do Trabalho</span>
+        <span class="feriado-sug" onclick="feriadoSug('Dia do Trabalho')">Dia do Trabalho</span>
         <span class="feriado-sug" onclick="feriadoSug('Corpus Christi')">⛪ Corpus Christi</span>
         <span class="feriado-sug" onclick="feriadoSug('São João')">🎪 São João</span>
         <span class="feriado-sug" onclick="feriadoSug('Independência')">🇧🇷 Independência</span>
-        <span class="feriado-sug" onclick="feriadoSug('Nossa Sra. Aparecida')">ðŸ•Šï¸ N.Sra. Aparecida</span>
-        <span class="feriado-sug" onclick="feriadoSug('Finados')">ðŸ•¯ï¸ Finados</span>
+        <span class="feriado-sug" onclick="feriadoSug('Nossa Sra. Aparecida')">N.Sra. Aparecida</span>
+        <span class="feriado-sug" onclick="feriadoSug('Finados')">Finados</span>
         <span class="feriado-sug" onclick="feriadoSug('Proclamação da República')">📜 República</span>
-        <span class="feriado-sug" onclick="feriadoSug('Natal')">ðŸŽ„ Natal</span>
+        <span class="feriado-sug" onclick="feriadoSug('Natal')">Natal</span>
         <span class="feriado-sug" onclick="feriadoSug('Folga compensatória')">📆 Folga compens.</span>
       </div>
     </div>
@@ -4375,9 +4568,9 @@ body:not(.light) #freqContextMenu {
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-danger btn-sm" id="cellObsBtnRemove" onclick="cellObsRemove()" style="margin-right:auto;">ðŸ—‘ï¸ Remover obs.</button>
+      <button class="btn btn-danger btn-sm" id="cellObsBtnRemove" onclick="cellObsRemove()" style="margin-right:auto;">Remover obs.</button>
       <button class="btn btn-outline" onclick="cellObsCancel()">Cancelar</button>
-      <button class="btn btn-primary" onclick="cellObsConfirm()">ðŸ’¾ Salvar</button>
+      <button class="btn btn-primary" onclick="cellObsConfirm()">Salvar</button>
     </div>
   </div>
 </div>
@@ -4406,16 +4599,16 @@ body:not(.light) #freqContextMenu {
         </div>
       </div>
       <div class="feriado-sugestoes" style="margin-top:-8px;margin-bottom:4px;">
-        <span class="feriado-sug" onclick="ferTodosSug('Ano Novo')">ðŸŽ† Ano Novo</span>
-        <span class="feriado-sug" onclick="ferTodosSug('Carnaval')">ðŸŽ­ Carnaval</span>
+        <span class="feriado-sug" onclick="ferTodosSug('Ano Novo')">Ano Novo</span>
+        <span class="feriado-sug" onclick="ferTodosSug('Carnaval')">Carnaval</span>
         <span class="feriado-sug" onclick="ferTodosSug('Sexta-feira Santa')">✝️ Sexta Santa</span>
         <span class="feriado-sug" onclick="ferTodosSug('Tiradentes')">⚔️ Tiradentes</span>
-        <span class="feriado-sug" onclick="ferTodosSug('Dia do Trabalho')">ðŸ”¨ Trabalho</span>
+        <span class="feriado-sug" onclick="ferTodosSug('Dia do Trabalho')">Trabalho</span>
         <span class="feriado-sug" onclick="ferTodosSug('São João')">🎪 São João</span>
         <span class="feriado-sug" onclick="ferTodosSug('Independência')">🇧🇷 Independência</span>
-        <span class="feriado-sug" onclick="ferTodosSug('N.Sra. Aparecida')">ðŸ•Šï¸ Aparecida</span>
-        <span class="feriado-sug" onclick="ferTodosSug('Finados')">ðŸ•¯ï¸ Finados</span>
-        <span class="feriado-sug" onclick="ferTodosSug('Natal')">ðŸŽ„ Natal</span>
+        <span class="feriado-sug" onclick="ferTodosSug('N.Sra. Aparecida')">Aparecida</span>
+        <span class="feriado-sug" onclick="ferTodosSug('Finados')">Finados</span>
+        <span class="feriado-sug" onclick="ferTodosSug('Natal')">Natal</span>
       </div>
     </div>
     <div class="modal-footer">
@@ -4736,12 +4929,15 @@ function getRequiredDocs(tipo){
 function openCadastroModal(tipo=''){
   DB.currentEditId = null;
   DB.tempDocs = {};
+  closeAllStatusDropdowns();
+  cleanupStatusDropdowns(document.getElementById('modalCadastro'));
   document.getElementById('modalCadastroTitle').textContent = 'Cadastrar Funcionário';
   ['f-nome','f-cpf','f-empresa','f-funcao','f-tel','f-email'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-tipo').value = tipo||'';
   document.getElementById('f-admissao').value = new Date().toISOString().split('T')[0];
   document.getElementById('docsFields').innerHTML = tipo ? buildDocFields(tipo) : '<p style="color:var(--text2);font-size:13px;">Selecione o tipo de funcion?rio primeiro.</p>';
   document.getElementById('trainFields').innerHTML = tipo ? buildTrainFields(tipo) : '<p style="color:var(--text2);font-size:13px;">Selecione o tipo de funcion?rio primeiro.</p>';
+  initStatusDropdowns(document.getElementById('modalCadastro'));
   updateEmpresasSuggestions();
   // Reset to first tab
   showTab('tab-dados', document.querySelector('#modalCadastro .tab-btn'));
@@ -4749,8 +4945,11 @@ function openCadastroModal(tipo=''){
 }
 function updateDocFields(){
   const tipo = document.getElementById('f-tipo').value;
+  closeAllStatusDropdowns();
+  cleanupStatusDropdowns(document.getElementById('modalCadastro'));
   document.getElementById('docsFields').innerHTML = tipo ? buildDocFields(tipo) : '<p style="color:var(--text2);font-size:13px;">Selecione o tipo de funcion?rio primeiro.</p>';
   document.getElementById('trainFields').innerHTML = tipo ? buildTrainFields(tipo) : '<p style="color:var(--text2);font-size:13px;">Selecione o tipo de funcion?rio primeiro.</p>';
+  initStatusDropdowns(document.getElementById('modalCadastro'));
 }
 // Função helper para padronizar a geração de chaves
 function makeKey(name){
@@ -4834,7 +5033,7 @@ function trainItemHtml(name, info, ex, key){
     </select>
     <label class="file-upload-label">
       <input type="file" accept=".pdf,image/*" onchange="handleDocUpload(this,'${key}','${name}')">
-      ${hasFile ? '?? Trocar' : '?? Anexar'}
+      ${hasFile ? 'Trocar' : 'Anexar'}
     </label>
     ${viewBtn}
   </div>`;
@@ -4860,7 +5059,7 @@ function docItemHtml(name, ex, key){
     </select>
     <label class="file-upload-label">
       <input type="file" accept=".pdf,image/*" onchange="handleDocUpload(this,'${key}','${name}')">
-      ${hasFile ? '?? Trocar' : '?? Anexar'}
+      ${hasFile ? 'Trocar' : 'Anexar'}
     </label>
     ${viewBtn}
   </div>`;
@@ -4878,7 +5077,7 @@ function handleDocUpload(input, key, name){
     DB.tempDocs[key] = { name: file.name, dataURL: e.target.result, docName: name };
     const item = input.closest('.doc-item');
     const label = item.querySelector('.file-upload-label');
-    if(label) label.innerHTML = input.outerHTML.replace('ðŸ“Ž Anexar','ðŸ“Ž Trocar').replace('ðŸ“Ž Trocar','ðŸ“Ž Trocar') + 'ðŸ“Ž Trocar';
+    if(label) label.innerHTML = `${input.outerHTML}Trocar`;
     // Re-add view button
     let viewBtn = item.querySelector('.view-doc-btn');
     if(!viewBtn){
@@ -4918,6 +5117,316 @@ function openPdfViewer(dataURL, name){
   document.getElementById('pdfViewerFrame').src = dataURL;
   openModal('modalPdf');
 }
+const STATUS_DROPDOWN_OPTIONS = ['Pendente', 'Conforme', 'N\u00e3o Conforme'];
+const PREMIUM_DROPDOWN_SELECTOR = '.doc-status-sel, #f-tipo';
+if (typeof window.ACTIVE_DROPDOWN === 'undefined') {
+  window.ACTIVE_DROPDOWN = null;
+}
+
+function isStatusDropdownSelect(select){
+  return Boolean(select?.classList?.contains('doc-status-sel'));
+}
+
+function isFuncionarioTipoDropdownSelect(select){
+  return select?.id === 'f-tipo';
+}
+
+function normalizeEmpresaStatusValue(value){
+  const raw = String(value || '').trim();
+  if (STATUS_DROPDOWN_OPTIONS.includes(raw)) return raw;
+  if (raw === 'NÃ£o Conforme' || raw === 'NÃƒÂ£o Conforme' || raw === 'N?o Conforme' || raw === 'Nao Conforme') return 'N\u00e3o Conforme';
+  if (raw === 'Conforme') return 'Conforme';
+  return 'Pendente';
+}
+
+function getPremiumDropdownOptions(select){
+  return Array.from(select?.options || []).map(option => ({
+    value: String(option.value ?? ''),
+    label: String(option.textContent ?? option.label ?? option.value ?? '').trim()
+  }));
+}
+
+function normalizePremiumDropdownValue(select, value){
+  if (!select) return '';
+  const options = getPremiumDropdownOptions(select);
+  const raw = String(value ?? '').trim();
+
+  if (isStatusDropdownSelect(select)) {
+    const normalized = normalizeEmpresaStatusValue(raw);
+    const match = options.find(option => normalizeEmpresaStatusValue(option.value) === normalized);
+    return match ? match.value : normalized;
+  }
+
+  const directMatch = options.find(option => option.value === raw);
+  if (directMatch) return directMatch.value;
+  return options[0]?.value ?? '';
+}
+
+function getPremiumDropdownBadgeClass(select, value){
+  if (isFuncionarioTipoDropdownSelect(select)) {
+    if (value === 'Terceirizado') return 'status-badge--tipo-terceirizado';
+    if (value === 'Novo Atacarejo') return 'status-badge--tipo-atacarejo';
+    return 'status-badge--tipo-default';
+  }
+
+  const normalized = normalizeEmpresaStatusValue(value);
+  if (normalized === 'Conforme') return 'status-badge--conforme';
+  if (normalized === 'N\u00e3o Conforme') return 'status-badge--nao-conforme';
+  return 'status-badge--pendente';
+}
+
+function getPremiumDropdownLabel(select, value){
+  const options = getPremiumDropdownOptions(select);
+  const normalizedValue = normalizePremiumDropdownValue(select, value);
+  const match = options.find(option => option.value === normalizedValue);
+  if (match?.label) return match.label;
+  return normalizedValue || options[0]?.label || '';
+}
+
+function renderStatusBadge(select, value){
+  const normalizedValue = normalizePremiumDropdownValue(select, value);
+  const label = getPremiumDropdownLabel(select, normalizedValue);
+  return `<span class="status-badge ${getPremiumDropdownBadgeClass(select, normalizedValue)}">${label}</span>`;
+}
+
+function updateStatusDropdownUI(dropdown, value){
+  if(!dropdown) return;
+  const select = dropdown._statusSelect;
+  const normalizedValue = normalizePremiumDropdownValue(select, value);
+  const label = getPremiumDropdownLabel(select, normalizedValue);
+  const button = dropdown.querySelector('.status-dropdown__button');
+  const labelEl = dropdown.querySelector('.status-dropdown__button-label');
+  const menu = dropdown._statusMenu;
+  if(labelEl) labelEl.innerHTML = renderStatusBadge(select, normalizedValue);
+  dropdown.dataset.value = normalizedValue;
+  menu?.querySelectorAll('.status-dropdown__option').forEach(option => {
+    const isSelected = option.dataset.value === normalizedValue;
+    option.classList.toggle('is-selected', isSelected);
+    option.setAttribute('aria-selected', String(isSelected));
+  });
+  if(button){
+    button.setAttribute('aria-label', `Selecionado: ${label}`);
+    button.setAttribute('title', `Selecionado: ${label}`);
+  }
+}
+
+function positionStatusDropdownMenu(dropdown){
+  const button = dropdown?.querySelector('.status-dropdown__button');
+  const menu = dropdown?._statusMenu;
+  if(!button || !menu) return;
+
+  const rect = button.getBoundingClientRect();
+  const viewportPadding = 12;
+  const gap = 8;
+  const width = Math.round(rect.width);
+
+  menu.style.width = `${width}px`;
+  const preferredHeight = Math.min(menu.scrollHeight || 0, 280);
+  const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+  const spaceAbove = rect.top - viewportPadding;
+  const shouldOpenUp = spaceBelow < Math.min(preferredHeight, 220) && spaceAbove > spaceBelow;
+  const availableSpace = shouldOpenUp ? spaceAbove : spaceBelow;
+  const maxHeight = Math.max(120, Math.min(280, availableSpace - gap));
+  const menuHeight = Math.min(menu.scrollHeight || maxHeight, maxHeight);
+
+  let left = Math.round(rect.left);
+  let top = shouldOpenUp
+    ? Math.round(rect.top - menuHeight - gap)
+    : Math.round(rect.bottom + gap);
+
+  left = Math.max(viewportPadding, Math.min(left, window.innerWidth - viewportPadding - width));
+  top = Math.max(viewportPadding, Math.min(top, window.innerHeight - viewportPadding - menuHeight));
+
+  menu.dataset.placement = shouldOpenUp ? 'top' : 'bottom';
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+  menu.style.maxHeight = `${maxHeight}px`;
+}
+
+function closeStatusDropdown(dropdown){
+  if(!dropdown) return;
+  dropdown.classList.remove('is-open');
+  dropdown.querySelector('.status-dropdown__button')?.setAttribute('aria-expanded', 'false');
+  dropdown._statusMenu?.classList.remove('is-open');
+  dropdown._statusMenu?.removeAttribute('data-placement');
+  if(window.ACTIVE_DROPDOWN === dropdown){
+    window.ACTIVE_DROPDOWN = null;
+  }
+}
+
+function destroyStatusDropdown(selectOrConfig){
+  const select = typeof selectOrConfig === 'string'
+    ? document.getElementById(selectOrConfig)
+    : selectOrConfig;
+  if(!select?._statusDropdownRef) return;
+
+  const dropdown = select._statusDropdownRef;
+  closeStatusDropdown(dropdown);
+  dropdown._statusMenu?.remove();
+  dropdown.remove();
+  select.classList.remove('status-dropdown__native');
+  select._statusDropdownRef = null;
+}
+
+function closeAllStatusDropdowns(exceptDropdown = null){
+  if(window.ACTIVE_DROPDOWN && window.ACTIVE_DROPDOWN !== exceptDropdown){
+    closeStatusDropdown(window.ACTIVE_DROPDOWN);
+  }
+  if(!exceptDropdown && window.ACTIVE_DROPDOWN){
+    closeStatusDropdown(window.ACTIVE_DROPDOWN);
+  }
+}
+
+function openStatusDropdown(dropdown){
+  if(!dropdown) return;
+  if(window.ACTIVE_DROPDOWN === dropdown){
+    closeStatusDropdown(dropdown);
+    return;
+  }
+  closeAllStatusDropdowns();
+  window.ACTIVE_DROPDOWN = dropdown;
+  dropdown.classList.add('is-open');
+  dropdown.querySelector('.status-dropdown__button')?.setAttribute('aria-expanded', 'true');
+  dropdown._statusMenu?.classList.add('is-open');
+  positionStatusDropdownMenu(dropdown);
+}
+
+function syncStatusDropdownValue(selectOrConfig, nextValue, options = {}){
+  const select = typeof selectOrConfig === 'string'
+    ? document.getElementById(selectOrConfig)
+    : selectOrConfig;
+  if(!select) return;
+
+  const normalized = normalizePremiumDropdownValue(select, nextValue ?? select.value);
+  if(select.value !== normalized){
+    select.value = normalized;
+  }
+
+  updateStatusDropdownUI(select._statusDropdownRef, normalized);
+
+  if(options.dispatchChange){
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+}
+
+function createStatusDropdown(selectOrConfig){
+  const select = typeof selectOrConfig === 'string'
+    ? document.getElementById(selectOrConfig)
+    : selectOrConfig;
+  if(!select) return null;
+
+  if(select._statusDropdownRef && select._statusDropdownRef._statusMenu){
+    syncStatusDropdownValue(select, select.value);
+    return select._statusDropdownRef;
+  }
+
+  const initialStatus = normalizePremiumDropdownValue(select, select.value);
+  select.value = initialStatus;
+  select.classList.add('status-dropdown__native');
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'status-dropdown';
+  dropdown.dataset.selectId = select.id || '';
+  dropdown.innerHTML = `
+    <button type="button" class="status-dropdown__button" aria-haspopup="listbox" aria-expanded="false">
+      <span class="status-dropdown__button-label"></span>
+      <span class="status-dropdown__chevron" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m6 9 6 6 6-6"/>
+        </svg>
+      </span>
+    </button>
+  `;
+
+  const menu = document.createElement('div');
+  menu.className = 'status-dropdown__menu';
+  menu.setAttribute('role', 'listbox');
+  menu.setAttribute('aria-label', 'Selecionar status');
+  menu.innerHTML = getPremiumDropdownOptions(select).map(option => `
+    <button
+      type="button"
+      class="status-dropdown__option"
+      data-value="${option.value}"
+      role="option"
+      aria-selected="false"
+    >
+      ${renderStatusBadge(select, option.value)}
+      <span class="status-dropdown__check" aria-hidden="true"></span>
+    </button>
+  `).join('');
+
+  select.insertAdjacentElement('afterend', dropdown);
+  document.body.appendChild(menu);
+
+  select._statusDropdownRef = dropdown;
+  dropdown._statusSelect = select;
+  dropdown._statusMenu = menu;
+  menu._statusDropdown = dropdown;
+
+  const button = dropdown.querySelector('.status-dropdown__button');
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    openStatusDropdown(dropdown);
+  });
+
+  menu.querySelectorAll('.status-dropdown__option').forEach(option => {
+    option.addEventListener('click', () => {
+      syncStatusDropdownValue(select, option.dataset.value, { dispatchChange: true });
+      closeStatusDropdown(dropdown);
+      button.focus();
+    });
+  });
+
+  select.addEventListener('change', () => {
+    updateStatusDropdownUI(dropdown, select.value);
+    if(window.ACTIVE_DROPDOWN === dropdown){
+      positionStatusDropdownMenu(dropdown);
+    }
+  });
+
+  updateStatusDropdownUI(dropdown, initialStatus);
+  return dropdown;
+}
+
+function initStatusDropdowns(root = document){
+  const scope = root?.querySelectorAll ? root : document;
+  scope.querySelectorAll(PREMIUM_DROPDOWN_SELECTOR).forEach(select => {
+    createStatusDropdown(select);
+    syncStatusDropdownValue(select, select.value);
+  });
+}
+
+function cleanupStatusDropdowns(root = document){
+  const scope = root?.querySelectorAll ? root : document;
+  scope.querySelectorAll(PREMIUM_DROPDOWN_SELECTOR).forEach(select => {
+    destroyStatusDropdown(select);
+  });
+}
+
+if(!window.__statusDropdownListenersBound){
+  document.addEventListener('click', (event) => {
+    const active = window.ACTIVE_DROPDOWN;
+    const activeMenu = active?._statusMenu;
+    if(active && (active.contains(event.target) || activeMenu?.contains(event.target))) return;
+    closeAllStatusDropdowns();
+  });
+  document.addEventListener('keydown', (event) => {
+    if(event.key !== 'Escape') return;
+    closeAllStatusDropdowns();
+  });
+  window.addEventListener('resize', () => {
+    if(window.ACTIVE_DROPDOWN){
+      positionStatusDropdownMenu(window.ACTIVE_DROPDOWN);
+    }
+  });
+  document.addEventListener('scroll', () => {
+    if(window.ACTIVE_DROPDOWN){
+      positionStatusDropdownMenu(window.ACTIVE_DROPDOWN);
+    }
+  }, true);
+  window.__statusDropdownListenersBound = true;
+}
+
 function handleEmpresaDoc(input, key){
   const file = input.files[0]; if(!file)return;
   const reader = new FileReader();
@@ -4970,6 +5479,8 @@ function editFuncionario(id){
   if(!func) return;
   DB.currentEditId = id;
   DB.tempDocs = {};
+  closeAllStatusDropdowns();
+  cleanupStatusDropdowns(document.getElementById('modalCadastro'));
   document.getElementById('modalCadastroTitle').textContent = 'Editar Funcionário';
   document.getElementById('f-nome').value = func.nome;
   document.getElementById('f-cpf').value = func.cpf;
@@ -4981,6 +5492,7 @@ function editFuncionario(id){
   document.getElementById('f-email').value = func.email||'';
   document.getElementById('docsFields').innerHTML = buildDocFields(func.tipo, func.docs||{});
   document.getElementById('trainFields').innerHTML = buildTrainFields(func.tipo, func.docs||{});
+  initStatusDropdowns(document.getElementById('modalCadastro'));
   updateEmpresasSuggestions();
   showTab('tab-dados', document.querySelector('#modalCadastro .tab-btn'));
   openModal('modalCadastro');
@@ -4992,8 +5504,10 @@ function editFuncionario(id){
 // ============================================================
 function openEmpresaModal(id=null){
   DB.tempEmpresaDocs = {};
+  closeAllStatusDropdowns();
   ['e-nome','e-cnpj','e-resp'].forEach(i=>document.getElementById(i).value='');
-  ['e-pgr','e-pcmso','e-art'].forEach(i=>document.getElementById(i).value='Pendente');
+  ['e-pgr','e-pcmso','e-art'].forEach(i=>syncStatusDropdownValue(i, 'Pendente'));
+  initStatusDropdowns(document.getElementById('modalEmpresa'));
   openModal('modalEmpresa');
 }
 // Firebase CRUD now handles saveEmpresa in js/main.js
@@ -5066,21 +5580,21 @@ function createEngMemberHTML(m, index){
       <div class="field"><label>Função / Cargo *</label>
         <select class="eng-funcao">
           <option value="">Selecione...</option>
-          <option value="Engenheiro Respons?vel" ${m.funcao==='Engenheiro Respons?vel'?'selected':''}>Engenheiro Respons?vel</option>
-          <option value="Engenheiro de Seguran?a" ${m.funcao==='Engenheiro de Seguran?a'?'selected':''}>Engenheiro de Seguran?a</option>
+          <option value="Engenheiro Responsável" ${['Engenheiro Responsável','Engenheiro Respons?vel'].includes(m.funcao)?'selected':''}>Engenheiro Responsável</option>
+          <option value="Engenheiro de Segurança" ${['Engenheiro de Segurança','Engenheiro de Seguran?a'].includes(m.funcao)?'selected':''}>Engenheiro de Segurança</option>
           <option value="Engenheiro Civil" ${m.funcao==='Engenheiro Civil'?'selected':''}>Engenheiro Civil</option>
-          <option value="Engenheiro El?trico" ${m.funcao==='Engenheiro El?trico'?'selected':''}>Engenheiro El?trico</option>
+          <option value="Engenheiro Elétrico" ${['Engenheiro Elétrico','Engenheiro El?trico'].includes(m.funcao)?'selected':''}>Engenheiro Elétrico</option>
           <option value="Arquiteto" ${m.funcao==='Arquiteto'?'selected':''}>Arquiteto</option>
           <option value="Mestre de Obras" ${m.funcao==='Mestre de Obras'?'selected':''}>Mestre de Obras</option>
           <option value="Encarregado" ${m.funcao==='Encarregado'?'selected':''}>Encarregado</option>
-          <option value="T?cnico de Seguran?a" ${m.funcao==='T?cnico de Seguran?a'?'selected':''}>T?cnico de Seguran?a</option>
+          <option value="Técnico de Segurança" ${['Técnico de Segurança','T?cnico de Seguran?a'].includes(m.funcao)?'selected':''}>Técnico de Segurança</option>
         </select>
       </div>
       <div class="field"><label>CREA *</label><input type="text" class="eng-crea" value="${m.crea || ''}" placeholder="000000-0/UF"></div>
       <div class="field"><label>Telefone para Contato *</label><input type="text" class="eng-telefone" value="${m.telefone || ''}" placeholder="(00) 00000-0000" oninput="formatPhone(this)"></div>
       <div class="field full-col"><label>Nome Fantasia da Empresa do Engenheiro *</label><input type="text" class="eng-empresa" value="${m.empresa || ''}" placeholder="Empresa contratada"></div>
     </div>
-    <button type="button" class="btn btn-danger btn-sm" style="margin-top:12px;" onclick="this.closest('.eng-member').remove()">ðŸ—‘ï¸ Remover Membro</button>
+    <button type="button" class="btn btn-danger btn-sm" style="margin-top:12px;" onclick="this.closest('.eng-member').remove()">Remover Membro</button>
   </div>`;
 }
 
@@ -5091,12 +5605,12 @@ function createSSTMemberHTML(m, index){
       <div class="field"><label>Função *</label>
         <select class="sst-funcao">
           <option value="">Selecione...</option>
-          <option value="T?cnico de Seguran?a" ${m.funcao==='T?cnico de Seguran?a'?'selected':''}>T?cnico de Seguran?a</option>
-          <option value="Engenheiro de Seguran?a" ${m.funcao==='Engenheiro de Seguran?a'?'selected':''}>Engenheiro de Seguran?a</option>
-          <option value="Supervisor de Seguran?a" ${m.funcao==='Supervisor de Seguran?a'?'selected':''}>Supervisor de Seguran?a</option>
+          <option value="Técnico de Segurança" ${['Técnico de Segurança','T?cnico de Seguran?a'].includes(m.funcao)?'selected':''}>Técnico de Segurança</option>
+          <option value="Engenheiro de Segurança" ${['Engenheiro de Segurança','Engenheiro de Seguran?a'].includes(m.funcao)?'selected':''}>Engenheiro de Segurança</option>
+          <option value="Supervisor de Segurança" ${['Supervisor de Segurança','Supervisor de Seguran?a'].includes(m.funcao)?'selected':''}>Supervisor de Segurança</option>
           <option value="Coordenador de SST" ${m.funcao==='Coordenador de SST'?'selected':''}>Coordenador de SST</option>
-          <option value="Respons?vel T?cnico" ${m.funcao==='Respons?vel T?cnico'?'selected':''}>Respons?vel T?cnico</option>
-          <option value="Gerente de Seguran?a" ${m.funcao==='Gerente de Seguran?a'?'selected':''}>Gerente de Seguran?a</option>
+          <option value="Responsável Técnico" ${['Responsável Técnico','Respons?vel T?cnico'].includes(m.funcao)?'selected':''}>Responsável Técnico</option>
+          <option value="Gerente de Segurança" ${['Gerente de Segurança','Gerente de Seguran?a'].includes(m.funcao)?'selected':''}>Gerente de Segurança</option>
         </select>
       </div>
       <div class="field"><label>Departamento *</label>
@@ -5109,7 +5623,7 @@ function createSSTMemberHTML(m, index){
       <div class="field"><label>Telefone para Contato *</label><input type="text" class="sst-telefone" value="${m.telefone || ''}" placeholder="(00) 00000-0000" oninput="formatPhone(this)"></div>
       <div class="field full-col"><label>Registro no MTE *</label><input type="text" class="sst-mte" value="${m.mte || ''}" placeholder="Número de registro no Ministério do Trabalho"></div>
     </div>
-    <button type="button" class="btn btn-danger btn-sm" style="margin-top:12px;" onclick="this.closest('.sst-member').remove()">ðŸ—‘ï¸ Remover Membro</button>
+    <button type="button" class="btn btn-danger btn-sm" style="margin-top:12px;" onclick="this.closest('.sst-member').remove()">Remover Membro</button>
   </div>`;
 }
 
@@ -5543,7 +6057,7 @@ function renderAta(tipo){
   list.sort((a, b) => a.empresa.localeCompare(b.empresa));
   const obraName = getObraDisplayName();
   const title = isTerc
-    ? `ATA DE LIBERA??O DE TERCEIROS ? ${obraName.toUpperCase()}`
+    ? `ATA DE LIBERAÇÃO DE TERCEIROS — ${obraName.toUpperCase()}`
     : `ATA DE LIBERAÇÃO — ${obraName.toUpperCase()}`;
   const targetId = isTerc ? 'ataTerc' : 'ataAtac';
   const el = document.getElementById(targetId);
@@ -5601,7 +6115,7 @@ function exportAtaPDF(tipo){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
   const title = isTerc
-    ? `ATA DE LIBERA??O DE TERCEIROS ? ${obraName.toUpperCase()}`
+    ? `ATA DE LIBERAÇÃO DE TERCEIROS — ${obraName.toUpperCase()}`
     : `ATA DE LIBERAÇÃO — ${obraName.toUpperCase()}`;
   const dataRefIso = ataGetDateISO(isTerc);
   const today = ataGetDateLabel(dataRefIso, false);
@@ -5656,7 +6170,7 @@ function exportAtaExcel(tipo){
   const dataRefLabel = ataGetDateLabel(dataRefIso, false);
   const obraName = getObraDisplayName();
   const obraEndereco = getObraFullEndereco();
-  const title = isTerc ? `ATA DE LIBERA??O DE TERCEIROS ? ${obraName.toUpperCase()}` : `ATA DE LIBERA??O ? ${obraName.toUpperCase()}`;
+  const title = isTerc ? `ATA DE LIBERAÇÃO DE TERCEIROS — ${obraName.toUpperCase()}` : `ATA DE LIBERAÇÃO — ${obraName.toUpperCase()}`;
 
   const ws_data = [
     [title],
@@ -5706,7 +6220,7 @@ function showDashboardStats(status){
     color = 'blue';
   } else {
     list = all.filter(f => computeStatus(f) === status);
-    title = status === 'conforme' ? 'Funcion?rios Liberados' : status === 'pendente' ? 'Funcion?rios Pendentes' : 'Funcion?rios Irregulares';
+    title = status === 'conforme' ? 'Funcionários Liberados' : status === 'pendente' ? 'Funcionários Pendentes' : 'Funcionários Irregulares';
     color = status === 'conforme' ? 'green' : status === 'pendente' ? 'yellow' : 'red';
   }
   
@@ -6488,7 +7002,7 @@ function freqCtxApply(status){
   const targets = freqState.ctxTarget ? [{ tipo: freqState.ctxTarget.tipo, funcId: freqState.ctxTarget.funcId, dia: freqState.ctxTarget.dia }] : [];
 
   // Feriado INDIVIDUAL — set only for the selected cell(s)
-  // (use "ðŸ“… Feriado para Todos" button for mass feriado)
+  // (use "Feriado para Todos" button for mass feriado)
   targets.forEach(t=>{
     if(!t.tipo || !t.funcId || !t.dia) return;
     if(status === null){

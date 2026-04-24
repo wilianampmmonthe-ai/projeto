@@ -1394,6 +1394,13 @@ window.editFuncionario = function(id) {
   
   db.currentEditId = id;
   db.tempDocs = {};
+
+  if (typeof window.closeAllStatusDropdowns === "function") {
+    window.closeAllStatusDropdowns();
+  }
+  if (typeof window.cleanupStatusDropdowns === "function") {
+    window.cleanupStatusDropdowns(document.getElementById("modalCadastro"));
+  }
   
   document.getElementById('modalCadastroTitle').textContent = 'Editar Funcionário';
   document.getElementById('f-nome').value = func.nome || '';
@@ -1408,6 +1415,10 @@ window.editFuncionario = function(id) {
   if (typeof window.buildDocFields === 'function') {
     document.getElementById('docsFields').innerHTML = window.buildDocFields(func.tipo, func.docs || {});
     document.getElementById('trainFields').innerHTML = window.buildTrainFields(func.tipo, func.docs || {});
+  }
+
+  if (typeof window.initStatusDropdowns === "function") {
+    window.initStatusDropdowns(document.getElementById("modalCadastro"));
   }
   
   if (typeof window.updateEmpresasSuggestions === 'function') {
@@ -1649,11 +1660,15 @@ window.toggleSidebar = function toggleSidebar() {
 };
 
 window.openModal = function openModal(id) {
-  document.getElementById(id)?.classList.add('open');
+  const modal = document.getElementById(id);
+  modal?.classList.add('open');
 };
 
 window.closeModal = function closeModal(id) {
   document.getElementById(id)?.classList.remove('open');
+  if ((id === 'modalEmpresa' || id === 'modalCadastro') && typeof window.closeAllStatusDropdowns === 'function') {
+    window.closeAllStatusDropdowns();
+  }
 };
 
 window.showTab = function showTab(id, el) {
