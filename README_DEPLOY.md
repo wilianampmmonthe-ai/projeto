@@ -28,9 +28,10 @@ Mesmo assim, a segurança deve vir de:
 
 Passos:
 
-- Abra `js/firebase-config.example.js`
-- Copie o conteúdo para `js/firebase-config.js`
+- Abra `js/config/firebase-config.example.js`
+- Copie o conteudo para `js/config/firebase-config.js`
 - Substitua `window.__FIREBASE_CONFIG__ = ...` pelo objeto do seu app web.
+- Nao coloque service accounts, chaves privadas ou credenciais administrativas nesse arquivo.
 
 Você pega esse objeto em:
 
@@ -48,9 +49,24 @@ Como seu projeto é HTML/JS/CSS estático:
 
 Arquivos importantes:
 
-- `Atacarejo_Igarassu_v2_Acessos.html` (página principal)
-- `js/*` (módulos Firebase)
-- `vercel.json` (headers básicos)
+- `index.html` (pagina principal)
+- `css/*` (estilos separados por responsabilidade)
+- `js/config/*` (configuracao e inicializacao Firebase)
+- `js/services/*` (servicos globais de Auth e banco)
+- `js/main.js` (logica principal atual do sistema)
+- `vercel.json` (headers basicos)
+
+## Estrutura do Projeto
+
+- `assets`: imagens, icones e demais arquivos estaticos.
+- `css`: estilos da aplicacao separados em base, layout, componentes, paginas, frequencia e impressao.
+- `js/config`: configuracao web e inicializacao do Firebase.
+- `js/services`: servicos globais de autenticacao e acesso ao banco.
+- `js/modules`: area reservada para modularizar telas como dashboard, funcionarios, empresas, frequencia, atas e admin.
+- `js/utils`: funcoes utilitarias compartilhadas, como formatadores, validadores, permissoes e exportacao.
+- `firestore.rules`: regras de seguranca do Firestore.
+- `storage.rules`: regras de seguranca do Firebase Storage.
+- `vercel.json`: configuracao de deploy estatico e headers na Vercel.
 
 ## 4) Como manter o sistema seguro (checklist)
 

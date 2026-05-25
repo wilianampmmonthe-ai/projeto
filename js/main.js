@@ -5,10 +5,8 @@ function $(id) {
 const PAGE_TITLES = {
   dashboard: "Dashboard",
   terceirizados: "Funcionários Terceirizados",
-  atacarejo: "Funcionários Novo Atacarejo",
   empresas: "Gestão de Empresas",
   "ata-terc": "Ata de Liberação de Terceiros",
-  "ata-atac": "Ata de Liberação - Novo Atacarejo",
   frequencia: "Controle de Frequência",
   admin: "Admin",
 };
@@ -18,15 +16,6 @@ const obraSelectorState = window.__obraSelectorState || (window.__obraSelectorSt
   metaById: {},
   availableObras: [],
 });
-
-function normalizeObraId(obraId) {
-  return String(obraId || "").trim().toLowerCase();
-}
-
-function normalizeRole(role) {
-  const normalized = String(role || "").trim().toLowerCase();
-  return ["admin", "editor", "viewer"].includes(normalized) ? normalized : "";
-}
 
 function ensureAppContext() {
   const ctx = window.APP_CTX || (window.APP_CTX = {
@@ -86,100 +75,12 @@ function persistObraAtivaId(obraAtivaId) {
   }
 }
 
-function normalizeAllowedObras(rawObras) {
-  if (Array.isArray(rawObras)) {
-    return rawObras
-      .map((obraId) => normalizeObraId(obraId))
-      .filter(Boolean);
-  }
-
-  if (rawObras && typeof rawObras === "object") {
-    return Object.keys(rawObras)
-      .filter((obraId) => Boolean(rawObras[obraId]))
-      .map((obraId) => normalizeObraId(obraId))
-      .filter(Boolean);
-  }
-
-  return [];
-}
-
-function getEnabledObrasFromAcessos(profile) {
-  if (!profile?.acessos || typeof profile.acessos !== "object" || Array.isArray(profile.acessos)) {
-    return [];
-  }
-
-  const enabled = new Set();
-  Object.entries(profile.acessos).forEach(([obraId, entry]) => {
-    const normalizedObraId = normalizeObraId(obraId);
-    if (!normalizedObraId) return;
-    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return;
-    if (entry.enabled === true) enabled.add(normalizedObraId);
-  });
-
-  return Array.from(enabled);
-}
-
-function normalizeAccessMap(rawAcessos) {
-  if (!rawAcessos || typeof rawAcessos !== "object" || Array.isArray(rawAcessos)) return {};
-
-  return Object.entries(rawAcessos).reduce((acc, [obraId, entry]) => {
-    const normalizedObraId = normalizeObraId(obraId);
-    if (!normalizedObraId || !entry || typeof entry !== "object" || Array.isArray(entry)) return acc;
-
-    acc[normalizedObraId] = {
-      enabled: entry.enabled !== false,
-      role: normalizeRole(entry.role) || "viewer",
-    };
-    return acc;
-  }, {});
-}
-
-function getLegacyObrasMap(rawObras) {
-  return normalizeAllowedObras(rawObras).reduce((acc, obraId) => {
-    acc[obraId] = true;
-    return acc;
-  }, {});
-}
-
-function getPermittedObras(profile) {
-  const permitted = new Set(Object.keys(getLegacyObrasMap(profile?.obras)));
-
-  getEnabledObrasFromAcessos(profile).forEach((obraId) => {
-    permitted.add(obraId);
-  });
-
-  Object.entries(normalizeAccessMap(profile?.acessos)).forEach(([obraId, entry]) => {
-    if (!entry.enabled) permitted.delete(obraId);
-  });
-
-  return Array.from(permitted);
-}
-
 function getAccessEntryForObraId(obraId, profile) {
   const normalizedObraId = normalizeObraId(obraId);
   if (!normalizedObraId) return null;
 
   const currentProfile = profile || ensureCurrentUserProfile();
   return normalizeAccessMap(currentProfile.acessos)[normalizedObraId] || null;
-}
-
-function resolveLegacyAccessForObra(profile, obraId) {
-  const normalizedObraId = normalizeObraId(obraId);
-  if (!normalizedObraId) return null;
-
-  const legacyObras = getLegacyObrasMap(profile?.obras);
-  const hasLegacyObras = Object.keys(legacyObras).length > 0;
-  const globalRole = normalizeRole(profile?.role) || "viewer";
-
-  if (hasLegacyObras && !legacyObras[normalizedObraId]) {
-    return null;
-  }
-
-  return {
-    enabled: true,
-    role: globalRole,
-    source: hasLegacyObras ? "fallback:obras+role" : "fallback:role-global",
-  };
 }
 
 function resolveAccessForObra(profile, obraId) {
@@ -213,13 +114,6 @@ function resolveAccessForObra(profile, obraId) {
   }
 
   return { canView: false, role: "", source: "none", entry: null };
-}
-
-function humanizeObraId(obraId) {
-  return normalizeObraId(obraId)
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function resolveObraAtivaId(profile, obrasPermitidas) {
@@ -281,23 +175,97 @@ function syncAppContext(user, profile) {
   console.debug("[obra-selector] obra ativa resolvida", {
     obraAtivaId,
   });
+  if (typeof window.updateDynamicObraLabels === "function") {
+    window.updateDynamicObraLabels();
+  }
   return ctx;
 }
+
+function getCurrentObraLabel() {
+  const ctx = ensureAppContext();
+  const activeId = normalizeObraId(ctx.obraAtivaId);
+  const liveName = String(window.DB?.obra?.nome || "").trim();
+  const ctxName = String(ctx.obraNome || "").trim();
+  const cachedName = String(
+    obraSelectorState.metaById[activeId]?.nome ||
+    obraSelectorState.namesById[activeId] ||
+    ""
+  ).trim();
+  const displayName = typeof window.getObraDisplayName === "function"
+    ? String(window.getObraDisplayName() || "").trim()
+    : "";
+  const humanizedId = typeof window.humanizeObraId === "function"
+    ? String(window.humanizeObraId(activeId) || "").trim()
+    : activeId;
+
+  return liveName || ctxName || cachedName || displayName || humanizedId || "Obra";
+}
+
+window.getCurrentObraLabel = getCurrentObraLabel;
 
 function getCurrentPageId() {
   const activePage = document.querySelector(".page.active")?.id || "";
   return activePage.replace(/^page-/, "") || "dashboard";
 }
 
+function getPageTitle(pageId) {
+  const obraLabel = getCurrentObraLabel();
+
+  if (pageId === "atacarejo") return `Funcionários ${obraLabel}`;
+  if (pageId === "ata-atac") return `Ata de Liberação - ${obraLabel}`;
+
+  return PAGE_TITLES[pageId] || pageId;
+}
+
+window.getPageTitle = getPageTitle;
+
+function updateDynamicObraLabels() {
+  const obraLabel = getCurrentObraLabel();
+
+  document.querySelectorAll('[data-dynamic-label="obra"]').forEach((el) => {
+    el.textContent = obraLabel;
+  });
+
+  document.querySelectorAll('[data-dynamic-label="obra-funcionarios"]').forEach((el) => {
+    el.textContent = obraLabel;
+  });
+
+  document.querySelectorAll('[data-dynamic-label="obra-funcionarios-completo"]').forEach((el) => {
+    el.textContent = `Funcionários ${obraLabel}`;
+  });
+
+  document.querySelectorAll('[data-dynamic-label="obra-ata"]').forEach((el) => {
+    el.textContent = `Ata ${obraLabel}`;
+  });
+
+  document.querySelectorAll('[data-dynamic-label="obra-ata-completo"]').forEach((el) => {
+    el.textContent = `Ata de Liberação - ${obraLabel}`;
+  });
+
+  document.querySelectorAll('[data-dynamic-label="obra-empty-funcionarios"]').forEach((el) => {
+    el.textContent = `Nenhum funcionário de ${obraLabel} cadastrado`;
+  });
+
+  document.querySelectorAll('[data-dynamic-label="obra-frequencia-print"]').forEach((el) => {
+    el.textContent = `CONTROLE DE FREQUÊNCIA — ${obraLabel}`;
+  });
+}
+
+window.updateDynamicObraLabels = updateDynamicObraLabels;
+
 function updateTopbarTitle(pageId) {
   const topbarTitle = document.getElementById("topbarTitle");
   if (!topbarTitle) return;
 
   const targetPageId = pageId || getCurrentPageId();
-  const baseTitle = PAGE_TITLES[targetPageId] || targetPageId;
+  const baseTitle = getPageTitle(targetPageId);
 
   topbarTitle.textContent = baseTitle;
   topbarTitle.setAttribute("title", baseTitle);
+
+  if (typeof window.updateDynamicObraLabels === "function") {
+    window.updateDynamicObraLabels();
+  }
 
   if (typeof window.updateObraSelectorLabel === "function") {
     window.updateObraSelectorLabel();
@@ -313,12 +281,6 @@ function getObraSelectorElements() {
     select: document.getElementById("obra-selector"),
     currentName: document.getElementById("obra-current-name"),
   };
-}
-
-function getAvailableObrasForUser(profile) {
-  const enabledFromAcessos = getEnabledObrasFromAcessos(profile);
-  if (enabledFromAcessos.length) return enabledFromAcessos;
-  return getPermittedObras(profile);
 }
 
 function getFriendlyObraName(obraId) {
@@ -437,6 +399,7 @@ function handleObraSelectorChange(event) {
   });
 
   updateObraSelectorLabel();
+  updateDynamicObraLabels();
   updateTopbarTitle();
   window.location.reload();
 }
@@ -483,6 +446,7 @@ async function refreshObraSelector(profile) {
   }
 
   updateObraSelectorLabel();
+  updateDynamicObraLabels();
 
   console.debug("[obra-selector] obra ativa resolvida", {
     obraAtivaId: normalizeObraId(ensureAppContext().obraAtivaId),
@@ -536,40 +500,6 @@ function safeToast(msg, type) {
   } else {
     console.log(`[${type || "info"}]`, fixedMsg);
   }
-}
-
-function normalizeUiText(msg) {
-  let text = String(msg || "");
-  if (!/[ÃÂâ]/.test(text)) return text;
-
-  const replacements = [
-    ["Ã¡", "á"], ["Ã ", "à"], ["Ã¢", "â"], ["Ã£", "ã"], ["Ã¤", "ä"],
-    ["Ã©", "é"], ["Ã¨", "è"], ["Ãª", "ê"], ["Ã«", "ë"],
-    ["Ã­", "í"], ["Ã¬", "ì"], ["Ã®", "î"], ["Ã¯", "ï"],
-    ["Ã³", "ó"], ["Ã²", "ò"], ["Ã´", "ô"], ["Ãµ", "õ"], ["Ã¶", "ö"],
-    ["Ãº", "ú"], ["Ã¹", "ù"], ["Ã»", "û"], ["Ã¼", "ü"],
-    ["Ã", "Á"], ["Ã€", "À"], ["Ã‚", "Â"], ["Ãƒ", "Ã"], ["Ã„", "Ä"],
-    ["Ã‰", "É"], ["Ãˆ", "È"], ["ÃŠ", "Ê"], ["Ã‹", "Ë"],
-    ["Ã", "Í"], ["ÃŒ", "Ì"], ["ÃŽ", "Î"], ["Ã", "Ï"],
-    ["Ã“", "Ó"], ["Ã’", "Ò"], ["Ã”", "Ô"], ["Ã•", "Õ"], ["Ã–", "Ö"],
-    ["Ãš", "Ú"], ["Ã™", "Ù"], ["Ã›", "Û"], ["Ãœ", "Ü"],
-    ["Ã§", "ç"], ["Ã‡", "Ç"], ["Ã±", "ñ"], ["Ã‘", "Ñ"],
-    ["Ãƒ", "Ã"], ["Ã‚", "Â"],
-    ["â€”", "—"], ["â€“", "–"], ["â€¢", "•"], ["â—", "●"], ["â˜°", "☰"], ["Ã—", "×"],
-    ["Ã¢Å“ÂÃ¯Â¸Â", ""], ["Ã°Å¸â€”â€˜Ã¯Â¸Â", ""],
-    [" Â· ", " • "], ["Â·", "•"], ["Â •", " •"], ["•Â", "•"],
-    [" Â ", " "], ["Âº", "º"], ["Âª", "ª"], ["Â", ""]
-  ];
-
-  for (let pass = 0; pass < 4; pass += 1) {
-    const before = text;
-    replacements.forEach(([from, to]) => {
-      text = text.split(from).join(to);
-    });
-    if (text === before) break;
-  }
-
-  return text;
 }
 
 function normalizeDocumentText(root) {
@@ -967,21 +897,6 @@ function updatePermissionUI() {
   updateUserIdentityUI();
 }
 
-function normalizeUserProfile(profile, fallbackUser) {
-  const email = String(profile?.email || fallbackUser?.email || "").trim().toLowerCase();
-  return {
-    id: String(profile?.id || fallbackUser?.uid || ""),
-    email,
-    role: normalizeRole(profile?.role) || "viewer",
-    status: String(profile?.status || "active"),
-    obras: getLegacyObrasMap(profile?.obras),
-    acessos: normalizeAccessMap(profile?.acessos),
-    obraAtivaId: normalizeObraId(profile?.obraAtivaId),
-    createdAt: profile?.createdAt || null,
-    updatedAt: profile?.updatedAt || null,
-  };
-}
-
 async function loadCurrentUserProfile(user) {
   const profile = await ensureUsuarioProfile(user);
   const normalized = normalizeUserProfile(profile, user);
@@ -1055,14 +970,6 @@ window.saveAdminUser = async function saveAdminUser(uid) {
     safeToast(e?.message || "Erro ao salvar usu?rio", "error");
   }
 };
-
-function cloneData(value, fallback) {
-  try {
-    return JSON.parse(JSON.stringify(value ?? fallback));
-  } catch (e) {
-    return fallback;
-  }
-}
 
 function collectFuncionarioDocs(tipo) {
   if (typeof window.collectDocs === "function") {
@@ -1225,6 +1132,7 @@ function wireRealtimeForUser() {
 
   unsubObra = listenObra((obra) => {
     window.DB.obra = obra;
+    if (typeof window.updateDynamicObraLabels === "function") window.updateDynamicObraLabels();
     if (typeof window.updateObraInterface === "function") window.updateObraInterface();
     if (typeof window.refreshAll === "function") window.refreshAll();
   });
@@ -1483,7 +1391,7 @@ window.saveEmpresa = async function () {
 
     const nome = $("e-nome")?.value?.trim();
     const cnpjRaw = $("e-cnpj")?.value?.trim() || "";
-    const cnpjDigits = cnpjRaw.replace(/\D/g, "");
+    const cnpjDigits = onlyDigits(cnpjRaw);
     const cnpj = cnpjDigits
       .replace(/^(\d{2})(\d)/, "$1.$2")
       .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
@@ -1808,9 +1716,9 @@ window.refreshAll = function refreshAll() {
     window.freqRender();
   }
 
-  const obraName = typeof window.getObraDisplayName === "function"
-    ? window.getObraDisplayName()
-    : "Novo Atacarejo";
+  const obraName = typeof window.getCurrentObraLabel === "function"
+    ? window.getCurrentObraLabel()
+    : "Obra";
 
   const atacTitle = document.getElementById("atacarejoTitle");
   if (atacTitle) {
@@ -1830,6 +1738,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updatePermissionUI();
   renderAdminUsers();
   if (typeof window.initDarkMode === "function") window.initDarkMode();
+  updateDynamicObraLabels();
   updateTopbarTitle();
   if (typeof window.normalizeDocumentText === "function") window.normalizeDocumentText();
 });

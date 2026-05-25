@@ -8,11 +8,18 @@ win-unpacked/
 *.dll
 *.asar
 
-firebase-config.js
-!js/firebase-config.js
+# A config web do Firebase fica versionada para o deploy estatico.
+# Nao coloque service accounts, chaves privadas ou credenciais administrativas nela.
 
 .env
+.env.*
+!.env.example
+*.local
 .vercel
+
+firebase-service-account*.json
+serviceAccount*.json
+*.pem
 
 .DS_Store
 Thumbs.db

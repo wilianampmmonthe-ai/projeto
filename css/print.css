@@ -1,0 +1,321 @@
+/* print.css - regras de impressao, atas e ajustes para PDF/impressao. */
+
+@media print {
+  #page-ata-terc .ata-preview,
+  #page-ata-atac .ata-preview {
+    border: 1px solid #d1d5db !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+  #page-ata-terc .ata-table,
+  #page-ata-atac .ata-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    background: #fff !important;
+    color: #000 !important;
+    page-break-inside: auto;
+  }
+  #page-ata-terc .ata-table th,
+  #page-ata-terc .ata-table td,
+  #page-ata-atac .ata-table th,
+  #page-ata-atac .ata-table td {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    color: #000 !important;
+    vertical-align: top !important;
+    padding: 6px !important;
+  }
+  #page-ata-terc .ata-table td:nth-child(5),
+  #page-ata-atac .ata-table td:nth-child(5) {
+    vertical-align: middle !important;
+    text-align: center !important;
+  }
+  #page-ata-terc .ata-table tbody tr,
+  #page-ata-atac .ata-table tbody tr {
+    height: 54px !important;
+  }
+  #page-ata-terc .ata-table tr,
+  #page-ata-atac .ata-table tr {
+    page-break-inside: avoid;
+  }
+}
+
+
+/* ============================================================
+   PRINT — A4 LANDSCAPE, B&W, PROFESSIONAL
+   ============================================================ */
+@media print {
+
+  /* PAGE SETUP */
+  @page {
+    size: A4 landscape;
+    margin: 8mm 10mm 8mm 10mm;
+  }
+
+  /* ── ROOT: force safe system fonts to prevent "Ø=Üw" garbage ── */
+  * {
+    font-family: Arial, Helvetica, sans-serif !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── HIDE ALL SCREEN-ONLY ELEMENTS ── */
+  .sidebar,
+  .sidebar-overlay,
+  .topbar,
+  .freq-topbar,
+  .freq-footer,
+  .freq-filter-bar,
+  .modal-overlay,
+  #toastContainer,
+  #loginScreen,
+  .backup-btn,
+  .darkmode-btn,
+  button,
+  input,
+  select,
+  .freq-obs-dot,
+  .freq-feriados-panel {
+    display: none !important;
+  }
+
+  /* ── LAYOUT RESET ── */
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  .content {
+    padding: 0 !important;
+  }
+
+  /* Hide all pages except frequencia when printing */
+  .page { display: none !important; }
+  .page#page-frequencia { display: block !important; }
+
+  /* ── PRINT HEADER (show only in print) ── */
+  #freqPrintHeader {
+    display: block !important;
+    border-bottom: 2px solid #000;
+    margin-bottom: 6mm;
+    padding-bottom: 3mm;
+  }
+
+  #freqPrintHeader .ph-title {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #000;
+    margin: 0 0 2px 0;
+  }
+
+  #freqPrintHeader .ph-sub {
+    font-size: 9pt;
+    color: #333;
+  }
+
+  /* ── TABLE SECTIONS ── */
+  .freq-table-section {
+    margin-bottom: 6mm;
+    page-break-inside: avoid;
+  }
+
+  .freq-section-title {
+    background: #000 !important;
+    color: #fff !important;
+    padding: 3px 6px !important;
+    font-size: 9pt !important;
+    font-weight: bold !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .freq-section-title .sub-count {
+    color: #ddd !important;
+  }
+
+  /* ── SCROLL WRAPPERS ── */
+  .freq-wrap {
+    overflow: visible !important;
+    max-height: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* ── FREQUENCY TABLE: base reset ── */
+  .freq-table {
+    width: 100% !important;
+    table-layout: auto !important;
+    border-collapse: collapse !important;
+    font-size: 7pt !important;
+    page-break-inside: auto;
+  }
+
+  .freq-table thead {
+    position: static !important;
+    display: table-header-group;
+  }
+
+  .freq-table tfoot {
+    position: static !important;
+    display: table-footer-group;
+  }
+
+  .freq-table tbody tr,
+  .freq-table tfoot tr {
+    page-break-inside: avoid;
+  }
+
+  /* ── ALL CELLS: white bg, black text, solid border ── */
+  .freq-table th,
+  .freq-table td {
+    background: #fff !important;
+    color: #000 !important;
+    border: 0.4pt solid #999 !important;
+    padding: 2px 1px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+    position: static !important;
+    box-shadow: none !important;
+  }
+
+  /* Fixed-col text alignment override for name cols */
+  .freq-table td.col-nome,
+  .freq-table th.col-nome {
+    text-align: left !important;
+    font-size: 7pt !important;
+  }
+  .freq-table td.col-func,
+  .freq-table td.col-emp {
+    text-align: left !important;
+    font-size: 6.5pt !important;
+  }
+
+  /* ── HEADER ROW ── */
+  .freq-table thead tr th {
+    background: #e8e8e8 !important;
+    color: #000 !important;
+    font-weight: bold !important;
+    font-size: 7pt !important;
+    border: 0.4pt solid #666 !important;
+  }
+
+  .freq-table .day-num { font-size: 7pt !important; display: block; font-weight: bold; }
+  .freq-table .day-wk  { font-size: 5.5pt !important; display: block; }
+
+  /* ── WEEKEND COLUMNS: grey background ── */
+  .freq-table .th-day.is-sunday,
+  .freq-table .th-day.is-saturday {
+    background: #ccc !important;
+    color: #000 !important;
+  }
+
+  .freq-table td.fim-semana {
+    background: #e0e0e0 !important;
+    color: #000 !important;
+  }
+
+  /* ── FOOTER (TOTAL DIÁRIO) ── */
+  .freq-table tfoot td {
+    background: #e8e8e8 !important;
+    color: #000 !important;
+    font-weight: bold !important;
+    font-size: 7pt !important;
+    border: 0.4pt solid #666 !important;
+  }
+
+  /* ── STATUS CELLS: remove colors, show abbreviation ── */
+  .freq-cell-wrap {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  .freq-cell {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    background: none !important;
+    color: #000 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    font-size: 7pt !important;
+    font-weight: bold !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    cursor: default !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Feriado: mark with asterisk column background */
+  .freq-table td:has(.freq-cell.st-Feriado) {
+    background: #f0f0f0 !important;
+  }
+
+  /* TOTAL column */
+  .freq-total-cell {
+    font-size: 8pt !important;
+    font-weight: bold !important;
+    background: #f4f4f4 !important;
+    color: #000 !important;
+  }
+
+  .freq-daily-total {
+    font-size: 7pt !important;
+    color: #000 !important;
+  }
+
+  /* ── LEGEND: keep but make B&W ── */
+  .freq-footer.print-legend {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    margin-top: 4mm !important;
+    border-top: 0.5pt solid #aaa !important;
+    padding-top: 2mm !important;
+  }
+
+  .freq-legend-item {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 3px !important;
+    font-size: 6.5pt !important;
+    color: #000 !important;
+  }
+
+  .freq-legend-dot {
+    background: #888 !important;
+    border: 0.4pt solid #000 !important;
+    width: 6px !important;
+    height: 6px !important;
+  }
+
+  /* ── LEGEND FOOTER: show only legend strip in print ── */
+  .freq-footer {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    border: none !important;
+    padding: 2mm 0 0 0 !important;
+    margin-top: 2mm !important;
+    border-top: 0.5pt solid #aaa !important;
+    background: none !important;
+  }
+
+  .freq-footer-btns { display: none !important; }
+  .freq-legend { display: flex !important; flex-wrap: wrap !important; gap: 8px !important; }
+}
+

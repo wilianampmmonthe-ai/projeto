@@ -1,0 +1,539 @@
+/* frequency.css - tabela, filtros, celulas, menus e controles de frequencia. */
+
+/* ── FREQ FILTER BAR ─────────────────────────────────────── */
+.freq-filter-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-bottom: none; flex-wrap: wrap;
+}
+.freq-filter-bar label {
+  font-size: 11px; font-weight: 600; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.4px; flex-shrink: 0;
+}
+.freq-filter-input {
+  flex: 1; min-width: 100px; max-width: 200px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text);
+  font-family: var(--font-body); font-size: 12px;
+  padding: 5px 10px; outline: none; transition: border-color 0.15s;
+}
+.freq-filter-input:focus { border-color: var(--accent); }
+.freq-filter-input::placeholder { color: var(--text2); font-size: 11px; }
+.freq-filter-clear {
+  padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border);
+  background: transparent; color: var(--text2); transition: all 0.15s;
+  flex-shrink: 0;
+}
+.freq-filter-clear:hover { border-color: var(--red); color: var(--red); }
+.freq-filter-count {
+  margin-left: auto; font-size: 11px; color: var(--text2); flex-shrink: 0;
+}
+
+/* ── OBS INDICATOR (Novo Atacarejo) ─────────────────── */
+.freq-cell-wrap {
+  position: relative; display: inline-flex;
+  align-items: center; justify-content: center;
+  width: 34px; height: 28px;
+}
+.freq-obs-dot {
+  position: absolute; top: 1px; right: 1px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #fbbf24; border: 1px solid rgba(0,0,0,0.3);
+  pointer-events: none; flex-shrink: 0;
+}
+
+
+/* ── Botão de FERIADOS TODOS button ────────────────────────────────── */
+.btn-feriado-todos {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border-radius: 8px;
+  font-family: var(--font-body); font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1px solid rgba(59,130,246,0.4);
+  background: rgba(59,130,246,0.1); color: #60a5fa;
+  transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
+}
+.btn-feriado-todos:hover { background: rgba(59,130,246,0.2); border-color: #60a5fa; }
+
+/* ── FOLGA TODOS (fim de semana) button ───────────────────── */
+.btn-folga-todos {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border-radius: 8px;
+  font-family: var(--font-body); font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1px solid rgba(168,85,247,0.45);
+  background: rgba(168,85,247,0.12); color: #c084fc;
+  transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
+}
+.btn-folga-todos:hover { background: rgba(168,85,247,0.22); border-color: #c084fc; }
+
+.feriado-sugestoes {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+}
+.feriado-sug {
+  padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+  cursor: pointer; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text2); transition: all 0.15s;
+}
+.feriado-sug:hover { border-color: var(--accent); color: var(--accent); }
+
+
+/* ============================================================
+   FREQUÊNCIA MODULE
+   ============================================================ */
+.freq-topbar {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 20px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+.freq-topbar .freq-title {
+  font-family: var(--font-head); font-size: 18px; font-weight: 700; flex: 1;
+  min-width: 200px;
+}
+.freq-topbar .freq-month-ctrl {
+  display: flex; align-items: center; gap: 10px;
+}
+.freq-topbar .freq-month-ctrl select {
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text); font-family: var(--font-body); font-size: 14px;
+  padding: 7px 12px; border-radius: 8px; outline: none; cursor: pointer;
+}
+.freq-topbar .freq-month-ctrl select:focus { border-color: var(--accent); }
+.freq-counter {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 600;
+}
+.freq-counter .total { color: var(--accent); font-family: var(--font-head); font-size: 16px; font-weight: 800; }
+.freq-counter .sep { color: var(--text2); }
+.freq-counter .sub { color: var(--text2); font-size: 12px; font-weight: 400; }
+
+/* Frequency Table Container */
+.freq-table-section { margin-bottom: 28px; }
+.freq-section-title {
+  font-family: var(--font-head); font-size: 15px; font-weight: 700;
+  padding: 12px 16px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-bottom: none; border-radius: 10px 10px 0 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.freq-section-title .sub-count {
+  font-size: 12px; color: var(--text2); font-weight: 400;
+}
+
+.freq-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 0 0 10px 10px;
+  max-height: 70vh;
+  overflow-y: auto;
+  position: relative;
+}
+.freq-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
+.freq-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.freq-table {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+  font-size: 12px;
+}
+.freq-table thead { position: sticky; top: 0; z-index: 20; }
+.freq-table thead tr:first-child th { background: var(--bg3); }
+.freq-table thead tr:last-child th { background: #1d2235; }
+
+/* Fixed columns */
+.freq-table th.col-fixed,
+.freq-table td.col-fixed {
+  position: sticky;
+  background: var(--card);
+  z-index: 10;
+}
+.freq-table thead th.col-fixed { background: var(--bg3); z-index: 21; }
+.freq-table .col-num  { left: 0;     min-width: 36px;  width: 36px;  text-align: center; }
+.freq-table .col-nome { left: 36px;  min-width: 160px; width: 160px; }
+.freq-table .col-func { left: 196px; min-width: 120px; width: 120px; }
+.freq-table .col-emp  { left: 316px; min-width: 130px; width: 130px; }
+.freq-table .col-aloj { left: 446px; min-width: 70px;  width: 70px;  text-align: center; }
+.freq-table .col-total{ min-width: 52px; width: 52px;  text-align: center; font-weight: 700; }
+
+/* Shadow on last fixed col */
+.freq-table th.col-aloj,
+.freq-table td.col-aloj { box-shadow: 2px 0 8px rgba(0,0,0,0.3); }
+
+.freq-table th {
+  padding: 7px 5px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.4px;
+  color: var(--text2); white-space: nowrap;
+  border: 1px solid var(--border);
+}
+.freq-table td {
+  padding: 3px 3px; border: 1px solid rgba(42,48,80,0.6);
+  vertical-align: middle; white-space: nowrap;
+}
+.freq-table tr:hover td:not(.col-fixed) { background: rgba(255,255,255,0.015); }
+.freq-table tr:hover td.col-fixed { background: var(--bg3) !important; }
+
+/* Day header */
+.freq-table .th-day { min-width: 36px; width: 36px; text-align: center; }
+.freq-table .th-day .day-num { font-size: 11px; font-weight: 700; color: var(--text); display: block; }
+.freq-table .th-day .day-wk { font-size: 9px; color: var(--text2); display: block; }
+.freq-table .th-day.is-sunday .day-num,
+.freq-table .th-day.is-sunday .day-wk { color: #f87171; }
+.freq-table .th-day.is-saturday .day-num,
+.freq-table .th-day.is-saturday .day-wk { color: #fb923c; }
+
+/* Footer total row */
+.freq-table tfoot tr td {
+  background: var(--bg3); font-weight: 700; font-size: 11px;
+  position: sticky; bottom: 0; z-index: 5;
+  border-top: 2px solid var(--border);
+}
+.freq-table tfoot td.col-fixed { background: #1d2235; z-index: 11; }
+
+/* Status cell */
+.freq-cell {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 28px; border-radius: 4px;
+  font-size: 10px; font-weight: 700; cursor: pointer;
+  user-select: none; transition: all 0.12s; letter-spacing: 0.2px;
+  margin: 1px auto;
+}
+.freq-cell:hover { transform: scale(1.15); z-index: 2; position: relative; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+.freq-cell.selecting { outline: 2px solid #fff; }
+
+/* Status colors */
+.freq-cell.st-Trabalhado       { background: rgba(34,197,94,0.2);  color: #4ade80; border: 1px solid rgba(34,197,94,0.4); }
+.freq-cell.st-Feriado          { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.4); }
+.freq-cell.st-Folga            { background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid rgba(168,85,247,0.4); }
+.freq-cell.st-FaltaInjustificada{ background: rgba(239,68,68,0.2);  color: #f87171; border: 1px solid rgba(239,68,68,0.4); }
+.freq-cell.st-FaltaJustificada { background: rgba(234,179,8,0.2);  color: #fbbf24; border: 1px solid rgba(234,179,8,0.4); }
+.freq-cell.st-NaoContratado    { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); }
+.freq-cell.st-Demitido         { background: rgba(30,30,40,0.6);   color: #64748b; border: 1px solid rgba(51,65,85,0.5); }
+.freq-cell.st-vazio            { background: transparent; color: var(--border); border: 1px dashed var(--border); }
+
+/* Total cell highlight */
+.freq-total-cell { font-family: var(--font-head); font-size: 13px; font-weight: 800; color: var(--accent); text-align: center; }
+.freq-daily-total { text-align: center; color: var(--green); font-size: 12px; }
+
+/* Context menu */
+#freqContextMenu {
+  position: fixed; z-index: 9999;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  padding: 6px; min-width: 180px;
+  animation: fadeUp 0.12s ease;
+}
+#freqContextMenu .ctx-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 6px; cursor: pointer;
+  font-size: 13px; font-weight: 500; transition: background 0.1s;
+}
+#freqContextMenu .ctx-item:hover { background: var(--bg3); }
+#freqContextMenu .ctx-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+#freqContextMenu .ctx-sep { height: 1px; background: var(--border); margin: 4px 0; }
+#freqContextMenu .ctx-key {
+  margin-left: auto; font-size: 10px; color: var(--text2);
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 5px;
+}
+
+/* Frequency footer bar */
+.freq-footer {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 20px;
+  margin-top: 20px; flex-wrap: wrap;
+}
+.freq-legend { display: flex; gap: 10px; flex-wrap: wrap; flex: 1; }
+.freq-legend-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text2);
+}
+.freq-legend-dot {
+  width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0;
+}
+.freq-footer-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── FERIADOS DO MÊS panel ───────────────────────────────── */
+.freq-feriados-panel {
+  width: 100%;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.freq-feriados-panel .fp-title {
+  font-size: 11px; font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.6px;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.freq-feriados-panel .fp-title span { color: var(--accent); }
+.freq-feriados-list {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.freq-feriado-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(59,130,246,0.12);
+  border: 1px solid rgba(59,130,246,0.35);
+  border-radius: 20px; padding: 4px 12px;
+  font-size: 12px; font-weight: 600; color: #60a5fa;
+  transition: all 0.15s;
+}
+.freq-feriado-chip:hover { background: rgba(59,130,246,0.22); }
+.freq-feriado-chip .chip-date { opacity: 0.75; font-weight: 400; font-size: 11px; }
+.freq-feriado-chip .chip-remove {
+  cursor: pointer; font-size: 14px; line-height: 1;
+  color: rgba(96,165,250,0.6); background: none; border: none;
+  padding: 0; margin-left: 2px; transition: color 0.1s;
+}
+.freq-feriado-chip .chip-remove:hover { color: #f87171; }
+
+/* Holiday Modal */
+#modalFeriado .modal { max-width: 460px; }
+.freq-date-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+.freq-date-item {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 12px; font-size: 13px;
+}
+.freq-date-item .remove-date {
+  margin-left: auto; cursor: pointer; color: var(--red); font-size: 16px;
+  background: none; border: none; padding: 0;
+}
+
+/* Drag selection removed */
+.freq-table td { position: relative; }
+
+
+
+.freq-topbar,
+.freq-footer,
+.freq-section-title {
+  border-radius: 18px;
+  border: 1px solid rgba(148,163,184,0.12);
+  background: linear-gradient(180deg, rgba(15,23,42,0.86), rgba(17,24,39,0.88));
+}
+
+.freq-wrap {
+  border-radius: 0 0 18px 18px;
+}
+
+.freq-table th.col-fixed,
+.freq-table td.col-fixed {
+  background: #0f172a;
+}
+
+.freq-table thead tr:first-child th,
+.freq-table thead tr:last-child th,
+.freq-table tfoot td.col-fixed {
+  background: #111827;
+}
+
+.freq-cell {
+  border-radius: 8px;
+}
+
+.freq-cell:hover {
+  transform: translateY(-1px) scale(1.08);
+}
+
+#freqContextMenu {
+  border-radius: 16px;
+  border: 1px solid rgba(148,163,184,0.16);
+  background: linear-gradient(180deg, rgba(15,23,42,0.96), rgba(17,24,39,0.92));
+}
+
+
+
+.freq-topbar,
+.freq-footer,
+.freq-section-title,
+.freq-filter-bar {
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+}
+
+.freq-topbar {
+  padding: 12px 14px;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.freq-topbar .freq-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.freq-counter {
+  padding: 6px 12px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.freq-counter .total {
+  color: var(--blue);
+  font-size: 14px;
+}
+
+.freq-counter .sub,
+.freq-counter .sep {
+  color: var(--text2);
+}
+
+.freq-section-title {
+  padding: 10px 14px;
+  border-radius: 14px 14px 0 0;
+  font-size: 12px;
+}
+
+.freq-wrap {
+  border-radius: 0 0 14px 14px;
+  background: var(--surface);
+}
+
+.freq-table th.col-fixed,
+.freq-table td.col-fixed,
+.freq-table thead tr:first-child th,
+.freq-table thead tr:last-child th,
+.freq-table tfoot td.col-fixed,
+.freq-table tfoot tr td {
+  background: var(--surface);
+}
+
+.freq-table tr:hover td:not(.col-fixed) {
+  background: var(--surface-hover);
+}
+
+.freq-table tr:hover td.col-fixed {
+  background: var(--surface-2) !important;
+}
+
+body.light .freq-table tr:hover td.col-fixed {
+  background: #fafbfc !important;
+}
+
+.freq-table .th-day .day-num,
+.freq-table .th-day .day-wk {
+  color: var(--text2);
+}
+
+.freq-cell {
+  width: 28px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 9px;
+  margin: 2px auto;
+}
+
+.freq-cell.st-Trabalhado {
+  background: var(--green-lt);
+  color: var(--green);
+  border: 1px solid rgba(22, 163, 74, 0.14);
+}
+
+.freq-cell.st-Feriado {
+  background: var(--blue-lt);
+  color: var(--blue);
+  border: 1px solid rgba(37, 99, 235, 0.14);
+}
+
+.freq-cell.st-Folga {
+  background: rgba(124, 58, 237, 0.10);
+  color: #7c3aed;
+  border: 1px solid rgba(124, 58, 237, 0.12);
+}
+
+.freq-cell.st-FaltaInjustificada {
+  background: var(--red-lt);
+  color: var(--red);
+  border: 1px solid rgba(220, 38, 38, 0.14);
+}
+
+.freq-cell.st-FaltaJustificada {
+  background: var(--amber-lt);
+  color: var(--yellow);
+  border: 1px solid rgba(217, 119, 6, 0.14);
+}
+
+.freq-cell.st-NaoContratado {
+  background: var(--surface-3);
+  color: var(--text2);
+  border: 1px solid var(--border-soft);
+}
+
+.freq-cell.st-Demitido,
+.freq-cell.st-vazio {
+  color: var(--text2);
+  border: 1px dashed var(--border-strong);
+}
+
+.freq-cell:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.freq-total-cell {
+  color: var(--blue);
+}
+
+.freq-daily-total {
+  color: var(--green);
+}
+
+#freqContextMenu {
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+body:not(.light) #freqContextMenu {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+#freqContextMenu .ctx-item:hover {
+  background: var(--surface-hover);
+}
+
+#freqContextMenu .ctx-key {
+  background: var(--surface-3);
+  border-color: var(--border-soft);
+  color: var(--text2);
+}
+
+.freq-filter-bar {
+  padding: 10px 12px;
+  gap: 6px;
+}
+
+.freq-filter-bar label {
+  color: var(--text2);
+  font-size: 10px;
+}
+
+.freq-filter-input {
+  background: var(--surface);
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+.freq-filter-clear {
+  border-radius: 8px;
+}
+
+.freq-feriado-chip {
+  padding: 4px 10px;
+  background: var(--blue-lt);
+  border: 1px solid var(--blue-md);
+  color: var(--blue);
+}
+
+.freq-feriado-chip .chip-date {
+  color: var(--text2);
+}
+

@@ -1,0 +1,189 @@
+/* base.css - variaveis, reset e estilos globais extraidos de index.html. */
+
+:root {
+  --bg: #0d0f14;
+  --bg2: #13161e;
+  --bg3: #1a1e28;
+  --bg4: #20263a;
+  --accent: #f5a623;
+  --accent2: #e8921a;
+  --green: #22c55e;
+  --yellow: #eab308;
+  --red: #ef4444;
+  --blue: #3b82f6;
+  --text: #f0f2f8;
+  --text2: #9ba3b8;
+  --border: #2a3050;
+  --card: #161b27;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --radius: 12px;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+/* ── LIGHT MODE overrides ─────────────────────────────────── */
+body.light {
+  --bg:     #f0f4f8;
+  --bg2:    #e4eaf4;
+  --bg3:    #d8e0f0;
+  --bg4:    #ccd5e8;
+  --card:   #ffffff;
+  --border: #bec9e0;
+  --text:   #1a1e2e;
+  --text2:  #5a6480;
+  --shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+body.light .freq-table thead tr:last-child th { background: #ccd5e8; }
+body.light .freq-table tfoot td.col-fixed { background: #d0d8ea; }
+body.light .freq-table td.col-fixed,
+body.light .freq-table th.col-fixed { background: #ffffff; }
+body.light .freq-table thead th.col-fixed { background: #d8e0f0; }
+body.light .freq-cell.st-vazio { border-color: #bec9e0; color: #bec9e0; }
+body.light .freq-table tr:hover td:not(.col-fixed) { background: rgba(0,0,0,0.025); }
+body.light .freq-table tr:hover td.col-fixed { background: #e4eaf4 !important; }
+body.light .ata-preview { background: #fff; color: #1a1a1a; }
+body.light #freqContextMenu .ctx-key { background: #d8e0f0; border-color: #bec9e0; }
+body.light #loginScreen { background: #f0f4f8; }
+body.light .login-card { box-shadow: 0 0 80px rgba(245,166,35,0.12); }
+body.light .freq-cell:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.25s, color 0.25s;
+}
+
+/* SCROLLBA */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+
+/* ============================================================
+   MINIMAL & CLEAN DARK MODE DASHBOARD REDESIGN
+   ============================================================ */
+:root {
+  --bg: #0b1220;
+  --bg2: #0f172a;
+  --bg3: #111827;
+  --bg4: #1e293b;
+  --card: rgba(15, 23, 42, 0.86);
+  --accent: #3b82f6;
+  --accent2: #60a5fa;
+  --green: #34d399;
+  --yellow: #fbbf24;
+  --red: #f87171;
+  --blue: #3b82f6;
+  --text: #e5eefb;
+  --text2: #94a3b8;
+  --muted: #64748b;
+  --border: rgba(148, 163, 184, 0.16);
+  --shadow: 0 22px 44px rgba(2, 6, 23, 0.38);
+  --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.22);
+  --radius: 16px;
+  --font-head: 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(59,130,246,0.14), transparent 28%),
+    radial-gradient(circle at top right, rgba(14,165,233,0.10), transparent 22%),
+    linear-gradient(180deg, #08111f 0%, #0b1220 42%, #0f172a 100%);
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(148,163,184,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148,163,184,0.025) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at center, black 35%, transparent 90%);
+  opacity: 0.5;
+}
+
+
+/* ============================================================
+   VISUAL REFERENCE PORT - FLAT ENTERPRISE REFINEMENT
+   ============================================================ */
+:root {
+  --sidebar-width: 220px;
+  --surface: #1b2230;
+  --surface-2: #212a39;
+  --surface-3: #253042;
+  --surface-muted: #202939;
+  --surface-hover: rgba(96, 165, 250, 0.08);
+  --border-soft: rgba(148, 163, 184, 0.16);
+  --border-strong: rgba(148, 163, 184, 0.24);
+  --blue-lt: rgba(96, 165, 250, 0.14);
+  --blue-md: rgba(96, 165, 250, 0.2);
+  --green-lt: rgba(52, 211, 153, 0.14);
+  --amber-lt: rgba(251, 191, 36, 0.14);
+  --red-lt: rgba(248, 113, 113, 0.14);
+  --font-head: 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --bg: #111827;
+  --bg2: #1b2230;
+  --bg3: #212a39;
+  --bg4: #2b3648;
+  --card: #1b2230;
+  --accent: #60a5fa;
+  --accent2: #3b82f6;
+  --green: #34d399;
+  --yellow: #fbbf24;
+  --red: #f87171;
+  --blue: #60a5fa;
+  --text: #e5e7eb;
+  --text2: #9aa4b2;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.24);
+  --radius: 14px;
+}
+
+body.light {
+  --surface: #ffffff;
+  --surface-2: #fbfcfd;
+  --surface-3: #f4f6f8;
+  --surface-muted: #f6f8fb;
+  --surface-hover: rgba(37, 99, 235, 0.035);
+  --border-soft: #e4e8ee;
+  --border-strong: #d8dee8;
+  --blue-lt: #eef4ff;
+  --blue-md: #dbeafe;
+  --green-lt: #f0fdf4;
+  --amber-lt: #fffbeb;
+  --red-lt: #fef2f2;
+  --bg: #f6f7f9;
+  --bg2: #ffffff;
+  --bg3: #f3f5f8;
+  --bg4: #e7ebf1;
+  --card: #ffffff;
+  --accent: #2563eb;
+  --accent2: #1d4ed8;
+  --green: #16a34a;
+  --yellow: #d97706;
+  --red: #dc2626;
+  --blue: #2563eb;
+  --text: #1f2937;
+  --text2: #667085;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  letter-spacing: 0;
+}
+
+body::before { display: none; }
+
