@@ -69,7 +69,7 @@
           <span class="badge-count" id="badgeTerc">0</span>
         </div>
         <div class="nav-item" data-page="atacarejo" onclick="showPage('atacarejo', this)">
-          <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M7 21V8l8-4v17"/><path d="M21 21V12l-6-4"/><path d="M11 10h.01"/><path d="M11 13h.01"/><path d="M11 16h.01"/><path d="M11 19h.01"/></svg></span> <span data-dynamic-label="obra-funcionarios">Obra</span>
+          <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M7 21V8l8-4v17"/><path d="M21 21V12l-6-4"/><path d="M11 10h.01"/><path d="M11 13h.01"/><path d="M11 16h.01"/><path d="M11 19h.01"/></svg></span> <span class="nav-obra-label" data-dynamic-label="obra-funcionarios">Obra</span>
           <span class="badge-count" id="badgeAtac">0</span>
         </div>
         <div class="nav-item" data-page="frequencia" onclick="showPage('frequencia', this)">
@@ -94,7 +94,7 @@
           <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 3v18"/><circle cx="14" cy="10" r="2.5"/><path d="M10.5 18a3.5 3.5 0 0 1 7 0"/></svg></span> Ata Terceiros
         </div>
         <div class="nav-item" data-page="ata-atac" onclick="showPage('ata-atac', this)">
-          <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a2 2 0 0 0 2 2h6"/><path d="M10 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/><path d="M19 16v6"/><path d="M16 19h6"/></svg></span> <span data-dynamic-label="obra-ata">Ata Obra</span>
+          <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a2 2 0 0 0 2 2h6"/><path d="M10 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/><path d="M19 16v6"/><path d="M16 19h6"/></svg></span> <span class="nav-obra-label" data-dynamic-label="obra-ata">Ata Obra</span>
         </div>
       </div>
       <div class="nav-section" id="nav-admin-section" style="display:none;">
@@ -803,7 +803,7 @@
     </div>
     <div class="modal-body">
       <div class="info-box" style="margin-bottom:16px;">
-        Aplica o status <strong>Feriado</strong> para <u>todos</u> os funcionários (Terceirizados + <span data-dynamic-label="obra">Obra</span>). Células individuais podem ser alteradas depois.
+        Aplica o status <strong>Feriado</strong> para <u>todos</u> os funcionários (Terceirizados + <span class="obra-badge" data-dynamic-label="obra">Obra</span>). Células individuais podem ser alteradas depois.
       </div>
       <div class="grid-2">
         <div class="field">
@@ -2153,7 +2153,7 @@ function renderDashTable(list){
       <td><strong>${f.nome}</strong></td>
       <td>${f.empresa}</td>
       <td>${f.funcao}</td>
-      <td><span class="tipo-badge ${f.tipo==='Terceirizado'?'terceirizado':'atacarejo'}">${f.tipo==='Terceirizado'?'Terceirizado':obraLabel}</span></td>
+      <td><span class="${f.tipo==='Terceirizado'?'tipo-badge terceirizado':'tipo-badge obra-dinamica obra-type-badge'}">${f.tipo==='Terceirizado'?'Terceirizado':obraLabel}</span></td>
       <td><span class="badge-status ${status==='conforme'?'conforme':status==='pendente'?'pendente':'irregular'}">${statusLabel(status)}</span></td>
       <td>
         <div style="min-width:80px;">${done}/${total}
@@ -2497,7 +2497,7 @@ function showDashboardStats(status){
                 <td><strong>${f.empresa}</strong></td>
                 <td>${f.nome}</td>
                 <td>${f.funcao}</td>
-                <td><span class="tipo-badge ${f.tipo === 'Terceirizado' ? 'terceirizado' : 'atacarejo'}">${f.tipo === 'Terceirizado' ? 'Terceirizado' : obraLabel}</span></td>
+                <td><span class="${f.tipo === 'Terceirizado' ? 'tipo-badge terceirizado' : 'tipo-badge obra-dinamica obra-type-badge'}">${f.tipo === 'Terceirizado' ? 'Terceirizado' : obraLabel}</span></td>
                 <td><span class="badge-status ${s === 'conforme' ? 'conforme' : s === 'pendente' ? 'pendente' : 'irregular'}">${statusLabel(s)}</span></td>
                 <td>
                   <div class="action-btns">
