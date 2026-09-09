@@ -2,6 +2,9 @@ const COL_FUNCIONARIOS = "funcionarios";
 const COL_EMPRESAS = "empresas";
 const DOC_OBRA = "obra/atual";
 const COL_FREQUENCIA = "frequencia";
+const COL_EFETIVO = "efetivo";
+const COL_EFETIVO_CONFIG = "efetivoConfig";
+const COL_EFETIVO_IMPORTACOES = "efetivoImportacoes";
 const COL_USUARIOS = "usuarios";
 
 function dbNormalizeObraId(obraId) {
@@ -59,6 +62,16 @@ function dbGetFrequenciaDocRef(periodoKey) {
   return dbGetObraCollection(COL_FREQUENCIA).doc(String(periodoKey));
 }
 
+function dbGetEfetivoDocRef(periodoKey) {
+  return dbGetObraCollection(COL_EFETIVO).doc(String(periodoKey));
+}
+
+function dbAssertObraAtiva() {
+  if (!dbHasObraAtiva()) {
+    throw new Error("Nenhuma obra ativa selecionada.");
+  }
+}
+
 function dbNormalizeFrequenciaData(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) return {};
   if (data.data && typeof data.data === "object" && !Array.isArray(data.data)) {
@@ -76,6 +89,14 @@ function dbNormalizeFrequenciaData(data) {
   return {};
 }
 
+function dbNormalizeWrappedData(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return {};
+  if (data.data && typeof data.data === "object" && !Array.isArray(data.data)) {
+    return data.data;
+  }
+  return data;
+}
+
 window.getObraPath = function getObraPath(subcollection) {
   return dbGetObraCollection(subcollection);
 };
@@ -87,6 +108,15 @@ function dbLog(evento, detalhes) {
   }
 
   console.log(`[db] ${evento}`, detalhes);
+}
+
+function dbLogPermissionError(scope, details, error) {
+  console.error(`[PERMISSION ERROR][${scope}]`, {
+    ...details,
+    errorCode: error?.code || "",
+    errorMessage: error?.message || String(error),
+    error,
+  });
 }
 
 function dbServerTimestamp() {
@@ -109,6 +139,60 @@ function dbGetBootstrapRole(email) {
   return "viewer";
 }
 
+function dbNormalizeRole(role) {
+  const normalized = String(role || "").trim().toLowerCase();
+  return ["admin", "editor", "viewer"].includes(normalized) ? normalized : "";
+}
+
+function dbGetStoredObraAtivaId() {
+  try {
+    return dbNormalizeObraId(localStorage.getItem("obraAtivaId"));
+  } catch (error) {
+    return "";
+  }
+}
+
+function dbNormalizeAccessMap(rawAcessos) {
+  if (!rawAcessos || typeof rawAcessos !== "object" || Array.isArray(rawAcessos)) return {};
+
+  return Object.entries(rawAcessos).reduce((acc, [obraId, entry]) => {
+    const normalizedObraId = dbNormalizeObraId(obraId);
+    if (!normalizedObraId || !entry || typeof entry !== "object" || Array.isArray(entry)) return acc;
+
+    acc[normalizedObraId] = {
+      enabled: entry.enabled !== false,
+      role: dbNormalizeRole(entry.role) || "viewer",
+    };
+    return acc;
+  }, {});
+}
+
+function dbBuildAccessForObra(rawAcessos, obraId, role) {
+  const normalizedObraId = dbNormalizeObraId(obraId);
+  const normalizedRole = dbNormalizeRole(role) || "viewer";
+  const acessos = dbNormalizeAccessMap(rawAcessos);
+
+  if (normalizedObraId) {
+    acessos[normalizedObraId] = {
+      enabled: true,
+      role: normalizedRole,
+    };
+  }
+
+  return acessos;
+}
+
+function dbNeedsAccessPatch(current, obraId, role) {
+  const normalizedObraId = dbNormalizeObraId(obraId);
+  if (!normalizedObraId) return false;
+
+  const normalizedRole = dbNormalizeRole(role) || "viewer";
+  const acessos = dbNormalizeAccessMap(current?.acessos);
+  const entry = acessos[normalizedObraId];
+
+  return !entry || entry.enabled !== true || entry.role !== normalizedRole || dbNormalizeObraId(current?.obraAtivaId) !== normalizedObraId;
+}
+
 async function dbBuildPayload(ref, row, extraFields) {
   const snap = await ref.get();
   const current = snap.exists ? snap.data() || {} : {};
@@ -125,9 +209,12 @@ async function dbBuildPayload(ref, row, extraFields) {
 }
 
 function ouvirFuncionarios(cb) {
-  dbLog("listener funcionarios:start");
+  const obraId = dbGetObraAtivaId() || null;
+  const collectionRef = dbGetObraCollection(COL_FUNCIONARIOS);
+  const path = `/${collectionRef.path}`;
+  dbLog("listener funcionarios:start", { path, obraId, operation: "onSnapshot" });
 
-  const q = dbGetObraCollection(COL_FUNCIONARIOS)
+  const q = collectionRef
     .orderBy("createdAt", "desc");
 
   return q.onSnapshot((snap) => {
@@ -135,7 +222,7 @@ function ouvirFuncionarios(cb) {
     dbLog("listener funcionarios:received", rows.length);
     cb(rows);
   }, (error) => {
-    console.error("[db] listener funcionarios:error", error);
+    dbLogPermissionError("funcionarios", { path, obraId, operation: "onSnapshot" }, error);
     cb([]);
   });
 }
@@ -158,9 +245,12 @@ async function removerFuncionario(id) {
 }
 
 function ouvirEmpresas(cb) {
-  dbLog("listener empresas:start");
+  const obraId = dbGetObraAtivaId() || null;
+  const collectionRef = dbGetObraCollection(COL_EMPRESAS);
+  const path = `/${collectionRef.path}`;
+  dbLog("listener empresas:start", { path, obraId, operation: "onSnapshot" });
 
-  const q = dbGetObraCollection(COL_EMPRESAS)
+  const q = collectionRef
     .orderBy("nome", "asc");
 
   return q.onSnapshot((snap) => {
@@ -168,7 +258,7 @@ function ouvirEmpresas(cb) {
     dbLog("listener empresas:received", rows.length);
     cb(rows);
   }, (error) => {
-    console.error("[db] listener empresas:error", error);
+    dbLogPermissionError("empresas", { path, obraId, operation: "onSnapshot" }, error);
     cb([]);
   });
 }
@@ -191,15 +281,18 @@ async function removerEmpresa(id) {
 }
 
 function ouvirObra(cb) {
-  dbLog("listener obra:start");
+  const obraId = dbGetObraAtivaId() || null;
+  const ref = dbGetObraDocRef();
+  const path = `/${ref.path}`;
+  dbLog("listener obra:start", { path, obraId, operation: "onSnapshot" });
 
-  return dbGetObraDocRef()
+  return ref
     .onSnapshot((snap) => {
       const obra = snap.exists ? { ...snap.data(), id: snap.id } : null;
       dbLog("listener obra:received", obra ? obra.id : null);
       cb(obra);
     }, (error) => {
-      console.error("[db] listener obra:error", error);
+      dbLogPermissionError("obra", { path, obraId, operation: "onSnapshot" }, error);
       cb(null);
     });
 }
@@ -216,29 +309,34 @@ async function salvarObra(obra) {
 
 function ouvirFrequencia(periodoKey, cb) {
   const docId = String(periodoKey);
-  dbLog("listener frequencia:start", { periodoKey: docId });
+  const obraId = dbGetObraAtivaId() || null;
 
   if (dbHasObraAtiva()) {
-    return dbGetFrequenciaDocRef(docId).onSnapshot((snap) => {
+    const ref = dbGetFrequenciaDocRef(docId);
+    const path = `/${ref.path}`;
+    dbLog("listener frequencia:start", { path, obraId, periodoKey: docId, operation: "onSnapshot", source: "firestore" });
+    return ref.onSnapshot((snap) => {
       const raw = snap.exists ? snap.data() || {} : null;
       const data = raw ? dbNormalizeFrequenciaData(raw) : null;
       const payload = data ? { id: docId, data } : null;
       dbLog("listener frequencia:received", { periodoKey: docId, hasData: Boolean(data), source: "firestore" });
       cb(payload);
     }, (error) => {
-      console.error("[db] listener frequencia:error", error);
+      dbLogPermissionError("frequencia", { path, obraId, periodoKey: docId, operation: "onSnapshot", source: "firestore" }, error);
       cb(null);
     });
   }
 
-  const ref = firebase.database().ref(`${COL_FREQUENCIA}/${docId}`);
+  const path = `/${COL_FREQUENCIA}/${docId}`;
+  const ref = firebase.database().ref(path);
+  dbLog("listener frequencia:start", { path, obraId, periodoKey: docId, operation: "on(value)", source: "realtime-database-legado" });
   const handler = ref.on("value", (snap) => {
     const data = snap.exists() ? snap.val() : null;
     const payload = data ? { id: docId, data } : null;
     dbLog("listener frequencia:received", { periodoKey: docId, hasData: Boolean(data), source: "rtdb" });
     cb(payload);
   }, (error) => {
-    console.error("[db] listener frequencia:error", error);
+    dbLogPermissionError("frequencia", { path, obraId, periodoKey: docId, operation: "on(value)", source: "realtime-database-legado" }, error);
     cb(null);
   });
 
@@ -289,13 +387,105 @@ async function obterUltimoPeriodoComFrequencia() {
   return keys[keys.length - 1] || "";
 }
 
+function ouvirEfetivo(periodoKey, cb) {
+  const docId = String(periodoKey);
+  dbLog("listener efetivo:start", { periodoKey: docId });
+
+  if (!dbHasObraAtiva()) {
+    cb(null);
+    return () => {};
+  }
+
+  return dbGetEfetivoDocRef(docId).onSnapshot((snap) => {
+    const raw = snap.exists ? snap.data() || {} : null;
+    const data = raw ? dbNormalizeWrappedData(raw) : null;
+    const payload = data ? { id: docId, data } : null;
+    dbLog("listener efetivo:received", { periodoKey: docId, hasData: Boolean(data) });
+    cb(payload);
+  }, (error) => {
+    console.error("[db] listener efetivo:error", error);
+    cb(null);
+  });
+}
+
+async function obterEfetivo(periodoKey) {
+  dbAssertObraAtiva();
+  const docId = String(periodoKey);
+  const snap = await dbGetEfetivoDocRef(docId).get();
+  if (!snap.exists) return null;
+  return { id: snap.id, data: dbNormalizeWrappedData(snap.data() || {}) };
+}
+
+async function salvarEfetivo(periodoKey, data) {
+  dbAssertObraAtiva();
+  const docId = String(periodoKey);
+  const payload = data || {};
+  const ref = dbGetEfetivoDocRef(docId);
+  const snap = await ref.get();
+
+  dbLog("salvar efetivo", { periodoKey: docId });
+  await ref.set({
+    data: payload,
+    updatedAt: dbServerTimestamp(),
+    createdAt: snap.exists ? (snap.data()?.createdAt || dbServerTimestamp()) : dbServerTimestamp(),
+  }, { merge: true });
+
+  return docId;
+}
+
+async function salvarEfetivoCategorias(categorias) {
+  dbAssertObraAtiva();
+  const ref = dbGetObraCollection(COL_EFETIVO_CONFIG).doc("categorias");
+  const snap = await ref.get();
+  const list = Array.isArray(categorias)
+    ? categorias.map((item) => String(item || "").trim()).filter(Boolean)
+    : [];
+
+  dbLog("salvar efetivo categorias", { total: list.length });
+  await ref.set({
+    categorias: Array.from(new Set(list)),
+    updatedAt: dbServerTimestamp(),
+    createdAt: snap.exists ? (snap.data()?.createdAt || dbServerTimestamp()) : dbServerTimestamp(),
+  }, { merge: true });
+
+  return "categorias";
+}
+
+async function salvarEfetivoImportacao(row) {
+  dbAssertObraAtiva();
+  const id = row?.id ? String(row.id) : crypto.randomUUID();
+  const ref = dbGetObraCollection(COL_EFETIVO_IMPORTACOES).doc(id);
+  const payload = await dbBuildPayload(ref, {
+    periodoKey: String(row?.periodoKey || ""),
+    fileName: String(row?.fileName || ""),
+    source: String(row?.source || ""),
+    categories: Number(row?.categories || 0),
+    companies: Number(row?.companies || 0),
+    importedAt: row?.importedAt || new Date().toISOString(),
+  });
+
+  dbLog("registrar efetivo importacao", { id, periodoKey: payload.periodoKey });
+  await ref.set(payload, { merge: true });
+
+  return id;
+}
+
 async function garantirUsuarioPerfil(user) {
   if (!user?.uid) throw new Error("Usuário autenticado inválido.");
 
   const uid = String(user.uid);
   const email = dbNormalizeEmail(user.email);
   const ref = firebase.firestore().collection(COL_USUARIOS).doc(uid);
-  const snap = await ref.get();
+  const path = `/${ref.path}`;
+  let snap;
+  dbLog("usuario perfil:get:start", { path, uid, operation: "get" });
+  try {
+    snap = await ref.get();
+    dbLog("usuario perfil:get:ok", { path, uid, operation: "get", exists: snap.exists });
+  } catch (error) {
+    dbLogPermissionError("usuario-profile-get", { path, uid, operation: "get" }, error);
+    throw error;
+  }
 
   if (!snap.exists) {
     const payload = {
@@ -308,27 +498,76 @@ async function garantirUsuarioPerfil(user) {
     };
 
     dbLog("bootstrap usuario", { uid, email, role: payload.role });
-    await ref.set(payload, { merge: true });
+    try {
+      await ref.set(payload, { merge: true });
+      dbLog("bootstrap usuario:write:ok", { path, uid, operation: "set(merge)" });
+    } catch (error) {
+      dbLogPermissionError("usuario-profile-create", { path, uid, operation: "set(merge)" }, error);
+      throw error;
+    }
+
+    const activeObraId = dbGetStoredObraAtivaId() || dbGetObraAtivaId();
+    if (payload.role === "admin" && activeObraId) {
+      const accessPayload = {
+        acessos: dbBuildAccessForObra({}, activeObraId, "admin"),
+        obraAtivaId: activeObraId,
+        updatedAt: dbServerTimestamp(),
+      };
+      dbLog("bootstrap usuario acesso obra", { uid, obraId: activeObraId, role: "admin" });
+      try {
+        await ref.set(accessPayload, { merge: true });
+        dbLog("bootstrap usuario acesso obra:write:ok", { path, uid, obraId: activeObraId, operation: "set(merge)" });
+      } catch (error) {
+        dbLogPermissionError("usuario-profile-bootstrap-access", { path, uid, obraId: activeObraId, operation: "set(merge)" }, error);
+        throw error;
+      }
+      return { ...payload, ...accessPayload, id: uid };
+    }
+
     return { ...payload, id: uid };
   }
 
   const current = snap.data() || {};
+  const storedEmail = dbNormalizeEmail(current.email);
   const nextEmail = dbNormalizeEmail(current.email || email);
-  const payload = {
+  const role = dbNormalizeRole(current.role) || "viewer";
+  const normalizedInMemory = {
+    ...current,
     id: uid,
     email: nextEmail,
-    role: current.role || dbGetBootstrapRole(nextEmail),
+    role,
     status: current.status || "active",
-    createdAt: current.createdAt || dbServerTimestamp(),
-    updatedAt: dbServerTimestamp(),
+    createdAt: current.createdAt || null,
   };
 
-  if (current.email !== nextEmail || !current.role || !current.status || !current.createdAt) {
-    dbLog("normalizar usuario", { uid, email: nextEmail, role: payload.role, status: payload.status });
-    await ref.set(payload, { merge: true });
+  if (storedEmail !== email || String(current.displayName || "") !== String(user.displayName || "")) {
+    dbLog("usuario perfil:auth-divergence", {
+      path,
+      uid,
+      firestoreEmail: storedEmail,
+      authEmail: email,
+      firestoreDisplayName: String(current.displayName || ""),
+      authDisplayName: String(user.displayName || ""),
+      action: "normalized-in-memory-only",
+    });
   }
 
-  return { ...current, ...payload, id: uid };
+  const inMemoryNormalizationReasons = {
+    missingEmail: !current.email,
+    missingRole: !current.role,
+    missingStatus: !current.status,
+    missingCreatedAt: !current.createdAt,
+  };
+  if (Object.values(inMemoryNormalizationReasons).some(Boolean)) {
+    dbLog("usuario perfil:normalized-in-memory", {
+      path,
+      uid,
+      operation: "none",
+      reasons: inMemoryNormalizationReasons,
+    });
+  }
+
+  return normalizedInMemory;
 }
 
 async function obterUsuario(uid) {
@@ -338,17 +577,19 @@ async function obterUsuario(uid) {
 }
 
 function ouvirUsuarios(cb) {
-  dbLog("listener usuarios:start");
+  const obraId = dbGetObraAtivaId() || null;
+  const collectionRef = firebase.firestore().collection(COL_USUARIOS);
+  const path = `/${collectionRef.path}`;
+  dbLog("listener usuarios:start", { path, obraId, operation: "onSnapshot" });
 
-  return firebase.firestore()
-    .collection(COL_USUARIOS)
+  return collectionRef
     .orderBy("email", "asc")
     .onSnapshot((snap) => {
       const rows = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
       dbLog("listener usuarios:received", rows.length);
       cb(rows);
     }, (error) => {
-      console.error("[db] listener usuarios:error", error);
+      dbLogPermissionError("usuarios", { path, obraId, operation: "onSnapshot" }, error);
       cb([]);
     });
 }
@@ -406,6 +647,26 @@ async function saveFrequencia(periodoKey, data) {
 
 async function getLatestFrequenciaPeriodoKey() {
   return obterUltimoPeriodoComFrequencia();
+}
+
+function listenEfetivo(periodoKey, cb) {
+  return ouvirEfetivo(periodoKey, cb);
+}
+
+async function getEfetivo(periodoKey) {
+  return obterEfetivo(periodoKey);
+}
+
+async function saveEfetivo(periodoKey, data) {
+  return salvarEfetivo(periodoKey, data);
+}
+
+async function saveEfetivoCategorias(categorias) {
+  return salvarEfetivoCategorias(categorias);
+}
+
+async function saveEfetivoImportacao(row) {
+  return salvarEfetivoImportacao(row);
 }
 
 async function ensureUsuarioProfile(user) {

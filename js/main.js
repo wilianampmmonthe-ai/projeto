@@ -8,6 +8,7 @@ const PAGE_TITLES = {
   empresas: "Gestão de Empresas",
   "ata-terc": "Ata de Liberação de Terceiros",
   frequencia: "Controle de Frequência",
+  efetivo: "Controle de Efetivo",
   admin: "Admin",
 };
 
@@ -122,6 +123,7 @@ function resolveObraAtivaId(profile, obrasPermitidas) {
   const preferred = normalizeObraId(profile?.obraAtivaId);
 
   if (saved && allowed.includes(saved) && resolveAccessForObra(profile, saved).canView) return saved;
+  if (preferred && allowed.includes(preferred) && resolveAccessForObra(profile, preferred).canView) return preferred;
 
   for (const obraId of allowed) {
     if (resolveAccessForObra(profile, obraId).canView) return obraId;
@@ -181,6 +183,16 @@ function syncAppContext(user, profile) {
   return ctx;
 }
 
+function ensureValidObraAtiva(user, profile) {
+  const ctx = ensureAppContext();
+  const activeObraId = normalizeObraId(ctx.obraAtivaId);
+  const activeIsAllowed = activeObraId &&
+    ctx.obrasPermitidas.includes(activeObraId) &&
+    resolveAccessForObra(profile, activeObraId).canView;
+
+  return activeIsAllowed ? ctx : syncAppContext(user, profile);
+}
+
 function getCurrentObraLabel() {
   const ctx = ensureAppContext();
   const activeId = normalizeObraId(ctx.obraAtivaId);
@@ -205,6 +217,7 @@ window.getCurrentObraLabel = getCurrentObraLabel;
 
 function getCurrentPageId() {
   const activePage = document.querySelector(".page.active")?.id || "";
+  if (activePage === "efetivo-page") return "efetivo";
   return activePage.replace(/^page-/, "") || "dashboard";
 }
 
@@ -313,7 +326,11 @@ async function loadFriendlyObraNames(obraIds) {
     if (obraSelectorState.metaById[obraId]?.nome) return;
 
     try {
-      const snap = await firebase.firestore().collection("obras").doc(obraId).get();
+      const ref = firebase.firestore().collection("obras").doc(obraId);
+      const path = `/${ref.path}`;
+      console.log("[LOGIN OBRA META] get:start", { path, obraId, operation: "get" });
+      const snap = await ref.get();
+      console.log("[LOGIN OBRA META OK]", { path, obraId, operation: "get", exists: snap.exists });
       const data = snap.data() || {};
       const nome = String(data.nome || "").trim();
       const municipio = String(data.municipio || "").trim();
@@ -334,7 +351,14 @@ async function loadFriendlyObraNames(obraIds) {
         }
       }
     } catch (error) {
-      console.debug("[obra-selector] nome-amigavel indisponivel", { obraId, error });
+      console.error("[PERMISSION ERROR][obra-metadata]", {
+        path: `/obras/${obraId}`,
+        obraId,
+        operation: "get",
+        errorCode: error?.code || "",
+        errorMessage: error?.message || String(error),
+        error,
+      });
     }
   }));
 
@@ -701,6 +725,7 @@ function stopRealtime() {
   if (typeof unsubObra === "function") unsubObra();
   if (typeof unsubFreq === "function") unsubFreq();
   if (typeof unsubUsuarios === "function") unsubUsuarios();
+  if (typeof window.efetivoDestroyPage === "function") window.efetivoDestroyPage();
 
   unsubFuncionarios = null;
   unsubEmpresas = null;
@@ -762,8 +787,12 @@ window.isViewer = function isViewer() {
   return getUserRole() === "viewer";
 };
 
+window.isGlobalAdmin = function isGlobalAdmin() {
+  return normalizeRole(ensureCurrentUserProfile().role) === "admin";
+};
+
 window.canManageUsers = function canManageUsers() {
-  return window.canManageAccess();
+  return window.isGlobalAdmin();
 };
 
 window.canEditObra = function canEditObra() {
@@ -779,6 +808,14 @@ window.canEditEmpresas = function canEditEmpresas() {
 };
 
 window.canEditFrequencia = function canEditFrequencia() {
+  return window.canViewCurrentObra() && (window.isAdmin() || window.isEditor());
+};
+
+window.canViewEfetivo = function canViewEfetivo() {
+  return window.canViewCurrentObra();
+};
+
+window.canEditEfetivo = function canEditEfetivo() {
   return window.canViewCurrentObra() && (window.isAdmin() || window.isEditor());
 };
 
@@ -860,6 +897,7 @@ function updatePermissionUI() {
   const canFuncionarios = window.canEditFuncionarios();
   const canEmpresas = window.canEditEmpresas();
   const canFreq = window.canEditFrequencia();
+  const canEfetivo = window.canEditEfetivo();
   const canExport = window.canExportDocumentos();
 
   setElementVisible("#nav-admin-section", canAdmin);
@@ -881,6 +919,9 @@ function updatePermissionUI() {
   setElementsDisabled("#btnFreqFolgaTodos", !canFreq);
   setElementsDisabled("#btnFreqExportExcel", !canExport);
   setElementsDisabled("#btnFreqExportPDF", !canExport);
+  setElementsDisabled("#efetivo-import-button", !canEfetivo);
+  setElementsDisabled("#efetivo-save-button", !canEfetivo);
+  setElementsDisabled("#efetivo-file-input", !canEfetivo);
   setElementsDisabled("#btnAtaTercExcel", !canExport);
   setElementsDisabled("#btnAtaTercPDF", !canExport);
   setElementsDisabled("#btnAtaAtacExcel", !canExport);
@@ -898,14 +939,24 @@ function updatePermissionUI() {
 }
 
 async function loadCurrentUserProfile(user) {
+  console.log("[LOGIN PROFILE 1] ensureUsuarioProfile:start", { uid: String(user?.uid || ""), path: `/usuarios/${String(user?.uid || "")}` });
   const profile = await ensureUsuarioProfile(user);
+  console.log("[LOGIN PROFILE 1 OK] ensureUsuarioProfile", profile);
+  console.log("[LOGIN PROFILE 2] normalizeUserProfile:start");
   const normalized = normalizeUserProfile(profile, user);
+  console.log("[LOGIN PROFILE 2 OK] normalizeUserProfile", normalized);
   window.currentUserProfile = normalized;
+  console.log("[LOGIN PROFILE 3] syncAppContext:start");
   syncAppContext(user, normalized);
+  console.log("[LOGIN PROFILE 3 OK] syncAppContext", ensureAppContext());
+  console.log("[LOGIN PROFILE 4] refreshObraSelector:start (async)");
   refreshObraSelector(normalized).catch((error) => {
     console.warn("[obra-selector] erro ao montar seletor", error);
   });
+  console.log("[LOGIN PROFILE 4 OK] refreshObraSelector:scheduled");
+  console.log("[LOGIN PROFILE 5] updatePermissionUI:start");
   updatePermissionUI();
+  console.log("[LOGIN PROFILE 5 OK] updatePermissionUI");
   return normalized;
 }
 
@@ -961,9 +1012,25 @@ window.saveAdminUser = async function saveAdminUser(uid) {
 
     const role = document.getElementById(`admin-role-${uid}`)?.value || existing.role || "viewer";
     const status = document.getElementById(`admin-status-${uid}`)?.value || existing.status || "active";
+    const activeObraId = normalizeObraId(ensureAppContext().obraAtivaId);
+    const normalizedRole = normalizeRole(role) || "viewer";
+    const acessos = normalizeAccessMap(existing.acessos);
 
-    console.log("[ui] salvar usuario", { uid: String(uid), role, status });
-    await salvarUsuario(uid, { email: existing.email, role, status });
+    if (activeObraId) {
+      acessos[activeObraId] = {
+        enabled: true,
+        role: normalizedRole,
+      };
+    }
+
+    console.log("[ui] salvar usuario", { uid: String(uid), role: normalizedRole, status, obraAtivaId: activeObraId });
+    await salvarUsuario(uid, {
+      email: existing.email,
+      role: normalizedRole,
+      status,
+      acessos,
+      ...(activeObraId ? { obraAtivaId: activeObraId } : {}),
+    });
     safeToast("Usuário atualizado com sucesso.", "success");
   } catch (e) {
     console.error("ERRO AO SALVAR USUÁRIO:", e);
@@ -1076,10 +1143,16 @@ function syncFrequenciaListener() {
     unsubFreq = null;
   }
 
-  if (typeof window.freqGetPeriodoKey !== "function") return;
+  if (typeof window.freqGetPeriodoKey !== "function") {
+    console.log("[LOGIN WIRE 7 SKIP] frequencia", { reason: "freqGetPeriodoKey indisponivel" });
+    return;
+  }
 
   const pk = window.freqGetPeriodoKey();
-  if (!pk) return;
+  if (!pk) {
+    console.log("[LOGIN WIRE 7 SKIP] frequencia", { reason: "periodoKey vazio", obraAtivaId: window.APP_CTX?.obraAtivaId || null });
+    return;
+  }
 
   console.log("[freq] listener:start", {
     obraAtivaId: window.APP_CTX?.obraAtivaId || null,
@@ -1110,11 +1183,16 @@ function syncFrequenciaListener() {
 window.syncFrequenciaListener = syncFrequenciaListener;
 
 function wireRealtimeForUser() {
+  console.log("[LOGIN WIRE 1] stopRealtime:start");
   stopRealtime();
+  console.log("[LOGIN WIRE 1 OK] stopRealtime");
+  console.log("[LOGIN WIRE 2] preparar estado:start");
   ensureDB();
   ensureAppContext();
   window.appUsers = window.appUsers || [];
+  console.log("[LOGIN WIRE 2 OK] preparar estado", ensureAppContext());
 
+  console.log("[LOGIN WIRE 3] listenFuncionarios:register");
   unsubFuncionarios = listenFuncionarios((rows) => {
     window.DB.funcionarios = rows;
     console.log("[freq] funcionarios:received", {
@@ -1124,28 +1202,41 @@ function wireRealtimeForUser() {
     });
     if (typeof window.refreshAll === "function") window.refreshAll();
   });
+  console.log("[LOGIN WIRE 3 OK] listenFuncionarios:registered");
 
+  console.log("[LOGIN WIRE 4] listenEmpresas:register");
   unsubEmpresas = listenEmpresas((rows) => {
     window.DB.empresas = rows;
     if (typeof window.refreshAll === "function") window.refreshAll();
   });
+  console.log("[LOGIN WIRE 4 OK] listenEmpresas:registered");
 
+  console.log("[LOGIN WIRE 5] listenObra:register");
   unsubObra = listenObra((obra) => {
     window.DB.obra = obra;
     if (typeof window.updateDynamicObraLabels === "function") window.updateDynamicObraLabels();
     if (typeof window.updateObraInterface === "function") window.updateObraInterface();
     if (typeof window.refreshAll === "function") window.refreshAll();
   });
+  console.log("[LOGIN WIRE 5 OK] listenObra:registered");
 
   if (window.canManageUsers()) {
+    console.log("[LOGIN WIRE 6] ouvirUsuarios:register", { path: "/usuarios", obraAtivaId: ensureAppContext().obraAtivaId });
     unsubUsuarios = ouvirUsuarios((rows) => {
       window.appUsers = rows.map((row) => normalizeUserProfile(row));
       renderAdminUsers();
     });
+    console.log("[LOGIN WIRE 6 OK] ouvirUsuarios:registered");
+  } else {
+    console.log("[LOGIN WIRE 6 SKIP] ouvirUsuarios", { canManageUsers: false });
   }
 
+  console.log("[LOGIN WIRE 7] syncFrequenciaListener:start");
   syncFrequenciaListener();
+  console.log("[LOGIN WIRE 7 OK] syncFrequenciaListener");
+  console.log("[LOGIN WIRE 8] updatePermissionUI:start");
   updatePermissionUI();
+  console.log("[LOGIN WIRE 8 OK] updatePermissionUI");
 }
 
 // --- SESSÃO ---
@@ -1169,9 +1260,15 @@ watchSession(async (user) => {
     return;
   }
 
+  let loginStage = "inicializacao";
   try {
+    loginStage = "loadCurrentUserProfile";
+    console.log("[LOGIN 1] loadCurrentUserProfile:start", { uid: String(user.uid || "") });
     const profile = await loadCurrentUserProfile(user);
+    console.log("[LOGIN 1 OK] loadCurrentUserProfile", profile);
 
+    loginStage = "validacao-status";
+    console.log("[LOGIN 2] validacao-status:start", { status: profile.status });
     if (profile.status === "blocked") {
       alert("Acesso bloqueado");
       await logout();
@@ -1183,7 +1280,15 @@ watchSession(async (user) => {
       await logout();
       return;
     }
+    console.log("[LOGIN 2 OK] validacao-status", { status: profile.status });
 
+    loginStage = "ensureValidObraAtiva";
+    console.log("[LOGIN 3] ensureValidObraAtiva:start", ensureAppContext());
+    ensureValidObraAtiva(user, profile);
+    console.log("[LOGIN 3 OK] ensureValidObraAtiva", ensureAppContext());
+
+    loginStage = "canViewCurrentObra";
+    console.log("[LOGIN 4] canViewCurrentObra:start", ensureAppContext());
     if (!window.canViewCurrentObra()) {
       logPermissionDebug("sem-acesso-a-obra", {
         userId: user.uid,
@@ -1192,13 +1297,31 @@ watchSession(async (user) => {
       await logout();
       return;
     }
+    console.log("[LOGIN 4 OK] canViewCurrentObra", { canView: true, obraAtivaId: ensureAppContext().obraAtivaId });
 
+    loginStage = "setLoggedIn";
+    console.log("[LOGIN 5] setLoggedIn:start");
     setLoggedIn(true);
+    console.log("[LOGIN 5 OK] setLoggedIn");
+    loginStage = "wireRealtimeForUser";
+    console.log("[LOGIN 6] wireRealtimeForUser:start", ensureAppContext());
     wireRealtimeForUser();
+    console.log("[LOGIN 6 OK] wireRealtimeForUser:listeners-registered");
+    loginStage = "renderAdminUsers";
+    console.log("[LOGIN 7] renderAdminUsers:start");
     renderAdminUsers();
+    console.log("[LOGIN 7 OK] renderAdminUsers");
+    loginStage = "safeToast";
+    console.log("[LOGIN 8] safeToast:start");
     safeToast("Sessão autenticada.", "success");
+    console.log("[LOGIN 8 OK] safeToast");
   } catch (e) {
-    console.error("ERRO AO CARREGAR PERFIL:", e);
+    console.error("ERRO AO CARREGAR PERFIL:", {
+      loginStage,
+      errorCode: e?.code || "",
+      errorMessage: e?.message || String(e),
+      error: e,
+    });
     safeToast(e?.message || "Erro ao carregar permiss?es do usu?rio.", "error");
     await logout();
   }
@@ -1537,10 +1660,15 @@ window.showPage = function showPage(id, el) {
     return;
   }
 
+  const previousPageId = document.querySelector(".page.active")?.id || "";
+  if (previousPageId === "efetivo-page" && id !== "efetivo" && typeof window.efetivoDestroyPage === "function") {
+    window.efetivoDestroyPage();
+  }
+
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
-  const page = document.getElementById('page-' + id);
+  const page = document.getElementById('page-' + id) || document.getElementById(id + '-page');
   if (page) page.classList.add('active');
   if (el) el.classList.add('active');
   updateTopbarTitle(id);
@@ -1556,6 +1684,9 @@ window.showPage = function showPage(id, el) {
   }
   if (id === 'frequencia' && typeof window.freqInit === 'function') {
     window.freqInit();
+  }
+  if (id === 'efetivo' && typeof window.efetivoInit === 'function') {
+    window.efetivoInit(page);
   }
   if (id === 'admin') {
     renderAdminUsers();
@@ -1714,6 +1845,9 @@ window.refreshAll = function refreshAll() {
   }
   if (activePageId === "page-frequencia" && freqState.periodoKey && typeof window.freqRender === "function") {
     window.freqRender();
+  }
+  if (activePageId === "efetivo-page" && typeof window.efetivoRefresh === "function") {
+    window.efetivoRefresh();
   }
 
   const obraName = typeof window.getCurrentObraLabel === "function"

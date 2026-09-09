@@ -53,6 +53,7 @@ Arquivos importantes:
 - `css/*` (estilos separados por responsabilidade)
 - `js/config/*` (configuracao e inicializacao Firebase)
 - `js/services/*` (servicos globais de Auth e banco)
+- `js/modules/efetivo.js` e `css/efetivo.css` (modulo de controle de efetivo mensal)
 - `js/main.js` (logica principal atual do sistema)
 - `vercel.json` (headers basicos)
 
@@ -62,11 +63,33 @@ Arquivos importantes:
 - `css`: estilos da aplicacao separados em base, layout, componentes, paginas, frequencia e impressao.
 - `js/config`: configuracao web e inicializacao do Firebase.
 - `js/services`: servicos globais de autenticacao e acesso ao banco.
-- `js/modules`: area reservada para modularizar telas como dashboard, funcionarios, empresas, frequencia, atas e admin.
+- `js/modules`: area reservada para modularizar telas como dashboard, funcionarios, empresas, frequencia, efetivo, atas e admin.
 - `js/utils`: funcoes utilitarias compartilhadas, como formatadores, validadores, permissoes e exportacao.
 - `firestore.rules`: regras de seguranca do Firestore.
 - `storage.rules`: regras de seguranca do Firebase Storage.
 - `vercel.json`: configuracao de deploy estatico e headers na Vercel.
+
+## Estrutura Firebase usada pelo sistema
+
+Colecoes raiz legadas:
+
+- `usuarios/{uid}`
+- `obra/{docId}`
+- `funcionarios/{docId}`
+- `empresas/{docId}`
+- `frequencia/{YYYY-MM}`
+
+Estrutura multiobra:
+
+- `obras/{obraId}`
+- `obras/{obraId}/funcionarios/{docId}`
+- `obras/{obraId}/empresas/{docId}`
+- `obras/{obraId}/frequencia/{YYYY-MM}`
+- `obras/{obraId}/efetivo/{YYYY-MM}`
+- `obras/{obraId}/efetivoConfig/categorias`
+- `obras/{obraId}/efetivoImportacoes/{importId}`
+
+No modulo Efetivo, viewers podem visualizar os consolidados da obra ativa. Editors e admins podem importar CSV/XLSX, editar valores manualmente e salvar o consolidado mensal.
 
 ## 4) Como manter o sistema seguro (checklist)
 

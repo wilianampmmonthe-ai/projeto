@@ -102,6 +102,7 @@ function getAvailableObrasForUser(profile) {
 function normalizeUserProfile(profile, fallbackUser) {
   const email = String(profile?.email || fallbackUser?.email || "").trim().toLowerCase();
   return {
+    ...(profile || {}),
     id: String(profile?.id || fallbackUser?.uid || ""),
     email,
     role: normalizeRole(profile?.role) || "viewer",

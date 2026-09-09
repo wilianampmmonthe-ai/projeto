@@ -11,8 +11,10 @@
 <link rel="stylesheet" href="./css/pages.css">
 <link rel="stylesheet" href="./css/frequency.css">
 <link rel="stylesheet" href="./css/print.css">
+<link rel="stylesheet" href="./css/efetivo.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
 </head>
 <body>
@@ -74,6 +76,9 @@
         </div>
         <div class="nav-item" data-page="frequencia" onclick="showPage('frequencia', this)">
           <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><circle cx="17" cy="17" r="2.5"/><path d="M13.5 21a3.5 3.5 0 0 1 7 0"/></svg></span> Frequência
+        </div>
+        <div class="nav-item" data-page="efetivo" onclick="showPage('efetivo', this)">
+          <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-7"/><path d="M18 7h1v1"/></svg></span> Efetivo
         </div>
       </div>
       <div class="nav-section">
@@ -376,6 +381,95 @@
             <div class="freq-feriados-list" id="freqFeriadosList"></div>
           </div>
         </div>
+      </div>
+
+      <div class="page" id="efetivo-page">
+        <section class="efetivo-module" aria-labelledby="efetivo-title">
+          <div class="efetivo-module__header">
+            <div class="efetivo-module__brand-slot" aria-label="BuildCo">
+              <img class="efetivo-module__brand-logo" src="data:image/svg+xml;base64,77u/PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MjguMyIgaGVpZ2h0PSIxODAuMCIgdmlld0JveD0iMCAwIDUyOC4zIDE4MC4wIj48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyNC4wMCwxNDAuMDApIHNjYWxlKDAuMTIwMDAsLTAuMTIwMDApIiBmaWxsPSIjRkZGRkZGIj48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLjAsMCkiIGQ9Ik0zNzIgLTZRMzE0IC02IDI2NS4wIDE2LjVRMjE2IDM5IDE4MyA4M1YwSDkxVjc0MkgxODdWNDUxUTIyMCA0OTMgMjY4LjAgNTE0LjBRMzE2IDUzNSAzNzIgNTM1UTQ0OSA1MzUgNTA5LjUgNTAxLjVRNTcwIDQ2OCA2MDUuMCA0MDcuMFE2NDAgMzQ2IDY0MCAyNjVRNjQwIDE4NCA2MDUuMCAxMjMuMFE1NzAgNjIgNTA5LjUgMjguMFE0NDkgLTYgMzcyIC02Wk0zNjQgNzhRNDE1IDc4IDQ1NS41IDEwMS41UTQ5NiAxMjUgNTE5LjUgMTY3LjBRNTQzIDIwOSA1NDMgMjY1UTU0MyAzMjEgNTE5LjUgMzYzLjBRNDk2IDQwNSA0NTUuNSA0MjguMFE0MTUgNDUxIDM2NCA0NTFRMzE0IDQ1MSAyNzMuNSA0MjguMFEyMzMgNDA1IDIwOS41IDM2My4wUTE4NiAzMjEgMTg2IDI2NVExODYgMjA5IDIwOS41IDE2Ny4wUTIzMyAxMjUgMjczLjUgMTAxLjVRMzE0IDc4IDM2NCA3OFoiLz48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSg2NzcuOCwwKSIgZD0iTTMxNCAtNlEyMTIgLTYgMTQ5LjAgNTEuMFE4NiAxMDggODYgMjI1VjUzMEgxODJWMjM2UTE4MiAxNTggMjE5LjUgMTE5LjBRMjU3IDgwIDMyNSA4MFE0MDAgODAgNDQ0LjUgMTI1LjVRNDg5IDE3MSA0ODkgMjU2VjUzMEg1ODVWMEg0OTRWNzlRNDY0IDM4IDQxNy4wIDE2LjBRMzcwIC02IDMxNCAtNloiLz48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMzUwLjcsMCkiIGQ9Ik05MSAwVjUzMEgxODdWMFpNMTM5IDYzMlExMTEgNjMyIDkyLjUgNjUwLjBRNzQgNjY4IDc0IDY5NFE3NCA3MjAgOTIuNSA3MzguNVExMTEgNzU3IDEzOSA3NTdRMTY3IDc1NyAxODUuNSA3MzkuNVEyMDQgNzIyIDIwNCA2OTZRMjA0IDY2OSAxODUuNSA2NTAuNVExNjcgNjMyIDEzOSA2MzJaIi8+PHBhdGggdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTYyNS41LDApIiBkPSJNOTEgMFY3NDJIMTg3VjBaIi8+PHBhdGggdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTkwMC4zLDApIiBkPSJNMzEwIC02UTIzMyAtNiAxNzIuNSAyOC4wUTExMiA2MiA3Ny4wIDEyMy4wUTQyIDE4NCA0MiAyNjVRNDIgMzQ2IDc3LjAgNDA3LjBRMTEyIDQ2OCAxNzIuNSA1MDEuNVEyMzMgNTM1IDMxMCA1MzVRMzY2IDUzNSA0MTQuMCA1MTQuMFE0NjIgNDkzIDQ5NSA0NTFWNzQySDU5MVYwSDQ5OVY4M1E0NjYgMzkgNDE3LjAgMTYuNVEzNjggLTYgMzEwIC02Wk0zMTggNzhRMzY4IDc4IDQwOC41IDEwMS41UTQ0OSAxMjUgNDcyLjUgMTY3LjBRNDk2IDIwOSA0OTYgMjY1UTQ5NiAzMjEgNDcyLjUgMzYzLjBRNDQ5IDQwNSA0MDguNSA0MjguMFEzNjggNDUxIDMxOCA0NTFRMjY3IDQ1MSAyMjYuNSA0MjguMFExODYgNDA1IDE2Mi41IDM2My4wUTEzOSAzMjEgMTM5IDI2NVExMzkgMjA5IDE2Mi41IDE2Ny4wUTE4NiAxMjUgMjI2LjUgMTAxLjVRMjY3IDc4IDMxOCA3OFoiLz48L2c+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMzMzLjM4LDE0MC4wMCkgc2NhbGUoMC4xMjAwMCwtMC4xMjAwMCkiIGZpbGw9IiNFODcyMkIiPjxwYXRoIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAuMCwwKSIgZD0iTTMyMiAtNlEyNDAgLTYgMTc3LjAgMjkuMFExMTQgNjQgNzguMCAxMjUuMFE0MiAxODYgNDIgMjY1UTQyIDM0NCA3OC4wIDQwNS4wUTExNCA0NjYgMTc3LjAgNTAwLjVRMjQwIDUzNSAzMjIgNTM1UTM5MyA1MzUgNDUwLjAgNTA2LjVRNTA3IDQ3OCA1MzggNDIyTDQ2NSAzNzVRNDM5IDQxNCA0MDEuNSA0MzIuNVEzNjQgNDUxIDMyMSA0NTFRMjY5IDQ1MSAyMjguMCA0MjguMFExODcgNDA1IDE2My4wIDM2My41UTEzOSAzMjIgMTM5IDI2NVExMzkgMjA4IDE2My4wIDE2Ni4wUTE4NyAxMjQgMjI4LjAgMTAxLjBRMjY5IDc4IDMyMSA3OFEzNjQgNzggNDAxLjUgOTYuNVE0MzkgMTE1IDQ2NSAxNTRMNTM4IDEwOFE1MDcgNTMgNDUwLjAgMjMuNVEzOTMgLTYgMzIyIC02WiIvPjxwYXRoIHRyYW5zZm9ybT0idHJhbnNsYXRlKDU2Ni44LDApIiBkPSJNMzE4IC02UTIzOCAtNiAxNzYuMCAyOS4wUTExNCA2NCA3OC4wIDEyNS4wUTQyIDE4NiA0MiAyNjVRNDIgMzQ0IDc4LjAgNDA1LjBRMTE0IDQ2NiAxNzYuMCA1MDAuNVEyMzggNTM1IDMxOCA1MzVRMzk3IDUzNSA0NTkuNSA1MDAuNVE1MjIgNDY2IDU1Ny41IDQwNS4wUTU5MyAzNDQgNTkzIDI2NVE1OTMgMTg2IDU1Ny41IDEyNS4wUTUyMiA2NCA0NTkuNSAyOS4wUTM5NyAtNiAzMTggLTZaTTMxOCA3OFEzNjkgNzggNDA5LjUgMTAxLjVRNDUwIDEyNSA0NzMuMCAxNjcuMFE0OTYgMjA5IDQ5NiAyNjVRNDk2IDMyMSA0NzMuMCAzNjMuMFE0NTAgNDA1IDQwOS41IDQyOC4wUTM2OSA0NTEgMzE4IDQ1MVEyNjcgNDUxIDIyNi41IDQyOC4wUTE4NiA0MDUgMTYyLjUgMzYzLjBRMTM5IDMyMSAxMzkgMjY1UTEzOSAyMDkgMTYyLjUgMTY3LjBRMTg2IDEyNSAyMjYuNSAxMDEuNVEyNjcgNzggMzE4IDc4WiIvPjxwYXRoIHRyYW5zZm9ybT0idHJhbnNsYXRlKDExOTcuNywwKSIgZD0iTTExNCAtNlE4NiAtNiA2Ni4wIDEzLjVRNDYgMzMgNDYgNjNRNDYgOTMgNjYuMCAxMTIuMFE4NiAxMzEgMTE0IDEzMVExNDEgMTMxIDE2MC41IDExMi4wUTE4MCA5MyAxODAgNjNRMTgwIDMzIDE2MC41IDEzLjVRMTQxIC02IDExNCAtNloiLz48L2c+PC9zdmc+DQo=" alt="BuildCo">
+            </div>
+            <h1 class="efetivo-module__title" id="efetivo-title">RELAÇÃO DO EFETIVO DAS EMPRESAS TERCEIRIZADAS</h1>
+            <div class="efetivo-module__project-slot">
+              <span>Obra:</span>
+              <strong id="efetivo-obra-label">Obra</strong>
+            </div>
+          </div>
+
+          <div class="efetivo-module__toolbar">
+            <div class="efetivo-module__period">
+              <label class="efetivo-module__label" for="efetivo-month-select">Mês</label>
+              <select class="efetivo-module__select" id="efetivo-month-select"></select>
+              <span class="efetivo-module__status" id="efetivo-status">Aguardando carregamento.</span>
+            </div>
+            <div class="efetivo-module__actions">
+              <input id="efetivo-file-input" type="file" accept=".csv,.xlsx,.xls" hidden>
+              <button class="efetivo-module__button efetivo-module__button--primary" id="efetivo-import-button" type="button">
+                <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 15v4h14v-4"/></svg>
+                Importar
+              </button>
+              <button class="efetivo-module__button" id="efetivo-save-button" type="button">
+                <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+                Salvar
+              </button>
+              <button class="efetivo-module__button" id="efetivo-refresh-button" type="button">
+                <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15 6.7"/><path d="M3 12A9 9 0 0 1 18 5.3"/><path d="M18 2v4h-4"/><path d="M6 22v-4h4"/></svg>
+                Atualizar
+              </button>
+              <button class="efetivo-module__button" id="efetivo-print-button" type="button">
+                <svg viewBox="0 0 24 24"><path d="M7 8V3h10v5"/><path d="M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7Z"/></svg>
+                Imprimir
+              </button>
+            </div>
+          </div>
+
+          <div class="efetivo-module__kpis">
+            <article class="efetivo-module__kpi">
+              <span>Efetivo total</span>
+              <strong id="efetivo-kpi-total">0</strong>
+            </article>
+            <article class="efetivo-module__kpi">
+              <span>Empresas ativas</span>
+              <strong id="efetivo-kpi-companies">0</strong>
+            </article>
+            <article class="efetivo-module__kpi">
+              <span>Média diária</span>
+              <strong id="efetivo-kpi-daily-average">0,0</strong>
+            </article>
+            <article class="efetivo-module__kpi">
+              <span>Média mensal</span>
+              <strong id="efetivo-kpi-month-average">0,0</strong>
+            </article>
+          </div>
+
+          <section class="efetivo-module__chart-section" aria-labelledby="efetivo-chart-title">
+            <div class="efetivo-module__section-title">
+              <h3 id="efetivo-chart-title">Evolução mensal</h3>
+              <span>Total diário da obra</span>
+            </div>
+            <div class="efetivo-module__chart-wrap">
+              <canvas id="efetivo-chart"></canvas>
+              <div id="efetivo-chart-fallback" hidden></div>
+            </div>
+          </section>
+
+          <section class="efetivo-module__table-section" aria-labelledby="efetivo-table-title">
+            <div class="efetivo-module__section-title">
+              <h3 id="efetivo-table-title">Controle diário por empresa</h3>
+              <span>Edição liberada para admin/editor</span>
+            </div>
+            <div class="efetivo-module__empty" id="efetivo-empty" hidden></div>
+            <div class="efetivo-module__table-wrap">
+              <table class="efetivo-module__table" id="efetivo-table"></table>
+            </div>
+          </section>
+
+          <footer class="efetivo-module__dashboard-footer">
+            <div>Fonte: <strong id="efetivo-source">Manual</strong></div>
+            <div>Atualizado: <strong id="efetivo-updated-at">--</strong></div>
+            <div class="efetivo-module__footer-brand"><span>build</span><strong>co</strong></div>
+          </footer>
+        </section>
       </div>
 
       <div class="page" id="page-admin">
@@ -4261,6 +4355,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 <script src="./js/modules/funcionarios.js"></script>
 <script src="./js/modules/empresas.js"></script>
 <script src="./js/modules/frequencia.js"></script>
+<script src="./js/modules/efetivo.js"></script>
 <script src="./js/modules/atas.js"></script>
 <script src="./js/modules/admin.js"></script>
 <script src="./js/main.js"></script>

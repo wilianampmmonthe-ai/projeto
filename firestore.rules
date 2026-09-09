@@ -50,6 +50,64 @@ service cloud.firestore {
         && request.resource.data.status == "active";
     }
 
+    function userData() {
+      return userDoc().data;
+    }
+
+    function hasAccessMap() {
+      return userData().keys().hasAny(["acessos"]) && userData().acessos is map;
+    }
+
+    function hasLegacyObrasMap() {
+      return userData().keys().hasAny(["obras"]) && userData().obras is map;
+    }
+
+    function hasScopedAccessConfig() {
+      return hasAccessMap() || hasLegacyObrasMap();
+    }
+
+    function hasAccessEntry(obraId) {
+      return hasAccessMap() && userData().acessos[obraId] is map;
+    }
+
+    function hasDisabledAccessEntry(obraId) {
+      return hasAccessEntry(obraId) && userData().acessos[obraId].enabled == false;
+    }
+
+    function hasEnabledAccessEntry(obraId) {
+      return hasAccessEntry(obraId) && userData().acessos[obraId].enabled != false;
+    }
+
+    function hasLegacyObraAccess(obraId) {
+      return hasLegacyObrasMap() && userData().obras[obraId] == true;
+    }
+
+    function canAccessObra(obraId) {
+      return isSignedIn()
+        && isActiveUser()
+        && !hasDisabledAccessEntry(obraId)
+        && (
+          hasEnabledAccessEntry(obraId)
+          || hasLegacyObraAccess(obraId)
+          || !hasScopedAccessConfig()
+        );
+    }
+
+    function getObraRole(obraId) {
+      return hasEnabledAccessEntry(obraId) && userData().acessos[obraId].keys().hasAny(["role"])
+        ? userData().acessos[obraId].role
+        : getUserRole();
+    }
+
+    function canWriteObraData(obraId) {
+      return canAccessObra(obraId)
+        && (getObraRole(obraId) == "admin" || getObraRole(obraId) == "editor");
+    }
+
+    function canManageObra(obraId) {
+      return canAccessObra(obraId) && getObraRole(obraId) == "admin";
+    }
+
     match /usuarios/{uid} {
       allow read: if isSignedIn();
       allow create: if canCreateOwnUserDoc(uid) || isAdmin();
@@ -74,6 +132,41 @@ service cloud.firestore {
     match /frequencia/{docId} {
       allow read: if isSignedIn() && isActiveUser();
       allow write: if isSignedIn() && isActiveUser() && (isAdmin() || isEditor());
+    }
+
+    match /obras/{obraId} {
+      allow read: if canAccessObra(obraId);
+      allow create, update, delete: if canManageObra(obraId);
+
+      match /funcionarios/{docId} {
+        allow read: if canAccessObra(obraId);
+        allow write: if canWriteObraData(obraId);
+      }
+
+      match /empresas/{docId} {
+        allow read: if canAccessObra(obraId);
+        allow write: if canWriteObraData(obraId);
+      }
+
+      match /frequencia/{docId} {
+        allow read: if canAccessObra(obraId);
+        allow write: if canWriteObraData(obraId);
+      }
+
+      match /efetivo/{docId} {
+        allow read: if canAccessObra(obraId);
+        allow write: if canWriteObraData(obraId);
+      }
+
+      match /efetivoConfig/{docId} {
+        allow read: if canAccessObra(obraId);
+        allow write: if canWriteObraData(obraId);
+      }
+
+      match /efetivoImportacoes/{docId} {
+        allow read: if canAccessObra(obraId);
+        allow write: if canWriteObraData(obraId);
+      }
     }
   }
 }
