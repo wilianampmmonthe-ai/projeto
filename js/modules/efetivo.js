@@ -21,6 +21,9 @@
     unsubscribe: null,
     saveTimer: null,
     isRemoteApplying: false,
+    hasRemoteSnapshot: false,
+    autoSyncPromise: null,
+    autoSyncPending: false,
   };
 
   function currentYear() {
@@ -68,6 +71,38 @@
     });
   }
 
+  function getMonthBounds(periodoKey) {
+    const { year, monthIndex } = periodoToParts(periodoKey);
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+    return {
+      first: `${year}-${pad2(monthIndex + 1)}-01`,
+      last: `${year}-${pad2(monthIndex + 1)}-${pad2(lastDay)}`,
+    };
+  }
+
+  function companyDateToIso(value) {
+    if (typeof value === "string") {
+      const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
+        const parsed = new Date(Date.UTC(year, month - 1, day));
+        if (
+          parsed.getUTCFullYear() === year
+          && parsed.getUTCMonth() === month - 1
+          && parsed.getUTCDate() === day
+        ) {
+          return `${match[1]}-${match[2]}-${match[3]}`;
+        }
+        return "";
+      }
+    }
+    const date = value?.toDate instanceof Function ? value.toDate() : value instanceof Date ? value : null;
+    if (!date || Number.isNaN(date.getTime())) return "";
+    return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+  }
+
   function cleanText(value) {
     return value == null ? "" : String(value).replace(/\s+/g, " ").trim();
   }
@@ -82,6 +117,10 @@
       .replace(/[^\w\s/-]/g, "")
       .replace(/\s+/g, " ")
       .trim();
+  }
+
+  function normalizeCompanyIdentityName(value) {
+    return removeAccents(value).toLowerCase().replace(/\s+/g, " ").trim();
   }
 
   function toNumber(value) {
@@ -177,8 +216,8 @@
 
   function bindEvents() {
     const els = state.elements;
-    els["efetivo-month-select"]?.addEventListener("change", () => {
-      selectPeriod(els["efetivo-month-select"].value);
+    els["efetivo-month-select"]?.addEventListener("change", async () => {
+      await selectPeriod(els["efetivo-month-select"].value);
     });
     els["efetivo-import-button"]?.addEventListener("click", () => {
       if (!canEdit()) {
@@ -224,23 +263,7 @@
   function createEmptyDataset(periodoKey) {
     const { year, monthIndex } = periodoToParts(periodoKey);
     const days = createMonthDays(year, monthIndex);
-    const empresas = Array.isArray(window.DB?.empresas) ? window.DB.empresas : [];
-    const categoriesByName = new Map();
-
-    empresas.forEach((empresa) => {
-      const name = cleanText(empresa?.nome).toUpperCase();
-      if (!name) return;
-      const categoryName = cleanText(empresa?.categoriaEfetivo || empresa?.categoria || guessCategory(name)).toUpperCase();
-      if (!categoriesByName.has(categoryName)) {
-        categoriesByName.set(categoryName, { name: categoryName, companies: [] });
-      }
-      categoriesByName.get(categoryName).companies.push({
-        name,
-        values: new Array(days.length).fill(0),
-      });
-    });
-
-    return {
+    const empty = {
       obraId: getObraId(),
       project: getObraLabel(),
       source: "Manual",
@@ -249,9 +272,10 @@
       monthIndex,
       periodoKey,
       days,
-      categories: Array.from(categoriesByName.values()),
+      categories: [],
       fileName: "",
     };
+    return mergeEligibleCompanies(empty, periodoKey).dataset;
   }
 
   function normalizeDataset(raw, periodoKey) {
@@ -260,6 +284,7 @@
     const categories = Array.isArray(raw?.categories) ? raw.categories : [];
 
     return {
+      ...(raw || {}),
       obraId: raw?.obraId || getObraId(),
       project: raw?.project || getObraLabel(),
       source: raw?.source || "Manual",
@@ -270,14 +295,100 @@
       days,
       fileName: raw?.fileName || "",
       categories: categories.map((category) => ({
+        ...category,
         name: cleanText(category?.name || "OUTROS").toUpperCase(),
         companies: Array.isArray(category?.companies)
           ? category.companies.map((company) => ({
+              ...company,
+              empresaId: cleanText(company?.empresaId) || null,
               name: cleanText(company?.name || "SEM EMPRESA").toUpperCase(),
               values: normalizeValues(company?.values || [], days.length),
             }))
           : [],
       })).filter((category) => category.companies.length),
+    };
+  }
+
+  function isCompanyEligibleForPeriod(empresa, periodoKey) {
+    const bounds = getMonthBounds(periodoKey);
+    const start = companyDateToIso(empresa?.dataInicioObra);
+    const end = companyDateToIso(empresa?.dataFimObra);
+    return (!start || start <= bounds.last) && (!end || end >= bounds.first);
+  }
+
+  function getEligibleCompanies(periodoKey, dayCount) {
+    const empresas = Array.isArray(window.DB?.empresas) ? window.DB.empresas : [];
+    return empresas
+      .filter((empresa) => isCompanyEligibleForPeriod(empresa, periodoKey))
+      .map((empresa) => {
+        const name = cleanText(empresa?.nome).toUpperCase();
+        if (!name) return null;
+        return {
+          empresaId: cleanText(empresa?.id) || null,
+          name,
+          categoryName: cleanText(empresa?.categoriaEfetivo || empresa?.categoria || guessCategory(name)).toUpperCase(),
+          values: new Array(dayCount).fill(0),
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function isSameCompany(savedCompany, eligibleCompany) {
+    const savedId = cleanText(savedCompany?.empresaId);
+    const eligibleId = cleanText(eligibleCompany?.empresaId);
+    if (savedId && eligibleId) return savedId === eligibleId;
+    const savedName = normalizeCompanyIdentityName(savedCompany?.name);
+    const eligibleName = normalizeCompanyIdentityName(eligibleCompany?.name);
+    return Boolean(savedName && eligibleName && savedName === eligibleName);
+  }
+
+  function mergeEligibleCompanies(dataset, periodoKey) {
+    const key = periodoToParts(periodoKey || dataset?.periodoKey).periodoKey;
+    const dayCount = Array.isArray(dataset?.days)
+      ? dataset.days.length
+      : createMonthDays(periodoToParts(key).year, periodoToParts(key).monthIndex).length;
+    const categories = (Array.isArray(dataset?.categories) ? dataset.categories : []).map((category) => ({
+      ...category,
+      companies: (Array.isArray(category?.companies) ? category.companies : []).map((company) => ({
+        ...company,
+        values: Array.isArray(company?.values) ? company.values.slice() : new Array(dayCount).fill(0),
+      })),
+    }));
+    let added = 0;
+    let identityLinked = 0;
+
+    getEligibleCompanies(key, dayCount).forEach((eligibleCompany) => {
+      const matches = categories.flatMap((category) => (
+        category.companies.filter((company) => isSameCompany(company, eligibleCompany))
+      ));
+      if (matches.length === 1) {
+        if (!cleanText(matches[0].empresaId) && cleanText(eligibleCompany.empresaId)) {
+          matches[0].empresaId = eligibleCompany.empresaId;
+          identityLinked += 1;
+        }
+        return;
+      }
+      if (matches.length > 1) return;
+
+      let category = categories.find((item) => (
+        normalizeCompanyIdentityName(item.name) === normalizeCompanyIdentityName(eligibleCompany.categoryName)
+      ));
+      if (!category) {
+        category = { name: eligibleCompany.categoryName || "OUTROS", companies: [] };
+        categories.push(category);
+      }
+      category.companies.push({
+        empresaId: eligibleCompany.empresaId,
+        name: eligibleCompany.name,
+        values: eligibleCompany.values,
+      });
+      added += 1;
+    });
+
+    return {
+      dataset: { ...dataset, categories },
+      added,
+      identityLinked,
     };
   }
 
@@ -585,15 +696,48 @@
     else delete status.dataset.busy;
   }
 
-  function selectPeriod(periodoKey) {
+  async function selectPeriod(periodoKey) {
     const key = periodoToParts(periodoKey).periodoKey;
+    if (key !== state.periodoKey && state.saveTimer) {
+      const select = state.elements["efetivo-month-select"];
+      window.clearTimeout(state.saveTimer);
+      state.saveTimer = null;
+      if (select) select.disabled = true;
+      try {
+        await persistDataset("Alteracoes salvas.");
+      } finally {
+        if (select) select.disabled = false;
+      }
+    }
     state.periodoKey = key;
+    state.hasRemoteSnapshot = false;
     ensurePeriodOption(key);
     const select = state.elements["efetivo-month-select"];
     if (select) select.value = key;
     state.dataset = createEmptyDataset(key);
     render();
     subscribeToCurrentPeriod();
+  }
+
+  function queueAutomaticSync(message) {
+    if (!canEdit()) return;
+    if (state.autoSyncPromise) {
+      state.autoSyncPending = true;
+      return;
+    }
+    const targetPeriod = state.periodoKey;
+    state.autoSyncPromise = Promise.resolve()
+      .then(() => {
+        if (state.periodoKey !== targetPeriod) return;
+        return persistDataset(message || "Empresas elegiveis sincronizadas.");
+      })
+      .finally(() => {
+        state.autoSyncPromise = null;
+        if (state.autoSyncPending) {
+          state.autoSyncPending = false;
+          queueAutomaticSync(message);
+        }
+      });
   }
 
   function subscribeToCurrentPeriod() {
@@ -613,13 +757,28 @@
     }
 
     setStatus(STATUS_LOADING, true);
-    state.unsubscribe = window.listenEfetivo(state.periodoKey, (payload) => {
+    state.hasRemoteSnapshot = false;
+    const subscribedPeriod = state.periodoKey;
+    state.unsubscribe = window.listenEfetivo(subscribedPeriod, (payload) => {
+      if (state.periodoKey !== subscribedPeriod) return;
       state.isRemoteApplying = true;
-      const incoming = payload?.data ? normalizeDataset(payload.data, state.periodoKey) : createEmptyDataset(state.periodoKey);
-      state.dataset = incoming;
+      const hasSavedDataset = Boolean(payload?.data);
+      const incoming = hasSavedDataset
+        ? normalizeDataset(payload.data, state.periodoKey)
+        : createEmptyDataset(state.periodoKey);
+      const merged = hasSavedDataset
+        ? mergeEligibleCompanies(incoming, state.periodoKey)
+        : { dataset: incoming, added: 0 };
+      state.dataset = merged.dataset;
+      state.hasRemoteSnapshot = true;
       setStatus(payload?.data ? "Consolidado carregado do Firebase." : STATUS_EMPTY, false);
       render();
       state.isRemoteApplying = false;
+      if (canEdit() && (!hasSavedDataset || merged.added > 0 || merged.identityLinked > 0)) {
+        queueAutomaticSync(hasSavedDataset
+          ? "Cadastro de empresas sincronizado."
+          : "Consolidado mensal criado com empresas elegiveis.");
+      }
     });
   }
 
@@ -674,7 +833,10 @@
   function scheduleSave(delay) {
     if (state.isRemoteApplying || !canEdit()) return;
     window.clearTimeout(state.saveTimer);
-    state.saveTimer = window.setTimeout(() => persistDataset("Alteracoes salvas."), delay ?? 900);
+    state.saveTimer = window.setTimeout(() => {
+      state.saveTimer = null;
+      persistDataset("Alteracoes salvas.");
+    }, delay ?? 900);
   }
 
   async function persistDataset(successMessage) {
@@ -688,8 +850,9 @@
       return;
     }
 
+    const merged = mergeEligibleCompanies(state.dataset, state.periodoKey);
     const dataset = normalizeDataset({
-      ...state.dataset,
+      ...merged.dataset,
       obraId: getObraId(),
       project: getObraLabel(),
       updatedAt: new Date().toLocaleString("pt-BR"),
@@ -1227,7 +1390,16 @@
 
   window.efetivoRefresh = function efetivoRefresh() {
     if (!state.root) return;
+    const current = normalizeDataset(
+      state.dataset || createEmptyDataset(state.periodoKey || getCurrentPeriodoKey()),
+      state.periodoKey || getCurrentPeriodoKey()
+    );
+    const merged = mergeEligibleCompanies(current, state.periodoKey || current.periodoKey);
+    state.dataset = merged.dataset;
     render();
+    if ((merged.added > 0 || merged.identityLinked > 0) && state.hasRemoteSnapshot && canEdit()) {
+      queueAutomaticSync("Cadastro de empresas sincronizado.");
+    }
   };
 
   window.efetivoDestroyPage = function efetivoDestroyPage() {
@@ -1236,5 +1408,17 @@
       state.unsubscribe();
       state.unsubscribe = null;
     }
+    state.hasRemoteSnapshot = false;
   };
 })();
+// Compatibility notes for automatic company synchronization:
+// missing lifecycle dates are treated as open bounds.
+/*
+Historical rows and their values are never removed by the automatic merge.
+Rows without empresaId use normalized company names as a fallback identity.
+Invalid legacy dates do not silently exclude a registered company.
+*/
+// End of synchronization compatibility notes.
+// The module closure above intentionally remains the executable endpoint.
+
+// End of file.

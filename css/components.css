@@ -393,6 +393,11 @@ tr.row-yellow td { background: rgba(234,179,8,0.04); }
   color: #f87171;
   border-color: rgba(239,68,68,0.24);
 }
+.status-badge--nao-se-aplica {
+  background: rgba(148,163,184,0.14);
+  color: #cbd5e1;
+  border-color: rgba(148,163,184,0.24);
+}
 .status-badge--tipo-default {
   background: rgba(148,163,184,0.14);
   color: #cbd5e1;
@@ -1031,6 +1036,12 @@ body:not(.light) tr.row-yellow td {
   background: var(--amber-lt);
   color: var(--yellow);
   border: 1px solid rgba(217, 119, 6, 0.14);
+}
+
+.badge-status.nao-se-aplica {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text2);
+  border: 1px solid rgba(148, 163, 184, 0.22);
 }
 
 .badge-status.irregular,

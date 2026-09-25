@@ -152,7 +152,7 @@
           <div class="stat-card green clickable" onclick="showDashboardStats('conforme')" title="Clique para ver funcionários liberados">
             <div class="s-label">Liberados</div>
             <div class="s-value" id="stat-liberados">0</div>
-            <div class="s-sub">Documentação conforme</div>
+            <div class="s-sub">Documentação concluída</div>
             <div class="s-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg></div>
           </div>
           <div class="stat-card yellow clickable" onclick="showDashboardStats('pendente')" title="Clique para ver funcionários pendentes">
@@ -275,7 +275,7 @@
             <button class="btn btn-primary btn-sm has-icon" id="btnAtaTercPDF" onclick="exportAtaPDF('terceirizado')"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/><path d="M9 9h1"/></svg>PDF</button>
           </div>
         </div>
-        <div class="info-box">Apenas funcionários com documentação <strong>Conforme</strong> são incluídos na ata.</div>
+        <div class="info-box">Apenas funcionários com documentação concluída (<strong>Conforme</strong> ou <strong>Não se aplica</strong>) são incluídos na ata.</div>
         <div id="ataTerc"></div>
       </div>
 
@@ -289,7 +289,7 @@
             <button class="btn btn-primary btn-sm has-icon" id="btnAtaAtacPDF" onclick="exportAtaPDF('Novo Atacarejo')"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/><path d="M9 9h1"/></svg>PDF</button>
           </div>
         </div>
-        <div class="info-box">Apenas funcionários com documentação <strong>Conforme</strong> são incluídos na ata.</div>
+        <div class="info-box">Apenas funcionários com documentação concluída (<strong>Conforme</strong> ou <strong>Não se aplica</strong>) são incluídos na ata.</div>
         <div id="ataAtac"></div>
       </div>
 
@@ -526,8 +526,7 @@
               <option value="Novo Atacarejo" data-dynamic-label="obra">Obra</option>
             </select>
           </div>
-          <div class="field"><label>Empresa *</label><input type="text" id="f-empresa" placeholder="Nome da empresa" list="empresasSuggestions"></div>
-          <datalist id="empresasSuggestions"></datalist>
+          <div class="field"><label>Empresa *</label><select id="f-empresa" required><option value="">Selecione uma empresa...</option></select></div>
           <div class="field"><label>Função *</label><input type="text" id="f-funcao" placeholder="Cargo / função"></div>
           <div class="field"><label>Data de Admissão</label><input type="date" id="f-admissao"></div>
           <div class="field"><label>Telefone</label><input type="text" id="f-tel" placeholder="(00) 00000-0000"></div>
@@ -575,28 +574,44 @@
 <div class="modal-overlay" id="modalEmpresa">
   <div class="modal" style="max-width:500px;">
     <div class="modal-header">
-      <h3>Cadastrar Empresa</h3>
+      <h3 id="modalEmpresaTitle">Cadastrar Empresa</h3>
       <button class="modal-close" onclick="closeModal('modalEmpresa')">×</button>
     </div>
     <div class="modal-body">
       <div class="field"><label>Nome da Empresa *</label><input type="text" id="e-nome" placeholder="Razão social"></div>
       <div class="field"><label>CNPJ *</label><input type="text" id="e-cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" maxlength="18" oninput="formatCNPJ(this)"></div>
       <div class="field"><label>Responsável</label><input type="text" id="e-resp" placeholder="Nome do responsável"></div>
+      <div class="grid-2">
+        <div class="field"><label>Data de início da obra</label><input type="date" id="e-data-inicio-obra"></div>
+        <div class="field">
+          <label>Categoria do efetivo</label>
+          <input type="text" id="e-categoria-efetivo" list="categoriasEfetivoSuggestions" placeholder="Ex.: Civil">
+          <datalist id="categoriasEfetivoSuggestions">
+            <option value="INDIRETOS"></option>
+            <option value="CIVIL"></option>
+            <option value="SERRALHARIA / OUTROS"></option>
+            <option value="TERRAPLANAGEM"></option>
+            <option value="ESTRUTURA / METALICA"></option>
+            <option value="INSTALACOES"></option>
+            <option value="OUTROS"></option>
+          </datalist>
+        </div>
+      </div>
       <div class="doc-section">
         <h4>Documentos da Empresa</h4>
         <div class="doc-item">
           <span class="doc-name">PGR</span>
-          <select class="doc-status-sel" id="e-pgr"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option></select>
+          <select class="doc-status-sel" id="e-pgr"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option><option value="Não se aplica">Não se aplica</option></select>
           <label class="file-upload-label"><input type="file" accept=".pdf" onchange="handleEmpresaDoc(this,'pgr')">Anexar</label>
         </div>
         <div class="doc-item">
           <span class="doc-name">PCMSO</span>
-          <select class="doc-status-sel" id="e-pcmso"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option></select>
+          <select class="doc-status-sel" id="e-pcmso"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option><option value="Não se aplica">Não se aplica</option></select>
           <label class="file-upload-label"><input type="file" accept=".pdf" onchange="handleEmpresaDoc(this,'pcmso')">Anexar</label>
         </div>
         <div class="doc-item">
           <span class="doc-name">ART dos Programas</span>
-          <select class="doc-status-sel" id="e-art"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option></select>
+          <select class="doc-status-sel" id="e-art"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option><option value="Não se aplica">Não se aplica</option></select>
           <label class="file-upload-label"><input type="file" accept=".pdf" onchange="handleEmpresaDoc(this,'art')">Anexar</label>
         </div>
       </div>
@@ -604,6 +619,27 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalEmpresa')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveEmpresa()">Salvar Empresa</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INATIVAR EMPRESA -->
+<div class="modal-overlay" id="modalInativarEmpresa" aria-hidden="true">
+  <div class="modal" style="max-width:460px;" role="dialog" aria-modal="true" aria-labelledby="modalInativarEmpresaTitle">
+    <div class="modal-header">
+      <h3 id="modalInativarEmpresaTitle">Inativar empresa</h3>
+      <button class="modal-close" type="button" onclick="closeInativarEmpresaModal()" aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p id="inativarEmpresaMessage" style="color:var(--text2);margin-bottom:16px;"></p>
+      <div class="field">
+        <label>Data de encerramento *</label>
+        <input type="date" id="e-data-fim-obra" required>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" type="button" onclick="closeInativarEmpresaModal()">Cancelar</button>
+      <button class="btn btn-danger" type="button" onclick="inativarEmpresa()">Inativar empresa</button>
     </div>
   </div>
 </div>
@@ -965,6 +1001,7 @@ if (!Array.isArray(DB.funcionarios)) DB.funcionarios = [];
 if (!Array.isArray(DB.empresas)) DB.empresas = [];
 if (!Object.prototype.hasOwnProperty.call(DB, 'obra')) DB.obra = null;
 if (!Object.prototype.hasOwnProperty.call(DB, 'currentEditId')) DB.currentEditId = null;
+if (!Object.prototype.hasOwnProperty.call(DB, 'currentEmpresaEditId')) DB.currentEmpresaEditId = null;
 if (!DB.tempDocs || typeof DB.tempDocs !== 'object' || Array.isArray(DB.tempDocs)) DB.tempDocs = {};
 if (!DB.tempEmpresaDocs || typeof DB.tempEmpresaDocs !== 'object' || Array.isArray(DB.tempEmpresaDocs)) DB.tempEmpresaDocs = {};
 
@@ -1110,7 +1147,7 @@ function renderEmpresas() {
 
   el.innerHTML = empresas.map(e => {
     const docs = e.docs || {};
-    const funkCount = funcionarios.filter(f => f.empresa === e.nome).length;
+    const funkCount = funcionarios.filter(f => isFuncionarioLinkedToEmpresa(f, e)).length;
 
     return `<div class="empresa-card">
       <div class="empresa-header">
@@ -1127,7 +1164,7 @@ function renderEmpresas() {
         ${['pgr', 'pcmso', 'art'].map(k => {
           const d = docs[k] || { status: 'Pendente' };
           const label = { pgr: 'PGR', pcmso: 'PCMSO', art: 'ART' }[k];
-          return `<span class="badge-status ${d.status === 'Conforme' ? 'conforme' : d.status === 'N?o Conforme' ? 'irregular' : 'pendente'}" style="font-size:11px;">${label}</span>`;
+          return `<span class="badge-status ${getDocumentStatusBadgeClass(d.status)}" style="font-size:11px;">${label}</span>`;
         }).join('')}
       </div>
     </div>`;
@@ -1209,10 +1246,10 @@ function computeStatus(func){
   if(missingDocs.length > 0) return 'pendente';
   
   // Pegar status apenas dos documentos obrigatórios
-  const requiredStatuses = requiredDocs.map(r => docs[makeKey(r)]?.status || 'Pendente');
+  const requiredStatuses = requiredDocs.map(r => normalizeEmpresaStatusValue(docs[makeKey(r)]?.status));
   
   if(requiredStatuses.length===0) return 'pendente';
-  if(requiredStatuses.every(s=>s==='Conforme')) return 'conforme';
+  if(requiredStatuses.every(isResolvedDocumentStatus)) return 'conforme';
   
   // Check expired pending
   const hasPending = requiredStatuses.includes('Pendente');
@@ -1228,8 +1265,12 @@ function docsProgress(func){
   const docs = func.docs||{};
   const req = getRequiredDocs(func.tipo);
   const total = req.length;
-  const done = req.filter(r=>docs[makeKey(r)]&&docs[makeKey(r)].status==='Conforme').length;
+  const done = req.filter(r=>isResolvedDocumentStatus(docs[makeKey(r)]?.status)).length;
   return {done, total, pct: total?Math.round(done/total*100):0};
+}
+function isResolvedDocumentStatus(status){
+  const normalized = normalizeEmpresaStatusValue(status);
+  return normalized==='Conforme' || normalized==='Não se aplica';
 }
 function getRequiredDocs(tipo){
   if(tipo==='Terceirizado') return [...DOCS_TERCEIRIZADO,...TRAINS_OBRIG_TERC];
@@ -1263,6 +1304,7 @@ function updateDocFields(){
   document.getElementById('docsFields').innerHTML = tipo ? buildDocFields(tipo) : '<p style="color:var(--text2);font-size:13px;">Selecione o tipo de funcion?rio primeiro.</p>';
   document.getElementById('trainFields').innerHTML = tipo ? buildTrainFields(tipo) : '<p style="color:var(--text2);font-size:13px;">Selecione o tipo de funcion?rio primeiro.</p>';
   initStatusDropdowns(document.getElementById('modalCadastro'));
+  updateEmpresasSuggestions();
 }
 // Função helper para padronizar a geração de chaves
 function makeKey(name){
@@ -1325,10 +1367,11 @@ function buildTrainFields(tipo, existingDocs={}){
   return html;
 }
 function trainItemHtml(name, info, ex, key){
-  const statusSel = ['Conforme','Pendente','Não Conforme'].map(s=>
-    `<option value="${s}" ${ex.status===s?'selected':''}>${s}</option>`
+  const normalizedStatus = normalizeEmpresaStatusValue(ex.status);
+  const statusSel = ['Conforme','Pendente','Não Conforme','Não se aplica'].map(s=>
+    `<option value="${s}" ${normalizedStatus===s?'selected':''}>${s}</option>`
   ).join('');
-  const deadlineInfo = ex.status==='Pendente' && ex.deadline
+  const deadlineInfo = normalizedStatus==='Pendente' && ex.deadline
     ? (isExpired(ex.deadline)
         ? `<span class="doc-expired">Vencido: ${formatDate(ex.deadline)}</span>`
         : `<span class="doc-deadline">Prazo: ${formatDate(ex.deadline)}</span>`)
@@ -1355,10 +1398,11 @@ function trainItemHtml(name, info, ex, key){
   </div>`;
 }
 function docItemHtml(name, ex, key){
-  const statusSel = ['Conforme','Pendente','Não Conforme'].map(s=>
-    `<option value="${s}" ${ex.status===s?'selected':''}>${s}</option>`
+  const normalizedStatus = normalizeEmpresaStatusValue(ex.status);
+  const statusSel = ['Conforme','Pendente','Não Conforme','Não se aplica'].map(s=>
+    `<option value="${s}" ${normalizedStatus===s?'selected':''}>${s}</option>`
   ).join('');
-  const deadlineInfo = ex.status==='Pendente' && ex.deadline
+  const deadlineInfo = normalizedStatus==='Pendente' && ex.deadline
     ? (isExpired(ex.deadline)
         ? `<span class="doc-expired">Vencido: ${formatDate(ex.deadline)}</span>`
         : `<span class="doc-deadline">Prazo: ${formatDate(ex.deadline)}</span>`)
@@ -1433,7 +1477,7 @@ function openPdfViewer(dataURL, name){
   document.getElementById('pdfViewerFrame').src = dataURL;
   openModal('modalPdf');
 }
-const STATUS_DROPDOWN_OPTIONS = ['Pendente', 'Conforme', 'N\u00e3o Conforme'];
+const STATUS_DROPDOWN_OPTIONS = ['Pendente', 'Conforme', 'N\u00e3o Conforme', 'N\u00e3o se aplica'];
 const PREMIUM_DROPDOWN_SELECTOR = '.doc-status-sel, #f-tipo';
 if (typeof window.ACTIVE_DROPDOWN === 'undefined') {
   window.ACTIVE_DROPDOWN = null;
@@ -1451,8 +1495,17 @@ function normalizeEmpresaStatusValue(value){
   const raw = String(value || '').trim();
   if (STATUS_DROPDOWN_OPTIONS.includes(raw)) return raw;
   if (raw === 'NÃ£o Conforme' || raw === 'NÃƒÂ£o Conforme' || raw === 'N?o Conforme' || raw === 'Nao Conforme') return 'N\u00e3o Conforme';
+  if (raw === 'NÃ£o se aplica' || raw === 'NÃƒÂ£o se aplica' || raw === 'N?o se aplica' || raw === 'Nao se aplica') return 'N\u00e3o se aplica';
   if (raw === 'Conforme') return 'Conforme';
   return 'Pendente';
+}
+
+function getDocumentStatusBadgeClass(value){
+  const normalized = normalizeEmpresaStatusValue(value);
+  if (normalized === 'Conforme') return 'conforme';
+  if (normalized === 'N\u00e3o Conforme') return 'irregular';
+  if (normalized === 'N\u00e3o se aplica') return 'nao-se-aplica';
+  return 'pendente';
 }
 
 function getPremiumDropdownOptions(select){
@@ -1488,6 +1541,7 @@ function getPremiumDropdownBadgeClass(select, value){
   const normalized = normalizeEmpresaStatusValue(value);
   if (normalized === 'Conforme') return 'status-badge--conforme';
   if (normalized === 'N\u00e3o Conforme') return 'status-badge--nao-conforme';
+  if (normalized === 'N\u00e3o se aplica') return 'status-badge--nao-se-aplica';
   return 'status-badge--pendente';
 }
 
@@ -1801,7 +1855,7 @@ function editFuncionario(id){
   document.getElementById('f-nome').value = func.nome;
   document.getElementById('f-cpf').value = func.cpf;
   document.getElementById('f-tipo').value = func.tipo;
-  document.getElementById('f-empresa').value = func.empresa;
+  selectFuncionarioEmpresa(func);
   document.getElementById('f-funcao').value = func.funcao;
   document.getElementById('f-admissao').value = func.admissao||'';
   document.getElementById('f-tel').value = func.tel||'';
@@ -1809,7 +1863,6 @@ function editFuncionario(id){
   document.getElementById('docsFields').innerHTML = buildDocFields(func.tipo, func.docs||{});
   document.getElementById('trainFields').innerHTML = buildTrainFields(func.tipo, func.docs||{});
   initStatusDropdowns(document.getElementById('modalCadastro'));
-  updateEmpresasSuggestions();
   showTab('tab-dados', document.querySelector('#modalCadastro .tab-btn'));
   openModal('modalCadastro');
 }
@@ -1820,36 +1873,76 @@ function editFuncionario(id){
 // ============================================================
 function openEmpresaModal(id=null){
   DB.tempEmpresaDocs = {};
+  DB.currentEmpresaEditId = id === null ? null : String(id);
   closeAllStatusDropdowns();
-  ['e-nome','e-cnpj','e-resp'].forEach(i=>document.getElementById(i).value='');
-  ['e-pgr','e-pcmso','e-art'].forEach(i=>syncStatusDropdownValue(i, 'Pendente'));
+  const empresa = id === null
+    ? null
+    : DB.empresas.find(item => String(item.id) === String(id));
+
+  if(id !== null && !empresa){
+    DB.currentEmpresaEditId = null;
+    toast('Empresa não encontrada','error');
+    return;
+  }
+
+  document.getElementById('modalEmpresaTitle').textContent = empresa ? 'Editar Empresa' : 'Cadastrar Empresa';
+  const nomeInput = document.getElementById('e-nome');
+  const possuiFuncionarios = Boolean(empresa && DB.funcionarios.some(func => isFuncionarioLinkedToEmpresa(func, empresa)));
+  nomeInput.value = empresa?.nome || '';
+  nomeInput.readOnly = possuiFuncionarios;
+  nomeInput.title = possuiFuncionarios
+    ? 'O nome não pode ser alterado enquanto houver funcionários vinculados.'
+    : '';
+  document.getElementById('e-cnpj').value = empresa?.cnpj || '';
+  document.getElementById('e-resp').value = empresa?.resp || '';
+  document.getElementById('e-data-inicio-obra').value = empresa?.dataInicioObra || '';
+  document.getElementById('e-categoria-efetivo').value = empresa?.categoriaEfetivo || '';
+  ['pgr','pcmso','art'].forEach(key => {
+    syncStatusDropdownValue(`e-${key}`, empresa?.docs?.[key]?.status || 'Pendente');
+  });
+  document.querySelectorAll('#modalEmpresa input[type="file"]').forEach(input => { input.value = ''; });
   initStatusDropdowns(document.getElementById('modalEmpresa'));
   openModal('modalEmpresa');
 }
 // Firebase CRUD now handles saveEmpresa in js/main.js
+function normalizeEmpresaLifecycleStatus(empresa){
+  return empresa?.status === 'inativa' ? 'inativa' : 'ativa';
+}
+function formatEmpresaLifecycleDate(value){
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : '';
+}
 function renderEmpresas(){
   const el = document.getElementById('empresasList');
   if(!DB.empresas.length){ el.innerHTML=`<div class="empty-state"><div class="icon">${SVG_EMPTY_STATE}</div><p>Nenhuma empresa cadastrada</p></div>`; return; }
   el.innerHTML = DB.empresas.map(e=>{
     const docs = e?.docs || {};
-    const funkCount = DB.funcionarios.filter(f=>f.empresa===e.nome).length;
-    const statusColor = s => s==='Conforme'?'var(--green)':s==='N?o Conforme'?'var(--red)':'var(--yellow)';
+    const funkCount = DB.funcionarios.filter(f=>isFuncionarioLinkedToEmpresa(f, e)).length;
+    const lifecycleStatus = normalizeEmpresaLifecycleStatus(e);
+    const inicioObra = formatEmpresaLifecycleDate(e.dataInicioObra);
+    const fimObra = formatEmpresaLifecycleDate(e.dataFimObra);
     return `<div class="empresa-card">
       <div class="empresa-header">
         <div>
           <h4>${e.nome}</h4>
           <span style="font-size:12px;color:var(--text2);">${e.cnpj||''} ${e.resp?'? '+e.resp:''}</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
           <span style="font-size:12px;color:var(--text2);">${funkCount} funcionário(s)</span>
+          ${renderEditActionButton(`openEmpresaModal(${JSON.stringify(e.id)})`)}
+          ${lifecycleStatus === 'ativa' ? `<button class="btn btn-danger btn-sm empresa-lifecycle-action" type="button" onclick='openInativarEmpresaModal(${JSON.stringify(e.id)})'>Inativar empresa</button>` : ''}
           ${renderDeleteActionButton(`removeEmpresa(${JSON.stringify(e.id)})`)}
         </div>
       </div>
       <div class="docs-mini">
+        <span class="badge-status ${lifecycleStatus === 'ativa' ? 'conforme' : 'irregular'}" style="font-size:11px;">${lifecycleStatus === 'ativa' ? 'Ativa' : 'Inativa'}</span>
+        ${e.categoriaEfetivo ? `<span class="badge-status" style="font-size:11px;">${e.categoriaEfetivo}</span>` : ''}
+        ${inicioObra ? `<span style="font-size:11px;color:var(--text2);align-self:center;">Início: ${inicioObra}</span>` : ''}
+        ${fimObra ? `<span style="font-size:11px;color:var(--text2);align-self:center;">Encerramento: ${fimObra}</span>` : ''}
         ${['pgr','pcmso','art'].map(k=>{
           const d = docs[k]||{status:'Pendente'};
           const label = {pgr:'PGR',pcmso:'PCMSO',art:'ART'}[k];
-          return `<span class="badge-status ${d.status==='Conforme'?'conforme':d.status==='N?o Conforme'?'irregular':'pendente'}" style="font-size:11px;">${label}</span>`;
+          return `<span class="badge-status ${getDocumentStatusBadgeClass(d.status)}" style="font-size:11px;">${label}</span>`;
         }).join('')}
       </div>
     </div>`;
@@ -2135,10 +2228,86 @@ function getObraFullEndereco(){
   if(!obra) return `Obra: ${getActiveObraNome()} — ${getActiveObraCidadeUF()}`;
   return `Obra: ${obra.logradouro}, ${obra.numero} — ${obra.bairro}, ${obra.municipio} — ${obra.uf}`;
 }
-function updateEmpresasSuggestions(){
-  const dl = document.getElementById('empresasSuggestions');
-  if(!dl) return;
-  dl.innerHTML = DB.empresas.map(e=>`<option value="${e.nome}">`).join('');
+function normalizeEmpresaName(value){
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+function findEmpresaById(empresaId){
+  const id = String(empresaId || '');
+  return id ? DB.empresas.find(empresa => String(empresa.id) === id) || null : null;
+}
+function resolveEmpresaByUniqueName(nome){
+  const normalizedName = normalizeEmpresaName(nome);
+  if(!normalizedName) return null;
+  const matches = DB.empresas.filter(empresa => normalizeEmpresaName(empresa.nome) === normalizedName);
+  return matches.length === 1 ? matches[0] : null;
+}
+function resolveFuncionarioEmpresa(funcionario){
+  return findEmpresaById(funcionario?.empresaId)
+    || resolveEmpresaByUniqueName(funcionario?.empresa);
+}
+function isFuncionarioLinkedToEmpresa(funcionario, empresa){
+  if(!funcionario || !empresa) return false;
+  if(funcionario.empresaId) return String(funcionario.empresaId) === String(empresa.id);
+  return String(resolveEmpresaByUniqueName(funcionario.empresa)?.id || '') === String(empresa.id);
+}
+function updateEmpresasSuggestions(fallbackName=''){
+  const select = document.getElementById('f-empresa');
+  if(!select) return;
+
+  const previousValue = select.value;
+  const previousOption = select.selectedOptions?.[0];
+  const previousCompatibilityName = previousOption?.dataset?.legacy === 'true'
+    ? String(previousOption.dataset.empresaNome || '').trim()
+    : '';
+  select.replaceChildren(new Option('Selecione uma empresa...', ''));
+  DB.empresas.forEach(empresa => {
+    if(!empresa?.id || !String(empresa.nome || '').trim()) return;
+    const option = new Option(String(empresa.nome).trim(), String(empresa.id));
+    option.dataset.empresaId = String(empresa.id);
+    option.dataset.empresaNome = String(empresa.nome).trim();
+    select.add(option);
+  });
+
+  let compatibilityName = String(fallbackName || previousCompatibilityName || '').trim();
+  if(!compatibilityName && document.getElementById('f-tipo')?.value === 'Novo Atacarejo'){
+    compatibilityName = typeof getActiveObraNome === 'function' ? getActiveObraNome() : '';
+  }
+
+  if(compatibilityName){
+    const resolved = resolveEmpresaByUniqueName(compatibilityName);
+    if(resolved){
+      select.value = String(resolved.id);
+      return;
+    }
+    const option = new Option(`${compatibilityName} (compatibilidade)`, '__legacy__');
+    option.dataset.empresaNome = compatibilityName;
+    option.dataset.legacy = 'true';
+    select.add(option);
+    select.value = option.value;
+    return;
+  }
+
+  if(findEmpresaById(previousValue)) select.value = previousValue;
+}
+function selectFuncionarioEmpresa(funcionario){
+  const resolved = resolveFuncionarioEmpresa(funcionario);
+  updateEmpresasSuggestions(resolved?.nome || funcionario?.empresa || '');
+  const select = document.getElementById('f-empresa');
+  if(select && resolved) select.value = String(resolved.id);
+}
+function getSelectedFuncionarioEmpresa(){
+  const select = document.getElementById('f-empresa');
+  const option = select?.selectedOptions?.[0];
+  if(!option || !option.value) return null;
+  const empresa = findEmpresaById(option.dataset.empresaId || option.value);
+  if(empresa) return { empresaId: String(empresa.id), empresa: String(empresa.nome || '').trim(), source: 'id' };
+  const legacyName = String(option.dataset.empresaNome || '').trim();
+  return legacyName ? { empresaId: null, empresa: legacyName, source: 'compatibilidade' } : null;
 }
 
 // ============================================================
@@ -2390,7 +2559,7 @@ function renderAta(tipo){
   const targetId = isTerc ? 'ataTerc' : 'ataAtac';
   const el = document.getElementById(targetId);
   if(!list.length){
-    el.innerHTML=`<div class="empty-state"><div class="icon">${SVG_EMPTY_STATE}</div><p>Nenhum funcionário com documentação conforme</p></div>`;
+    el.innerHTML=`<div class="empty-state"><div class="icon">${SVG_EMPTY_STATE}</div><p>Nenhum funcionário com documentação concluída</p></div>`;
     return;
   }
   const dataRefIso = ataGetDateISO(isTerc);
@@ -2433,7 +2602,7 @@ function exportAtaPDF(tipo){
     const match = isTerc ? f.tipo==='Terceirizado' : f.tipo==='Novo Atacarejo';
     return match && computeStatus(f)==='conforme';
   });
-  if(!list.length){ toast('Nenhum funcionário conforme para gerar ata','warning'); return; }
+  if(!list.length){ toast('Nenhum funcionário com documentação concluída para gerar ata','warning'); return; }
   // Ordenar por empresa para agrupar funcionários da mesma empresa
   list.sort((a, b) => a.empresa.localeCompare(b.empresa));
 
@@ -2490,7 +2659,7 @@ function exportAtaExcel(tipo){
     const match = isTerc ? f.tipo==='Terceirizado' : f.tipo==='Novo Atacarejo';
     return match && computeStatus(f)==='conforme';
   });
-  if(!list.length){ toast('Nenhum funcionário conforme','warning'); return; }
+  if(!list.length){ toast('Nenhum funcionário com documentação concluída','warning'); return; }
   // Ordenar por empresa para agrupar funcionários da mesma empresa
   list.sort((a, b) => a.empresa.localeCompare(b.empresa));
 
@@ -2643,7 +2812,14 @@ function viewFuncionarioDetails(id){
         <h4 style="margin:0 0 12px 0;font-size:14px;color:var(--text2);">Documentação: ${done}/${total}</h4>
         <div style="display:flex;flex-wrap:wrap;gap:8px;">
           ${Object.entries(func.docs || {}).map(([key, doc]) => {
-            const color = doc.status === 'Conforme' ? 'var(--green)' : doc.status === 'Pendente' ? 'var(--yellow)' : 'var(--red)';
+            const normalizedStatus = normalizeEmpresaStatusValue(doc.status);
+            const color = normalizedStatus === 'Conforme'
+              ? 'var(--green)'
+              : normalizedStatus === 'Pendente'
+                ? 'var(--yellow)'
+                : normalizedStatus === 'Não se aplica'
+                  ? 'var(--text2)'
+                  : 'var(--red)';
             return `<span style="padding:4px 10px;border-radius:6px;background:${color}22;border:1px solid ${color};color:${color};font-size:11px;">${doc.docName}: ${doc.status}</span>`;
           }).join('')}
         </div>

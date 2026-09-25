@@ -740,6 +740,8 @@ function ensureDB() {
   if (!Array.isArray(db.empresas)) db.empresas = [];
   if (!Object.prototype.hasOwnProperty.call(db, "obra")) db.obra = null;
   if (!Object.prototype.hasOwnProperty.call(db, "currentEditId")) db.currentEditId = null;
+  if (!Object.prototype.hasOwnProperty.call(db, "currentEmpresaEditId")) db.currentEmpresaEditId = null;
+  if (!Object.prototype.hasOwnProperty.call(db, "pendingInactiveEmpresaId")) db.pendingInactiveEmpresaId = null;
   if (!db.tempDocs || typeof db.tempDocs !== "object" || Array.isArray(db.tempDocs)) db.tempDocs = {};
   if (!db.tempEmpresaDocs || typeof db.tempEmpresaDocs !== "object" || Array.isArray(db.tempEmpresaDocs)) {
     db.tempEmpresaDocs = {};
@@ -908,6 +910,7 @@ function updatePermissionUI() {
   setElementVisible("#btnNovoTerceirizado", canFuncionarios);
   setElementVisible("#btnNovoAtacarejo", canFuncionarios);
   setElementVisible("#btnNovaEmpresa", canEmpresas);
+  setElementVisible(".empresa-lifecycle-action", canEmpresas);
   setElementVisible("#btnSalvarObraModal", canObra);
   setElementVisible(".edit-btn", canFuncionarios);
   setElementVisible(".delete-btn", canFuncionarios || canEmpresas);
@@ -1052,16 +1055,21 @@ function collectFuncionarioDocs(tipo) {
 
 function collectEmpresaDocs() {
   const db = ensureDB();
-  const docs = {};
+  const empresa = db.currentEmpresaEditId === null
+    ? null
+    : db.empresas.find((item) => String(item.id) === String(db.currentEmpresaEditId));
+  const docs = cloneData(empresa?.docs, {});
 
   ["pgr", "pcmso", "art"].forEach((key) => {
     const status = $(`e-${key}`)?.value || "Pendente";
     const fileData = db.tempEmpresaDocs[key] || null;
+    const previous = empresa?.docs?.[key] || {};
 
     docs[key] = {
+      ...previous,
       status,
-      fileName: fileData?.name || null,
-      dataURL: fileData?.dataURL || null,
+      fileName: fileData?.name || previous.fileName || null,
+      dataURL: fileData?.dataURL || previous.dataURL || null,
     };
   });
 
@@ -1382,7 +1390,11 @@ window.saveFuncionario = async function () {
       tipo = "Novo Atacarejo";
     }
 
-    const empresa = $("f-empresa")?.value?.trim() || "";
+    const empresaSelection = typeof window.getSelectedFuncionarioEmpresa === "function"
+      ? window.getSelectedFuncionarioEmpresa()
+      : null;
+    const empresa = empresaSelection?.empresa || "";
+    const empresaId = empresaSelection?.empresaId || null;
     const funcao = $("f-funcao")?.value?.trim() || "";
     const admissao = $("f-admissao")?.value || "";
     const tel = $("f-tel")?.value || "";
@@ -1396,11 +1408,11 @@ window.saveFuncionario = async function () {
     const funcionarioId = db.currentEditId || crypto.randomUUID();
     const docs = collectFuncionarioDocs(tipo);
     const row = { 
-      nome, cpf, tipo, empresa, funcao, admissao, tel, email,
+      nome, cpf, tipo, empresaId, empresa, funcao, admissao, tel, email,
       docs
     };
 
-    console.log("[ui] salvar funcionario", { id: funcionarioId, tipo });
+    console.log("[ui] salvar funcionario", { id: funcionarioId, tipo, empresaId, empresaSource: empresaSelection?.source || "none" });
     await salvarFuncionario({ ...row, id: funcionarioId });
 
     db.currentEditId = null;
@@ -1437,7 +1449,9 @@ window.editFuncionario = function(id) {
   document.getElementById('f-nome').value = func.nome || '';
   document.getElementById('f-cpf').value = func.cpf || '';
   document.getElementById('f-tipo').value = func.tipo || '';
-  document.getElementById('f-empresa').value = func.empresa || '';
+  if (typeof window.selectFuncionarioEmpresa === 'function') {
+    window.selectFuncionarioEmpresa(func);
+  }
   document.getElementById('f-funcao').value = func.funcao || '';
   document.getElementById('f-admissao').value = func.admissao || '';
   document.getElementById('f-tel').value = func.tel || '';
@@ -1450,10 +1464,6 @@ window.editFuncionario = function(id) {
 
   if (typeof window.initStatusDropdowns === "function") {
     window.initStatusDropdowns(document.getElementById("modalCadastro"));
-  }
-  
-  if (typeof window.updateEmpresasSuggestions === 'function') {
-    window.updateEmpresasSuggestions();
   }
   
   if (typeof window.showTab === 'function') {
@@ -1532,22 +1542,142 @@ window.saveEmpresa = async function () {
       return;
     }
 
-    const empresaId = crypto.randomUUID();
-    const row = { nome, cnpj, resp, docs: collectEmpresaDocs() };
+    const dataInicioObra = $("e-data-inicio-obra")?.value || null;
+    const categoriaEfetivo = $("e-categoria-efetivo")?.value?.trim() || "";
+    const empresaEditada = db.currentEmpresaEditId === null
+      ? null
+      : db.empresas.find((item) => String(item.id) === String(db.currentEmpresaEditId));
+    const normalizedName = typeof window.normalizeEmpresaName === "function"
+      ? window.normalizeEmpresaName(nome)
+      : nome.toLowerCase();
+    const originalNormalizedName = empresaEditada
+      ? (typeof window.normalizeEmpresaName === "function"
+          ? window.normalizeEmpresaName(empresaEditada.nome)
+          : String(empresaEditada.nome || "").trim().toLowerCase())
+      : "";
+    const duplicateEmpresa = db.empresas.find((item) => {
+      if (empresaEditada && String(item.id) === String(empresaEditada.id)) return false;
+      const itemName = typeof window.normalizeEmpresaName === "function"
+        ? window.normalizeEmpresaName(item.nome)
+        : String(item.nome || "").trim().toLowerCase();
+      return itemName === normalizedName;
+    });
+    const isNewOrRenamedEmpresa = !empresaEditada || normalizedName !== originalNormalizedName;
+    if (isNewOrRenamedEmpresa && duplicateEmpresa) {
+      safeToast(`Já existe uma empresa cadastrada como ${duplicateEmpresa.nome}.`, "error");
+      return;
+    }
+    const possuiFuncionariosVinculados = Boolean(
+      empresaEditada && db.funcionarios.some((funcionario) => (
+        typeof window.isFuncionarioLinkedToEmpresa === "function"
+          ? window.isFuncionarioLinkedToEmpresa(funcionario, empresaEditada)
+          : funcionario.empresa === empresaEditada.nome
+      ))
+    );
+    if (possuiFuncionariosVinculados && nome !== empresaEditada.nome) {
+      safeToast("O nome não pode ser alterado enquanto houver funcionários vinculados.", "error");
+      return;
+    }
+    const empresaId = empresaEditada?.id || crypto.randomUUID();
+    const status = empresaEditada?.status === "inativa" ? "inativa" : "ativa";
+    const dataFimObra = status === "inativa" ? (empresaEditada?.dataFimObra || null) : null;
+    const row = {
+      nome,
+      cnpj,
+      resp,
+      docs: collectEmpresaDocs(),
+      status,
+      dataInicioObra,
+      dataFimObra,
+      categoriaEfetivo,
+    };
 
-    console.log("[ui] salvar empresa", { id: empresaId, nome });
+    console.log("[ui] salvar empresa", { id: empresaId, nome, isEdit: Boolean(empresaEditada) });
     await salvarEmpresa({ ...row, id: empresaId });
 
+    db.currentEmpresaEditId = null;
     db.tempEmpresaDocs = {};
 
     if (typeof window.closeModal === "function") {
       window.closeModal("modalEmpresa");
     }
 
-    safeToast("Empresa salva com sucesso.", "success");
+    safeToast(empresaEditada ? "Empresa atualizada com sucesso." : "Empresa salva com sucesso.", "success");
   } catch (e) {
     console.error("ERRO AO SALVAR EMPRESA:", e);
     safeToast(e?.message || "Erro ao salvar empresa", "error");
+  }
+};
+
+window.openInativarEmpresaModal = function openInativarEmpresaModal(id) {
+  const db = ensureDB();
+  if (!requirePermission(window.canEditEmpresas, "Seu perfil não pode inativar empresas.")) return;
+
+  const empresa = db.empresas.find((item) => String(item.id) === String(id));
+  if (!empresa) {
+    safeToast("Empresa não encontrada.", "error");
+    return;
+  }
+  if (empresa.status === "inativa") {
+    safeToast("A empresa já está inativa.", "error");
+    return;
+  }
+
+  db.pendingInactiveEmpresaId = String(empresa.id);
+  const message = $("inativarEmpresaMessage");
+  const dateInput = $("e-data-fim-obra");
+  if (message) message.textContent = `Informe a data de encerramento de ${empresa.nome || "esta empresa"}.`;
+  if (dateInput) {
+    dateInput.value = "";
+    dateInput.min = empresa.dataInicioObra || "";
+  }
+
+  const modal = $("modalInativarEmpresa");
+  modal?.classList.add("open");
+  modal?.setAttribute("aria-hidden", "false");
+  setTimeout(() => dateInput?.focus?.(), 0);
+};
+
+window.closeInativarEmpresaModal = function closeInativarEmpresaModal() {
+  const db = ensureDB();
+  db.pendingInactiveEmpresaId = null;
+  const modal = $("modalInativarEmpresa");
+  modal?.classList.remove("open");
+  modal?.setAttribute("aria-hidden", "true");
+};
+
+window.inativarEmpresa = async function inativarEmpresa() {
+  try {
+    const db = ensureDB();
+    if (!requirePermission(window.canEditEmpresas, "Seu perfil não pode inativar empresas.")) return;
+    if (!fb.auth.currentUser) {
+      safeToast("Você precisa estar autenticado.", "error");
+      return;
+    }
+
+    const empresaId = db.pendingInactiveEmpresaId;
+    const empresa = db.empresas.find((item) => String(item.id) === String(empresaId));
+    const dataFimObra = $("e-data-fim-obra")?.value || "";
+    if (!empresa) {
+      safeToast("Empresa não encontrada.", "error");
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dataFimObra)) {
+      safeToast("Informe a data de encerramento.", "error");
+      return;
+    }
+    if (empresa.dataInicioObra && dataFimObra < empresa.dataInicioObra) {
+      safeToast("A data de encerramento não pode ser anterior à data de início.", "error");
+      return;
+    }
+
+    console.log("[ui] inativar empresa", { id: String(empresa.id), dataFimObra });
+    await salvarEmpresa({ id: empresa.id, status: "inativa", dataFimObra });
+    window.closeInativarEmpresaModal();
+    safeToast("Empresa inativada com sucesso.", "success");
+  } catch (e) {
+    console.error("ERRO AO INATIVAR EMPRESA:", e);
+    safeToast(e?.message || "Erro ao inativar empresa", "error");
   }
 };
 
