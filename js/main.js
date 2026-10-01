@@ -716,6 +716,7 @@ globalThis.doLogout = window.doLogout;
 let unsubFuncionarios = null;
 let unsubEmpresas = null;
 let unsubObra = null;
+let unsubEfetivoCategorias = null;
 let unsubFreq = null;
 let unsubUsuarios = null;
 
@@ -723,6 +724,7 @@ function stopRealtime() {
   if (typeof unsubFuncionarios === "function") unsubFuncionarios();
   if (typeof unsubEmpresas === "function") unsubEmpresas();
   if (typeof unsubObra === "function") unsubObra();
+  if (typeof unsubEfetivoCategorias === "function") unsubEfetivoCategorias();
   if (typeof unsubFreq === "function") unsubFreq();
   if (typeof unsubUsuarios === "function") unsubUsuarios();
   if (typeof window.efetivoDestroyPage === "function") window.efetivoDestroyPage();
@@ -730,8 +732,13 @@ function stopRealtime() {
   unsubFuncionarios = null;
   unsubEmpresas = null;
   unsubObra = null;
+  unsubEfetivoCategorias = null;
   unsubFreq = null;
   unsubUsuarios = null;
+  if (window.DB) {
+    window.DB.efetivoCategorias = [];
+    window.DB.efetivoCategoriasConfiguradas = false;
+  }
 }
 
 function ensureDB() {
@@ -1218,6 +1225,15 @@ function wireRealtimeForUser() {
   });
   console.log("[LOGIN WIRE 4 OK] listenEmpresas:registered");
 
+  console.log("[LOGIN WIRE 4.1] listenEfetivoCategorias:register");
+  unsubEfetivoCategorias = listenEfetivoCategorias((payload) => {
+    if (typeof window.applyEfetivoCategoriesPayload === "function") {
+      window.applyEfetivoCategoriesPayload(payload);
+    }
+    if (typeof window.renderEmpresas === "function") window.renderEmpresas();
+  });
+  console.log("[LOGIN WIRE 4.1 OK] listenEfetivoCategorias:registered");
+
   console.log("[LOGIN WIRE 5] listenObra:register");
   unsubObra = listenObra((obra) => {
     window.DB.obra = obra;
@@ -1544,9 +1560,10 @@ window.saveEmpresa = async function () {
     const dataInicioObra = $("e-data-inicio-obra")?.value || null;
     const requestedStatus = $("e-status")?.value === "inativa" ? "inativa" : "ativa";
     const requestedDataFimObra = $("e-data-fim-obra")?.value || null;
-    const categoriaEfetivo = typeof window.normalizeEmpresaCategoriaEfetivo === "function"
-      ? window.normalizeEmpresaCategoriaEfetivo($("e-categoria-efetivo")?.value)
-      : ($("e-categoria-efetivo")?.value?.trim() || "OUTROS");
+    const categoriaEfetivoId = $("e-categoria-efetivo")?.value?.trim() || "";
+    const categoriaSelecionada = typeof window.getEfetivoCategoryById === "function"
+      ? window.getEfetivoCategoryById(categoriaEfetivoId, { includeInactive: true })
+      : null;
 
     if (requestedStatus === "inativa" && !requestedDataFimObra) {
       safeToast("Informe a data de encerramento da empresa.", "error");
@@ -1559,6 +1576,17 @@ window.saveEmpresa = async function () {
     const empresaEditada = db.currentEmpresaEditId === null
       ? null
       : db.empresas.find((item) => String(item.id) === String(db.currentEmpresaEditId));
+    if (!categoriaSelecionada) {
+      safeToast("Selecione uma categoria do efetivo válida.", "error");
+      return;
+    }
+    const categoriaAtual = empresaEditada && typeof window.resolveEfetivoCategoryForEmpresa === "function"
+      ? window.resolveEfetivoCategoryForEmpresa(empresaEditada, { includeInactive: true })
+      : null;
+    if (categoriaSelecionada.ativa === false && categoriaAtual?.id !== categoriaSelecionada.id) {
+      safeToast("Categorias inativas não podem receber novos vínculos.", "error");
+      return;
+    }
     const normalizedName = typeof window.normalizeEmpresaName === "function"
       ? window.normalizeEmpresaName(nome)
       : nome.toLowerCase();
@@ -1601,7 +1629,8 @@ window.saveEmpresa = async function () {
       status,
       dataInicioObra,
       dataFimObra,
-      categoriaEfetivo,
+      categoriaEfetivoId: categoriaSelecionada.id,
+      categoriaEfetivo: categoriaSelecionada.nomeNormalizado,
     };
 
     console.log("[ui] salvar empresa", { id: empresaId, nome, isEdit: Boolean(empresaEditada) });

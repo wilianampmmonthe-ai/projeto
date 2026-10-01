@@ -1654,3 +1654,59 @@ td .status-badge--tipo-atacarejo {
   }
 }
 
+.efetivo-category-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.efetivo-category-row {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr) auto auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg3);
+}
+
+.efetivo-category-order {
+  display: flex;
+  gap: 4px;
+}
+
+.efetivo-category-name {
+  width: 100%;
+}
+
+.efetivo-category-create {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.efetivo-category-help {
+  margin: 14px 0 0;
+  color: var(--text2);
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .efetivo-category-row {
+    grid-template-columns: auto 1fr;
+  }
+
+  .efetivo-category-row .badge-status,
+  .efetivo-category-row > button {
+    grid-column: 2;
+  }
+
+  .efetivo-category-create {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

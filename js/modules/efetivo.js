@@ -9,13 +9,12 @@
   const DOW = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"];
   const STATUS_LOADING = "Carregando consolidado...";
   const STATUS_EMPTY = "Sem consolidado salvo para o mes.";
-  const CATEGORY_ORDER = ["INDIRETOS", "CIVIL", "TERRAPLANAGEM", "ESTRUTURA_METALICA", "INSTALACOES", "OUTROS"];
-  const CATEGORY_LABELS = {
+  const LEGACY_CATEGORY_LABELS = {
     INDIRETOS: "INDIRETOS",
     CIVIL: "CIVIL",
     TERRAPLANAGEM: "TERRAPLANAGEM",
-    ESTRUTURA_METALICA: "ESTRUTURA / METALICA",
-    INSTALACOES: "INSTALACOES",
+    ESTRUTURA_METALICA: "ESTRUTURA / METÁLICA",
+    INSTALACOES: "INSTALAÇÕES",
     OUTROS: "OUTROS",
   };
 
@@ -137,18 +136,60 @@
   }
 
   function normalizeCategory(value) {
+    if (typeof window.efetivoCategoryUtils?.normalizeCategoryName === "function") {
+      return window.efetivoCategoryUtils.normalizeCategoryName(value);
+    }
     const normalized = removeAccents(value)
       .toUpperCase()
       .replace(/\s*\/\s*/g, "_")
-      .replace(/\s+/g, "_");
+      .replace(/[^A-Z0-9_ -]/g, "")
+      .replace(/[ -]+/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_|_$/g, "");
     if (normalized === "SERRALHARIA_OUTROS") return "OUTROS";
     if (normalized === "TERRAPLENAGEM") return "TERRAPLANAGEM";
     if (normalized === "ESTRUTURAS_METALICA") return "ESTRUTURA_METALICA";
-    return CATEGORY_ORDER.includes(normalized) ? normalized : "OUTROS";
+    return normalized;
   }
 
   function categoryLabel(value) {
-    return CATEGORY_LABELS[normalizeCategory(value)] || CATEGORY_LABELS.OUTROS;
+    const normalized = normalizeCategory(value);
+    return LEGACY_CATEGORY_LABELS[normalized] || cleanText(value).toUpperCase() || "OUTROS";
+  }
+
+  function resolveCompanyCategory(company) {
+    if (typeof window.resolveEfetivoCategoryForEmpresa === "function") {
+      return window.resolveEfetivoCategoryForEmpresa(company, { includeInactive: true });
+    }
+    const nomeNormalizado = normalizeCategory(company?.categoriaEfetivo || company?.categoria) || "OUTROS";
+    return {
+      id: `legado-${nomeNormalizado.toLowerCase().replace(/_/g, "-")}`,
+      nome: categoryLabel(nomeNormalizado),
+      nomeNormalizado,
+      ordem: Object.keys(LEGACY_CATEGORY_LABELS).indexOf(nomeNormalizado) + 1 || 999,
+      ativa: true,
+    };
+  }
+
+  function getRuntimeCategories() {
+    if (typeof window.getEfetivoCategories === "function") {
+      return window.getEfetivoCategories({ includeInactive: true });
+    }
+    return Object.entries(LEGACY_CATEGORY_LABELS).map(([nomeNormalizado, nome], index) => ({
+      id: `legado-${nomeNormalizado.toLowerCase().replace(/_/g, "-")}`,
+      nome,
+      nomeNormalizado,
+      ordem: index + 1,
+      ativa: true,
+    }));
+  }
+
+  function findRuntimeCategoryByName(value) {
+    const normalized = normalizeCategory(value);
+    return getRuntimeCategories().find((category) => (
+      category.nomeNormalizado === normalized
+      || category.nomesAnterioresNormalizados?.includes(normalized)
+    )) || null;
   }
 
   function toNumber(value) {
@@ -336,7 +377,9 @@
     const categories = Array.isArray(raw?.categories) ? raw.categories : [];
     const normalizedCategories = categories.map((category) => ({
       ...category,
+      id: cleanText(category?.id || category?.categoriaEfetivoId) || null,
       name: categoryLabel(category?.name),
+      ordem: Number.isFinite(Number(category?.ordem)) ? Number(category.ordem) : null,
       companies: Array.isArray(category?.companies)
         ? category.companies.map((company) => ({
             ...company,
@@ -404,10 +447,13 @@
       .map((empresa) => {
         const name = cleanText(empresa?.nome).toUpperCase();
         if (!name) return null;
+        const category = resolveCompanyCategory(empresa);
         return {
           empresaId: cleanText(empresa?.id) || null,
           name,
-          categoryName: categoryLabel(empresa?.categoriaEfetivo || empresa?.categoria),
+          categoryId: cleanText(category?.id) || null,
+          categoryName: cleanText(category?.nome).toUpperCase() || "OUTROS",
+          categoryOrder: Number.isFinite(Number(category?.ordem)) ? Number(category.ordem) : 999,
           values: new Array(dayCount).fill(0),
         };
       })
@@ -428,8 +474,9 @@
     const dayCount = Array.isArray(dataset?.days)
       ? dataset.days.length
       : createMonthDays(periodoToParts(key).year, periodoToParts(key).monthIndex).length;
-    const categories = (Array.isArray(dataset?.categories) ? dataset.categories : []).map((category) => ({
+    const categories = (Array.isArray(dataset?.categories) ? dataset.categories : []).map((category, sourceIndex) => ({
       ...category,
+      _sourceIndex: sourceIndex,
       companies: (Array.isArray(category?.companies) ? category.companies : []).map((company) => ({
         ...company,
         values: Array.isArray(company?.values) ? company.values.slice() : new Array(dayCount).fill(0),
@@ -452,14 +499,21 @@
       if (matches.length > 1) return;
 
       let category = categories.find((item) => (
-        normalizeCompanyIdentityName(item.name) === normalizeCompanyIdentityName(eligibleCompany.categoryName)
+        (eligibleCompany.categoryId && cleanText(item.id) === eligibleCompany.categoryId)
+        || normalizeCompanyIdentityName(item.name) === normalizeCompanyIdentityName(eligibleCompany.categoryName)
       ));
       if (!category) {
-        category = { name: eligibleCompany.categoryName || "OUTROS", companies: [] };
+        category = {
+          id: eligibleCompany.categoryId,
+          name: eligibleCompany.categoryName || "OUTROS",
+          ordem: eligibleCompany.categoryOrder,
+          companies: [],
+        };
         categories.push(category);
       }
       category.companies.push({
         empresaId: eligibleCompany.empresaId,
+        categoriaEfetivoId: eligibleCompany.categoryId,
         name: eligibleCompany.name,
         values: eligibleCompany.values,
       });
@@ -467,7 +521,15 @@
     });
 
     return {
-      dataset: { ...dataset, categories },
+      dataset: {
+        ...dataset,
+        categories: categories
+          .sort((a, b) => (
+            (Number.isFinite(Number(a.ordem)) ? Number(a.ordem) : 10000 + Number(a._sourceIndex || 0))
+            - (Number.isFinite(Number(b.ordem)) ? Number(b.ordem) : 10000 + Number(b._sourceIndex || 0))
+          ))
+          .map(({ _sourceIndex, ...category }) => category),
+      },
       added,
       identityLinked,
     };
@@ -564,21 +626,30 @@
 
     const categories = new Map();
     eligibleCompanies.forEach((empresa) => {
-      const category = normalizeCategory(empresa?.categoriaEfetivo || empresa?.categoria);
-      if (!categories.has(category)) categories.set(category, []);
-      categories.get(category).push({
+      const category = resolveCompanyCategory(empresa);
+      const categoryId = cleanText(category?.id) || `fallback-${normalizeCategory(category?.nome || "OUTROS").toLowerCase()}`;
+      if (!categories.has(categoryId)) {
+        categories.set(categoryId, {
+          id: categoryId,
+          name: cleanText(category?.nome).toUpperCase() || "OUTROS",
+          ordem: Number.isFinite(Number(category?.ordem)) ? Number(category.ordem) : 999,
+          companies: [],
+        });
+      }
+      categories.get(categoryId).companies.push({
         empresaId: cleanText(empresa.id) || null,
+        categoriaEfetivoId: categoryId,
         name: cleanText(empresa.nome || "SEM EMPRESA").toUpperCase(),
         values: valuesByCompany.get(cleanText(empresa.id)) || new Array(days.length).fill(0),
       });
     });
 
     return {
-      categories: CATEGORY_ORDER
-        .filter((category) => categories.has(category))
+      categories: Array.from(categories.values())
+        .sort((a, b) => a.ordem - b.ordem || a.name.localeCompare(b.name, "pt-BR"))
         .map((category) => ({
-          name: CATEGORY_LABELS[category],
-          companies: categories.get(category).sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
+          ...category,
+          companies: category.companies.sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
         })),
       dayHasData: getDaysWithData(frequencyData, days),
       holidays: frequencyData?.feriados && typeof frequencyData.feriados === "object"
@@ -1295,9 +1366,6 @@
     try {
       setStatus("Salvando consolidado...", true);
       await window.saveEfetivo(state.periodoKey, dataset);
-      if (typeof window.saveEfetivoCategorias === "function") {
-        await window.saveEfetivoCategorias(dataset.categories.map((category) => category.name));
-      }
       state.dataset = dataset;
       setStatus(successMessage || "Consolidado salvo.", false);
       render();
@@ -1518,7 +1586,13 @@
       });
 
       if (isCategoryName(label) || !values.some((value) => value > 0)) {
-        currentCategory = { name: label.toUpperCase(), companies: [] };
+        const configuredCategory = findRuntimeCategoryByName(label);
+        currentCategory = {
+          id: configuredCategory?.id || null,
+          name: configuredCategory?.nome?.toUpperCase() || label.toUpperCase(),
+          ordem: Number.isFinite(Number(configuredCategory?.ordem)) ? Number(configuredCategory.ordem) : null,
+          companies: [],
+        };
         categories.push(currentCategory);
         continue;
       }
@@ -1532,7 +1606,9 @@
 
     const filtered = categories
       .map((category) => ({
+        id: category.id || null,
         name: category.name,
+        ordem: category.ordem,
         companies: category.companies.filter((company) => company.values.some((value) => value > 0)),
       }))
       .filter((category) => category.companies.length);
@@ -1559,11 +1635,21 @@
     Array.from(companyMap.entries())
       .sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
       .forEach(([company, values]) => {
-        const categoryName = guessCategory(company);
-        if (!categoriesByName.has(categoryName)) {
-          categoriesByName.set(categoryName, { name: categoryName, companies: [] });
+        const registeredCompany = (Array.isArray(window.DB?.empresas) ? window.DB.empresas : [])
+          .find((item) => normalizeCompanyIdentityName(item?.nome) === normalizeCompanyIdentityName(company));
+        const resolvedCategory = resolveCompanyCategory(registeredCompany || { categoriaEfetivo: guessCategory(company) });
+        const categoryKey = cleanText(resolvedCategory?.id) || normalizeCategory(resolvedCategory?.nome || "OUTROS");
+        if (!categoriesByName.has(categoryKey)) {
+          categoriesByName.set(categoryKey, {
+            id: cleanText(resolvedCategory?.id) || null,
+            name: cleanText(resolvedCategory?.nome).toUpperCase() || "OUTROS",
+            ordem: Number.isFinite(Number(resolvedCategory?.ordem)) ? Number(resolvedCategory.ordem) : null,
+            companies: [],
+          });
         }
-        categoriesByName.get(categoryName).companies.push({
+        categoriesByName.get(categoryKey).companies.push({
+          empresaId: cleanText(registeredCompany?.id) || null,
+          categoriaEfetivoId: cleanText(resolvedCategory?.id) || null,
           name: company.toUpperCase(),
           values: normalizeValues(values, days.length),
         });
@@ -1578,7 +1664,12 @@
       monthIndex,
       periodoKey: meta.periodoKey,
       days,
-      categories: Array.from(categoriesByName.values()),
+      categories: Array.from(categoriesByName.values())
+        .sort((a, b) => (
+          (Number.isFinite(Number(a.ordem)) ? Number(a.ordem) : 999)
+          - (Number.isFinite(Number(b.ordem)) ? Number(b.ordem) : 999)
+          || a.name.localeCompare(b.name, "pt-BR")
+        )),
       fileName: meta.fileName || "",
     };
   }
@@ -1664,7 +1755,7 @@
 
   function isCategoryName(value) {
     const text = normalizeHeader(value);
-    return [
+    const legacy = [
       "indiretos",
       "civil",
       "serralharia / outros",
@@ -1678,6 +1769,7 @@
       "instalacoes",
       "outros",
     ].includes(text);
+    return legacy || getRuntimeCategories().some((category) => normalizeHeader(category.nome) === text);
   }
 
   function guessCategory(company) {
@@ -1716,15 +1808,7 @@
   }
 
   function pdfCategoryLabel(value) {
-    const labels = {
-      INDIRETOS: "INDIRETOS",
-      CIVIL: "CIVIL",
-      TERRAPLANAGEM: "TERRAPLANAGEM",
-      ESTRUTURA_METALICA: "ESTRUTURA / METÁLICA",
-      INSTALACOES: "INSTALAÇÕES",
-      OUTROS: "OUTROS",
-    };
-    return labels[normalizeCategory(value)] || pdfDynamicText(value).toUpperCase();
+    return pdfDynamicText(categoryLabel(value)).toUpperCase();
   }
 
   function sanitizePdfFilePart(value) {

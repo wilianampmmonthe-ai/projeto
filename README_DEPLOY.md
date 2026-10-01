@@ -91,6 +91,12 @@ Estrutura multiobra:
 
 No modulo Efetivo, viewers podem visualizar os consolidados da obra ativa. Editors e admins podem importar CSV/XLSX, editar valores manualmente e salvar o consolidado mensal.
 
+### Categorias configuráveis do efetivo
+
+O documento `obras/{obraId}/efetivoConfig/categorias` contém o array `categorias`. Cada item possui `id` estável, `nome`, `nomeNormalizado`, `ordem`, `ativa`, datas de criação/atualização e, após renomeações, os nomes normalizados anteriores usados na compatibilidade com empresas legadas.
+
+Quando o documento ainda não existe, a interface usa as categorias padrão apenas em memória. A gravação ocorre somente por ação explícita de administrador/editor no gerenciador da tela **Empresas**. Empresas novas salvam `categoriaEfetivoId` e mantêm `categoriaEfetivo` para compatibilidade; registros legados são resolvidos pelo nome e, se não houver correspondência, por **Outros**. Categorias inativas continuam resolvíveis em empresas e históricos existentes, mas não aceitam novos vínculos.
+
 ## 4) Como manter o sistema seguro (checklist)
 
 - **Nunca** colocar usuário/senha no código (removido).

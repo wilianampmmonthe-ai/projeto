@@ -451,17 +451,51 @@ async function salvarEfetivoCategorias(categorias) {
   const ref = dbGetObraCollection(COL_EFETIVO_CONFIG).doc("categorias");
   const snap = await ref.get();
   const list = Array.isArray(categorias)
-    ? categorias.map((item) => String(item || "").trim()).filter(Boolean)
+    ? categorias.map((item, index) => {
+        if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+        const id = String(item.id || "").trim();
+        const nome = String(item.nome || "").replace(/\s+/g, " ").trim();
+        const nomeNormalizado = String(item.nomeNormalizado || "").trim();
+        if (!id || !nome || !nomeNormalizado) return null;
+        return {
+          id,
+          nome,
+          nomeNormalizado,
+          nomesAnterioresNormalizados: Array.isArray(item.nomesAnterioresNormalizados)
+            ? item.nomesAnterioresNormalizados.map((value) => String(value || "").trim()).filter(Boolean)
+            : [],
+          ordem: Number.isFinite(Number(item.ordem)) ? Number(item.ordem) : index + 1,
+          ativa: item.ativa !== false,
+          createdAt: item.createdAt || new Date().toISOString(),
+          updatedAt: item.updatedAt || new Date().toISOString(),
+        };
+      }).filter(Boolean)
     : [];
 
   dbLog("salvar efetivo categorias", { total: list.length });
   await ref.set({
-    categorias: Array.from(new Set(list)),
+    categorias: list,
     updatedAt: dbServerTimestamp(),
     createdAt: snap.exists ? (snap.data()?.createdAt || dbServerTimestamp()) : dbServerTimestamp(),
   }, { merge: true });
 
   return "categorias";
+}
+
+function ouvirEfetivoCategorias(cb) {
+  const obraId = dbGetObraAtivaId() || null;
+  const ref = dbGetObraCollection(COL_EFETIVO_CONFIG).doc("categorias");
+  const path = `/${ref.path}`;
+  dbLog("listener categorias efetivo:start", { path, obraId, operation: "onSnapshot" });
+  return ref.onSnapshot((snap) => {
+    const data = snap.exists ? snap.data() || {} : {};
+    const categorias = Array.isArray(data.categorias) ? data.categorias : [];
+    dbLog("listener categorias efetivo:received", { exists: snap.exists, total: categorias.length });
+    cb({ exists: snap.exists, categorias });
+  }, (error) => {
+    dbLogPermissionError("categorias efetivo", { path, obraId, operation: "onSnapshot" }, error);
+    cb({ exists: false, categorias: [] });
+  });
 }
 
 async function salvarEfetivoImportacao(row) {
@@ -668,6 +702,10 @@ async function getLatestFrequenciaPeriodoKey() {
 
 function listenEfetivo(periodoKey, cb) {
   return ouvirEfetivo(periodoKey, cb);
+}
+
+function listenEfetivoCategorias(cb) {
+  return ouvirEfetivoCategorias(cb);
 }
 
 async function getEfetivo(periodoKey) {
