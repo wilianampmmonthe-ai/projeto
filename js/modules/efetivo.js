@@ -1691,20 +1691,40 @@
   }
 
   const PDF_COLORS = {
-    navy: [22, 43, 69],
-    blue: [42, 91, 145],
-    blueSoft: [224, 234, 244],
-    gray: [102, 113, 128],
-    line: [207, 215, 224],
-    paper: [247, 249, 251],
-    weekend: [238, 241, 245],
-    holiday: [223, 237, 248],
+    graphite: [31, 32, 36],
+    text: [43, 44, 48],
+    orange: [244, 122, 42],
+    peach: [255, 216, 191],
+    muted: [104, 113, 128],
+    line: [216, 221, 228],
+    paper: [255, 255, 255],
     white: [255, 255, 255],
-    green: [32, 122, 87],
   };
 
   function pdfSourceLabel(computed) {
     return computed.dataset.derivedFromFrequency ? "Frequência" : "Histórico consolidado";
+  }
+
+  function pdfReportTimestamp(date) {
+    return date.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  function pdfCategoryLabel(value) {
+    const labels = {
+      INDIRETOS: "INDIRETOS",
+      CIVIL: "CIVIL",
+      TERRAPLANAGEM: "TERRAPLANAGEM",
+      ESTRUTURA_METALICA: "ESTRUTURA / METÁLICA",
+      INSTALACOES: "INSTALAÇÕES",
+      OUTROS: "OUTROS",
+    };
+    return labels[normalizeCategory(value)] || pdfDynamicText(value).toUpperCase();
   }
 
   function sanitizePdfFilePart(value) {
@@ -1733,20 +1753,21 @@
   function buildPdfTableRows(computed) {
     const rows = [];
     computed.categories.forEach((category) => {
-      rows.push({ type: "category", label: category.name, categoryName: category.name });
+      const categoryLabel = pdfCategoryLabel(category.name);
+      rows.push({ type: "category", label: categoryLabel, categoryName: categoryLabel });
       category.companies.forEach((company) => {
         rows.push({
           type: "company",
           label: company.name,
-          categoryName: category.name,
+          categoryName: categoryLabel,
           values: company.values,
           average: company.average,
         });
       });
       rows.push({
         type: "subtotal",
-        label: `TOTAL ${category.name}`,
-        categoryName: category.name,
+        label: `TOTAL ${categoryLabel}`,
+        categoryName: categoryLabel,
         values: category.totals,
         average: category.average,
       });
@@ -1761,95 +1782,86 @@
     return rows;
   }
 
-  async function getEfetivoLogoPng() {
-    if (typeof document === "undefined") return null;
-    const image = document.querySelector(".efetivo-module__brand-logo");
-    if (!image) return null;
+  async function getBuildcoPdfLogo() {
+    if (typeof Image === "undefined" || typeof document === "undefined") return null;
     try {
+      const image = new Image();
+      image.src = "assets/img/buildco-logo-light.png";
       if (!image.complete) {
         await new Promise((resolve, reject) => {
           image.addEventListener("load", resolve, { once: true });
           image.addEventListener("error", reject, { once: true });
         });
       }
-      const width = Math.max(1, image.naturalWidth || 528);
-      const height = Math.max(1, image.naturalHeight || 180);
+      const width = Math.max(1, image.naturalWidth || 560);
+      const height = Math.max(1, image.naturalHeight || 140);
       const canvas = document.createElement("canvas");
-      canvas.width = Math.min(1200, width * 2);
-      canvas.height = Math.round(canvas.width * height / width);
+      canvas.width = width;
+      canvas.height = height;
       const context = canvas.getContext("2d");
-      context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      return canvas.toDataURL("image/png", 1);
+      context.drawImage(image, 0, 0, width, height);
+      return { data: canvas.toDataURL("image/png", 1), ratio: width / height };
     } catch (error) {
-      console.warn("[efetivo] logo indisponível para o PDF", error);
+      console.warn("[efetivo] logo BuildCo indisponível para o PDF", error);
       return null;
     }
-  }
-
-  function drawPdfBrand(doc, logoData, x, y, darkBackground) {
-    if (logoData && darkBackground) {
-      try {
-        doc.addImage(logoData, "PNG", x, y, 33, 11.2, undefined, "FAST");
-        return;
-      } catch (error) {
-        console.warn("[efetivo] falha ao inserir logo no PDF", error);
-      }
-    }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(17);
-    doc.setTextColor(...(darkBackground ? PDF_COLORS.white : PDF_COLORS.navy));
-    doc.text("build", x, y + 8);
-    doc.setTextColor(43, 119, 181);
-    doc.text("co", x + 15.2, y + 8);
   }
 
   function drawPdfKpi(doc, x, y, width, label, value, detail) {
     doc.setFillColor(...PDF_COLORS.white);
     doc.setDrawColor(...PDF_COLORS.line);
-    doc.roundedRect(x, y, width, 27, 2, 2, "FD");
-    doc.setFillColor(...PDF_COLORS.blue);
-    doc.rect(x, y + 25.5, width, 1.5, "F");
+    doc.setLineWidth(0.22);
+    doc.roundedRect(x, y, width, 16.5, 1.5, 1.5, "FD");
+    doc.setFillColor(...PDF_COLORS.orange);
+    doc.roundedRect(x, y + 15.55, width, 0.95, 0.45, 0.45, "F");
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...PDF_COLORS.gray);
-    doc.setFontSize(7.2);
-    doc.text(label, x + 4, y + 6);
-    doc.setTextColor(...PDF_COLORS.navy);
-    doc.setFontSize(19);
-    doc.text(value, x + 4, y + 17.5);
-    doc.setTextColor(...PDF_COLORS.gray);
-    doc.setFontSize(6.2);
-    doc.text(detail, x + 4, y + 23);
+    doc.setTextColor(...PDF_COLORS.muted);
+    doc.setFontSize(5.6);
+    doc.text(label, x + 2.2, y + 4.3);
+    doc.setTextColor(...PDF_COLORS.text);
+    doc.setFontSize(14.5);
+    doc.text(value, x + 2.2, y + 10.9);
+    doc.setTextColor(...PDF_COLORS.muted);
+    doc.setFontSize(5.2);
+    doc.text(detail, x + 2.2, y + 14.2);
   }
 
-  function drawPdfWeeklyCards(doc, computed, x, y, width) {
+  function drawPdfWeeklyTable(doc, computed, x, y, width, height) {
+    doc.setFillColor(...PDF_COLORS.white);
+    doc.setDrawColor(...PDF_COLORS.line);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(x, y, width, height, 1.5, 1.5, "FD");
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...PDF_COLORS.navy);
-    doc.setFontSize(9);
-    doc.text("MÉDIA DOS COLABORADORES POR SEMANA", x, y);
-    const cards = computed.weeklyAverages.map((week, index) => ({
-      label: `SEMANA ${index + 1}`,
-      range: `${pad2(week.startDay)} A ${pad2(week.endDay)}`,
+    doc.setTextColor(...PDF_COLORS.text);
+    doc.setFontSize(7.9);
+    doc.text("MÉDIA DOS COLABORADORES POR SEMANA", x + 2.2, y + 5.8);
+    const rows = computed.weeklyAverages.map((week, index) => ({
+      label: `Semana ${index + 1} (${pad2(week.startDay)} a ${pad2(week.endDay)})`,
       value: pdfAverage(week.average),
+      total: false,
     }));
-    cards.push({ label: "MÉDIA DO MÊS", range: "DIAS INFORMADOS", value: pdfAverage(computed.monthAverage) });
-    const gap = 2.5;
-    const cardWidth = (width - gap * (cards.length - 1)) / cards.length;
-    cards.forEach((card, index) => {
-      const cardX = x + index * (cardWidth + gap);
-      doc.setFillColor(...(index === cards.length - 1 ? PDF_COLORS.blueSoft : PDF_COLORS.white));
+    rows.push({ label: "MÉDIA DO MÊS", value: pdfAverage(computed.monthAverage), total: true });
+    const tableY = y + 8.2;
+    const headerHeight = 5.2;
+    const rowHeight = (height - 8.2 - headerHeight - 1.3) / rows.length;
+    const firstWidth = width * 0.67;
+    doc.setFillColor(...PDF_COLORS.graphite);
+    doc.rect(x + 0.25, tableY, width - 0.5, headerHeight, "F");
+    doc.setTextColor(...PDF_COLORS.white);
+    doc.setFontSize(5.8);
+    doc.text("SEMANA", x + firstWidth / 2, tableY + 3.6, { align: "center" });
+    doc.text("MÉDIA", x + firstWidth + (width - firstWidth) / 2, tableY + 3.6, { align: "center" });
+    rows.forEach((row, index) => {
+      const rowY = tableY + headerHeight + index * rowHeight;
+      doc.setFillColor(...(row.total ? PDF_COLORS.orange : PDF_COLORS.white));
       doc.setDrawColor(...PDF_COLORS.line);
-      doc.roundedRect(cardX, y + 4, cardWidth, 23, 1.5, 1.5, "FD");
+      doc.rect(x + 0.25, rowY, firstWidth - 0.25, rowHeight, "FD");
+      doc.rect(x + firstWidth, rowY, width - firstWidth - 0.25, rowHeight, "FD");
+      doc.setTextColor(...(row.total ? PDF_COLORS.white : PDF_COLORS.text));
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(...PDF_COLORS.gray);
-      doc.setFontSize(6.1);
-      doc.text(card.label, cardX + 3, y + 9);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(5.5);
-      doc.text(card.range, cardX + 3, y + 13);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...PDF_COLORS.navy);
-      doc.setFontSize(14);
-      doc.text(card.value, cardX + 3, y + 23);
+      doc.setFontSize(5.8);
+      doc.text(row.label, x + 2, rowY + rowHeight / 2 + 1.8);
+      doc.text(row.value, x + firstWidth + (width - firstWidth) / 2, rowY + rowHeight / 2 + 1.8, { align: "center" });
     });
   }
 
@@ -1858,26 +1870,26 @@
     doc.setDrawColor(...PDF_COLORS.line);
     doc.roundedRect(x, y, width, height, 2, 2, "FD");
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...PDF_COLORS.navy);
-    doc.setFontSize(9);
-    doc.text("EVOLUÇÃO MENSAL DO EFETIVO", x + 5, y + 7);
+    doc.setTextColor(...PDF_COLORS.text);
+    doc.setFontSize(7.9);
+    doc.text("EVOLUÇÃO MENSAL DO EFETIVO", x + 2.2, y + 5.8);
 
     const values = computed.dailyTotals.map((value, index) => computed.dayHasData[index] ? toNumber(value) : null);
     const validValues = values.filter((value) => value !== null);
     const maxValue = Math.max(10, Math.ceil(Math.max(...validValues, 0) / 10) * 10);
-    const plotX = x + 12;
-    const plotY = y + 13;
-    const plotWidth = width - 18;
-    const plotHeight = height - 24;
+    const plotX = x + 14;
+    const plotY = y + 9.5;
+    const plotWidth = width - 20;
+    const plotHeight = height - 17.5;
     const denominator = Math.max(1, values.length - 1);
 
-    doc.setDrawColor(226, 231, 237);
-    [0, 0.5, 1].forEach((ratio) => {
+    doc.setDrawColor(...PDF_COLORS.line);
+    [0, 0.2, 0.4, 0.6, 0.8, 1].forEach((ratio) => {
       const lineY = plotY + plotHeight - plotHeight * ratio;
       doc.line(plotX, lineY, plotX + plotWidth, lineY);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(5.5);
-      doc.setTextColor(...PDF_COLORS.gray);
+      doc.setTextColor(...PDF_COLORS.muted);
       doc.text(formatInteger(maxValue * ratio), plotX - 2, lineY + 1.5, { align: "right" });
     });
 
@@ -1890,144 +1902,175 @@
       const pointX = plotX + plotWidth * index / denominator;
       const pointY = plotY + plotHeight - plotHeight * value / maxValue;
       if (previousPoint) {
-        doc.setDrawColor(...PDF_COLORS.blue);
-        doc.setLineWidth(0.8);
+        doc.setDrawColor(...PDF_COLORS.orange);
+        doc.setLineWidth(0.55);
         doc.line(previousPoint.x, previousPoint.y, pointX, pointY);
       }
-      doc.setFillColor(...PDF_COLORS.blue);
-      doc.circle(pointX, pointY, 0.8, "F");
+      doc.setFillColor(...PDF_COLORS.white);
+      doc.setDrawColor(...PDF_COLORS.orange);
+      doc.circle(pointX, pointY, 0.62, "FD");
       previousPoint = { x: pointX, y: pointY };
     });
 
     computed.dataset.days.forEach((day, index) => {
       if (index !== 0 && index !== computed.dataset.days.length - 1 && day.day % 5 !== 0) return;
       const labelX = plotX + plotWidth * index / denominator;
-      doc.setTextColor(...PDF_COLORS.gray);
+      doc.setTextColor(...PDF_COLORS.text);
       doc.setFontSize(5.5);
       doc.text(pad2(day.day), labelX, plotY + plotHeight + 5, { align: "center" });
     });
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(4.8);
+    doc.setTextColor(...PDF_COLORS.muted);
+    doc.text("Dias do mês", plotX, y + height - 1.8);
   }
 
-  function drawPdfDashboard(doc, computed, logoData, generatedAt) {
+  function drawPdfDashboard(doc, computed, generatedAt) {
     const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 10;
-    doc.setFillColor(...PDF_COLORS.paper);
+    const margin = 5.7;
+    const contentWidth = pageWidth - margin * 2;
+    doc.setFillColor(...PDF_COLORS.white);
     doc.rect(0, 0, pageWidth, doc.internal.pageSize.getHeight(), "F");
-    doc.setFillColor(...PDF_COLORS.navy);
-    doc.rect(0, 0, pageWidth, 33, "F");
-    drawPdfBrand(doc, logoData, 12, 8, true);
+    doc.setFillColor(...PDF_COLORS.graphite);
+    doc.rect(margin, 5.7, contentWidth, 23, "F");
 
     doc.setTextColor(...PDF_COLORS.white);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text("CONTROLE MENSAL CONSOLIDADO DE EFETIVO", pageWidth / 2, 13, { align: "center" });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.text(`MÊS: ${monthTitle(computed.dataset.periodoKey).toUpperCase()}`, pageWidth / 2, 20, { align: "center" });
+    doc.setFontSize(11.2);
+    doc.text("RELAÇÃO DO EFETIVO DAS EMPRESAS TERCEIRIZADAS", 144, 16.3, { align: "center" });
+    doc.setFontSize(6.1);
+    doc.setTextColor(205, 206, 209);
+    doc.text("CONTROLE MENSAL CONSOLIDADO DE EFETIVO", 144, 22.2, { align: "center" });
 
-    doc.setDrawColor(82, 118, 155);
-    doc.line(205, 6, 205, 27);
+    doc.setDrawColor(...PDF_COLORS.orange);
+    doc.setLineWidth(0.7);
+    doc.line(235, 8.8, 235, 25.7);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(6.3);
-    doc.text("OBRA", 211, 10);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.5);
-    const obraLines = doc.splitTextToSize(pdfDynamicText(getObraLabel()).toUpperCase(), 72).slice(0, 2);
-    doc.text(obraLines, 211, 14);
-    doc.setFontSize(5.8);
-    doc.text(`ATUALIZADO: ${generatedAt.toLocaleString("pt-BR")}`, 211, 26);
+    doc.setFontSize(5.6);
+    const meta = [
+      ["OBRA:", pdfDynamicText(getObraLabel()).toUpperCase()],
+      ["MÊS:", monthTitle(computed.dataset.periodoKey).toUpperCase()],
+      ["ATUALIZADO:", pdfReportTimestamp(generatedAt)],
+    ];
+    meta.forEach(([label, value], index) => {
+      const lineY = 13 + index * 5.1;
+      doc.setTextColor(...PDF_COLORS.orange);
+      doc.text(label, 239.5, lineY);
+      doc.setTextColor(216, 217, 220);
+      doc.text(value, index === 2 ? 257 : 253, lineY, { maxWidth: index === 2 ? 33 : 37 });
+    });
 
-    const kpiY = 40;
-    const gap = 4;
+    const kpiY = 31.2;
+    const gap = 2.3;
     const kpiWidth = (pageWidth - margin * 2 - gap * 3) / 4;
     const kpis = [
-      ["EFETIVO ATUAL", computed.effectiveTotal === null ? "—" : formatInteger(computed.effectiveTotal), computed.effectiveDay ? `DIA ${pad2(computed.effectiveDay.day)} · COLABORADORES` : "SEM DIA CONSOLIDADO"],
-      ["EMPRESAS ATIVAS", formatInteger(computed.activeCompanies), "EMPRESAS NA COMPETÊNCIA"],
-      ["MÉDIA SEMANAL", pdfAverage(computed.weeklyAverage), computed.latestWeek ? `DIAS ${pad2(computed.latestWeek.startDay)} A ${pad2(computed.latestWeek.endDay)}` : "SEM SEMANA CONSOLIDADA"],
-      ["MÉDIA MENSAL", pdfAverage(computed.monthAverage), "APENAS DIAS INFORMADOS"],
+      ["EFETIVO TOTAL", computed.effectiveTotal === null ? "—" : formatInteger(computed.effectiveTotal), "COLABORADORES"],
+      ["EMPRESAS ATIVAS", formatInteger(computed.activeCompanies), "ATIVAS"],
+      ["MÉDIA SEMANAL", pdfAverage(computed.weeklyAverage), "COLABORADORES"],
+      ["MÉDIA MENSAL", pdfAverage(computed.monthAverage), "COLABORADORES"],
     ];
     kpis.forEach((kpi, index) => drawPdfKpi(doc, margin + index * (kpiWidth + gap), kpiY, kpiWidth, ...kpi));
-    drawPdfWeeklyCards(doc, computed, margin, 75, pageWidth - margin * 2);
-    drawPdfChart(doc, computed, margin, 108, pageWidth - margin * 2, 76);
+    const lowerY = 50.2;
+    const lowerHeight = 39;
+    const lowerGap = 2.4;
+    const weeklyWidth = 117;
+    drawPdfWeeklyTable(doc, computed, margin, lowerY, weeklyWidth, lowerHeight);
+    drawPdfChart(doc, computed, margin + weeklyWidth + lowerGap, lowerY, contentWidth - weeklyWidth - lowerGap, lowerHeight);
 
     const unresolvedCount = computed.dataset.unresolvedEmployeeDetails?.length || 0;
     if (unresolvedCount) {
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(6.2);
+      doc.setFontSize(5.2);
       doc.setTextColor(145, 92, 23);
-      doc.text(`Observação: existem ${unresolvedCount} colaborador(es) presente(s) com vínculo empresarial não resolvido.`, margin, 190);
+      doc.text(`Observação: existem ${unresolvedCount} colaborador(es) presente(s) com vínculo empresarial não resolvido.`, margin, 94);
     }
   }
 
   function pdfTableLayout(doc, computed) {
     const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 10;
-    const companyWidth = 54;
+    const margin = 5.7;
+    const dayCount = computed.dataset.days.length;
+    const companyWidth = dayCount >= 31 ? 56 : dayCount === 30 ? 57 : 58;
     const averageWidth = 15;
-    const dayWidth = (pageWidth - margin * 2 - companyWidth - averageWidth) / computed.dataset.days.length;
-    return { pageWidth, margin, companyWidth, averageWidth, dayWidth, tableWidth: pageWidth - margin * 2 };
+    const dayWidth = (pageWidth - margin * 2 - companyWidth - averageWidth) / dayCount;
+    const dayValueFont = dayCount >= 31 ? 6.8 : dayCount === 30 ? 7.1 : 7.3;
+    return {
+      pageWidth,
+      margin,
+      companyWidth,
+      averageWidth,
+      dayWidth,
+      dayValueFont,
+      companyFont: dayCount >= 31 ? 7 : 7.2,
+      tableWidth: pageWidth - margin * 2,
+    };
   }
 
-  function drawPdfTablePageHeader(doc, computed, logoData, continuationIndex, layout) {
+  function drawPdfTablePageHeader(doc, computed, continuationIndex, layout, logo) {
     const { pageWidth, margin, companyWidth, averageWidth, dayWidth } = layout;
     doc.setFillColor(...PDF_COLORS.white);
     doc.rect(0, 0, pageWidth, doc.internal.pageSize.getHeight(), "F");
-    drawPdfBrand(doc, logoData, margin, 7, false);
+    doc.setDrawColor(...PDF_COLORS.line);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(margin, 5.7, layout.tableWidth, 7.2, 1.2, 1.2, "D");
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...PDF_COLORS.navy);
-    doc.setFontSize(11.5);
-    doc.text("CONTROLE TOTAL DIÁRIO POR EMPRESA", pageWidth / 2, 10, { align: "center" });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.5);
+    doc.setTextColor(...PDF_COLORS.text);
+    doc.setFontSize(7.8);
     const continuation = continuationIndex > 1 ? ` · CONTINUAÇÃO ${continuationIndex - 1}` : "";
-    doc.text(`${computed.dataset.days.length} DIAS DA COMPETÊNCIA${continuation}`, pageWidth / 2, 15, { align: "center" });
-    doc.setFontSize(6.2);
-    doc.text(pdfDynamicText(getObraLabel()), pageWidth - margin, 9, { align: "right", maxWidth: 78 });
-    doc.text(monthTitle(computed.dataset.periodoKey).toUpperCase(), pageWidth - margin, 14, { align: "right" });
+    doc.text(`CONTROLE TOTAL DIÁRIO POR EMPRESA${continuation}`, margin + 2, 10.4);
+    doc.setTextColor(...PDF_COLORS.muted);
+    doc.setFontSize(6.3);
+    doc.text(`${computed.dataset.days.length} DIAS MONITORADOS`, pageWidth - margin - 2, 10.4, { align: "right" });
 
-    const y = 20;
-    const headerHeight = 11;
-    doc.setFillColor(...PDF_COLORS.navy);
+    if (logo?.data) {
+      const logoHeight = 4.4;
+      const logoWidth = logoHeight * logo.ratio;
+      const logoX = (pageWidth - logoWidth) / 2;
+      const logoY = 5.7 + (7.2 - logoHeight) / 2;
+      doc.addImage(logo.data, "PNG", logoX, logoY, logoWidth, logoHeight, "buildco-pdf-logo", "FAST");
+    }
+
+    const y = 13.4;
+    const headerHeight = 9.2;
+    doc.setFillColor(...PDF_COLORS.graphite);
     doc.setDrawColor(...PDF_COLORS.line);
     doc.rect(margin, y, companyWidth, headerHeight, "FD");
     doc.setTextColor(...PDF_COLORS.white);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
-    doc.text("EMPRESA", margin + 2, y + 6.7);
+    doc.text("EMPRESA", margin + 1.2, y + 5.7);
     let x = margin + companyWidth;
     computed.dataset.days.forEach((day) => {
       const isWeekend = day.dow === "SAB" || day.dow === "DOM";
-      const isHoliday = Object.prototype.hasOwnProperty.call(computed.dataset.holidays || {}, String(day.day));
-      doc.setFillColor(...(isHoliday ? PDF_COLORS.holiday : isWeekend ? PDF_COLORS.weekend : PDF_COLORS.blueSoft));
+      doc.setFillColor(...(isWeekend ? PDF_COLORS.peach : PDF_COLORS.graphite));
       doc.setDrawColor(...PDF_COLORS.line);
       doc.rect(x, y, dayWidth, headerHeight, "FD");
-      doc.setTextColor(...PDF_COLORS.navy);
-      doc.setFontSize(4.7);
-      doc.text(day.month, x + dayWidth / 2, y + 3, { align: "center" });
-      doc.setFontSize(6.2);
-      doc.text(pad2(day.day), x + dayWidth / 2, y + 6.7, { align: "center" });
-      doc.setFontSize(4.5);
-      doc.text(day.dow, x + dayWidth / 2, y + 9.5, { align: "center" });
+      doc.setTextColor(...(isWeekend ? PDF_COLORS.text : PDF_COLORS.white));
+      doc.setFontSize(5.5);
+      doc.text(day.month, x + dayWidth / 2, y + 2.45, { align: "center" });
+      doc.setFontSize(7.4);
+      doc.text(pad2(day.day), x + dayWidth / 2, y + 5.7, { align: "center" });
+      doc.setFontSize(5.3);
+      doc.text(day.dow, x + dayWidth / 2, y + 8.05, { align: "center" });
       x += dayWidth;
     });
-    doc.setFillColor(...PDF_COLORS.navy);
+    doc.setFillColor(...PDF_COLORS.graphite);
     doc.rect(x, y, averageWidth, headerHeight, "FD");
     doc.setTextColor(...PDF_COLORS.white);
-    doc.setFontSize(6.2);
-    doc.text("MÉDIA", x + averageWidth / 2, y + 6.7, { align: "center" });
+    doc.setFontSize(7);
+    doc.text("MÉDIA", x + averageWidth / 2, y + 5.7, { align: "center" });
     return y + headerHeight;
   }
 
-  function getPdfCompanyText(doc, label, width) {
-    let fontSize = 6.4;
+  function getPdfCompanyText(doc, label, width, preferredFontSize) {
+    let fontSize = preferredFontSize || 7;
     const safeLabel = pdfDynamicText(label);
-    let lines = doc.splitTextToSize(safeLabel, width - 3);
-    while (lines.length > 2 && fontSize > 4.6) {
-      fontSize -= 0.3;
+    doc.setFontSize(fontSize);
+    while (doc.getTextWidth(safeLabel) > width - 2.4 && fontSize > 5.4) {
+      fontSize -= 0.2;
       doc.setFontSize(fontSize);
-      lines = doc.splitTextToSize(safeLabel, width - 3);
     }
-    return { fontSize, lines, height: Math.max(5.5, lines.length * 2.35 + 1.7) };
+    return { fontSize, lines: [safeLabel], height: 4.8 };
   }
 
   function drawPdfTableRow(doc, computed, row, y, layout, options) {
@@ -2036,88 +2079,86 @@
     const isSubtotal = row.type === "subtotal";
     const isGrandTotal = row.type === "grandTotal";
     let textInfo = {
-      fontSize: 6.2,
+      fontSize: isGrandTotal ? 7.6 : 7,
       lines: [pdfDynamicText(options?.continuation ? `${row.categoryName} · CONTINUAÇÃO` : row.label)],
-      height: 5.5,
+      height: 4.8,
     };
     if (row.type === "company") {
-      doc.setFont("helvetica", "normal");
+      doc.setFont("helvetica", "bold");
       doc.setFontSize(textInfo.fontSize);
-      textInfo = getPdfCompanyText(doc, row.label, companyWidth);
+      textInfo = getPdfCompanyText(doc, row.label, companyWidth, layout.companyFont);
     }
-    const rowHeight = isCategory ? 6 : textInfo.height;
+    const rowHeight = isGrandTotal ? 5.3 : isCategory ? 5 : textInfo.height;
     const background = isGrandTotal
-      ? PDF_COLORS.navy
+      ? PDF_COLORS.graphite
       : isCategory
-        ? PDF_COLORS.blue
+        ? PDF_COLORS.graphite
         : isSubtotal
-          ? [218, 227, 237]
+          ? PDF_COLORS.peach
           : PDF_COLORS.white;
-    const foreground = (isGrandTotal || isCategory) ? PDF_COLORS.white : PDF_COLORS.navy;
+    const foreground = (isGrandTotal || isCategory) ? PDF_COLORS.white : PDF_COLORS.text;
 
     doc.setFillColor(...background);
     doc.setDrawColor(...PDF_COLORS.line);
     if (isCategory) {
       doc.rect(margin, y, layout.tableWidth, rowHeight, "FD");
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(6.4);
+      doc.setFontSize(7);
       doc.setTextColor(...foreground);
-      doc.text(textInfo.lines[0], margin + 2, y + 4.1);
+      doc.text(textInfo.lines[0], margin + 0.8, y + rowHeight / 2 + 0.95);
       return rowHeight;
     }
 
     doc.rect(margin, y, companyWidth, rowHeight, "FD");
     doc.setTextColor(...foreground);
-    doc.setFont("helvetica", isSubtotal || isGrandTotal ? "bold" : "normal");
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(textInfo.fontSize);
-    const lineHeight = 2.35;
-    const textStartY = y + (rowHeight - textInfo.lines.length * lineHeight) / 2 + 1.9;
-    doc.text(textInfo.lines, margin + 1.5, textStartY);
+    const textStartY = y + rowHeight / 2 + (isGrandTotal ? 1.05 : 0.95);
+    doc.text(textInfo.lines, margin + (isSubtotal ? companyWidth / 2 : 1), textStartY, isSubtotal ? { align: "center" } : undefined);
 
     let x = margin + companyWidth;
     row.values.forEach((value, dayIndex) => {
       const day = computed.dataset.days[dayIndex];
-      const isWeekend = day.dow === "SAB" || day.dow === "DOM";
-      const isHoliday = Object.prototype.hasOwnProperty.call(computed.dataset.holidays || {}, String(day.day));
       const hasData = computed.dayHasData[dayIndex];
       let cellBackground = background;
       if (!isSubtotal && !isGrandTotal) {
-        cellBackground = !hasData ? PDF_COLORS.paper : isHoliday ? [239, 246, 252] : isWeekend ? [247, 248, 250] : PDF_COLORS.white;
+        cellBackground = PDF_COLORS.white;
       }
       doc.setFillColor(...cellBackground);
       doc.rect(x, y, dayWidth, rowHeight, "FD");
-      doc.setTextColor(...(isGrandTotal ? PDF_COLORS.white : hasData ? PDF_COLORS.navy : [150, 158, 168]));
-      doc.setFontSize(5.2);
-      doc.text(pdfValue(value, dayIndex, computed), x + dayWidth / 2, y + rowHeight / 2 + 1.8, { align: "center" });
+      doc.setTextColor(...(isGrandTotal ? PDF_COLORS.white : hasData ? PDF_COLORS.text : PDF_COLORS.muted));
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(isGrandTotal ? 7.6 : isSubtotal ? 7 : layout.dayValueFont);
+      doc.text(pdfValue(value, dayIndex, computed), x + dayWidth / 2, y + rowHeight / 2 + (isGrandTotal ? 1.05 : 0.95), { align: "center" });
       x += dayWidth;
     });
     doc.setFillColor(...background);
     doc.rect(x, y, averageWidth, rowHeight, "FD");
     doc.setTextColor(...foreground);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(5.8);
-    doc.text(pdfAverage(row.average), x + averageWidth / 2, y + rowHeight / 2 + 1.8, { align: "center" });
+    doc.setFontSize(isGrandTotal ? 7.6 : 7);
+    doc.text(pdfAverage(row.average), x + averageWidth / 2, y + rowHeight / 2 + (isGrandTotal ? 1.05 : 0.95), { align: "center" });
     return rowHeight;
   }
 
-  function drawPdfTablePages(doc, computed, logoData) {
+  function drawPdfTablePages(doc, computed, logo) {
     const layout = pdfTableLayout(doc, computed);
     const rows = buildPdfTableRows(computed);
-    const pageBottom = doc.internal.pageSize.getHeight() - 13;
+    const pageBottom = doc.internal.pageSize.getHeight() - 6;
     let tablePage = 1;
     doc.addPage("a4", "landscape");
-    let y = drawPdfTablePageHeader(doc, computed, logoData, tablePage, layout);
+    let y = drawPdfTablePageHeader(doc, computed, tablePage, layout, logo);
     let currentCategory = "";
 
     rows.forEach((row, rowIndex) => {
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(6.4);
-      const rowHeight = row.type === "company" ? getPdfCompanyText(doc, row.label, layout.companyWidth).height : 6;
-      const needsFollowingRow = row.type === "category" && rows[rowIndex + 1] ? 5.5 : 0;
+      doc.setFontSize(layout.companyFont);
+      const rowHeight = row.type === "company" ? getPdfCompanyText(doc, row.label, layout.companyWidth, layout.companyFont).height : row.type === "grandTotal" ? 5.3 : 5;
+      const needsFollowingRow = row.type === "category" && rows[rowIndex + 1] ? 4.8 : 0;
       if (y + rowHeight + needsFollowingRow > pageBottom) {
         tablePage += 1;
         doc.addPage("a4", "landscape");
-        y = drawPdfTablePageHeader(doc, computed, logoData, tablePage, layout);
+        y = drawPdfTablePageHeader(doc, computed, tablePage, layout, logo);
         if (row.type !== "category" && currentCategory) {
           y += drawPdfTableRow(doc, computed, { type: "category", categoryName: currentCategory }, y, layout, { continuation: true });
         }
@@ -2131,16 +2172,14 @@
     const pageCount = doc.getNumberOfPages();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const generatedLabel = generatedAt.toLocaleString("pt-BR").replace(",", "");
-    for (let page = 1; page <= pageCount; page += 1) {
+    const generatedLabel = pdfReportTimestamp(generatedAt);
+    for (let page = 2; page <= pageCount; page += 1) {
       doc.setPage(page);
-      doc.setDrawColor(...PDF_COLORS.line);
-      doc.line(10, pageHeight - 8, pageWidth - 10, pageHeight - 8);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(5.8);
-      doc.setTextColor(...PDF_COLORS.gray);
-      doc.text(`Fonte: ${pdfSourceLabel(computed)} · Relatório gerado em ${generatedLabel}`, 10, pageHeight - 4.5);
-      doc.text(`Página ${page} de ${pageCount}`, pageWidth - 10, pageHeight - 4.5, { align: "right" });
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(5.2);
+      doc.setTextColor(...PDF_COLORS.muted);
+      doc.text(`FONTE: ${pdfSourceLabel(computed).toUpperCase()}`, 5.7, pageHeight - 4.5);
+      doc.text(`RELATÓRIO GERADO EM ${generatedLabel}`, pageWidth - 5.7, pageHeight - 4.5, { align: "right" });
     }
   }
 
@@ -2161,12 +2200,12 @@
     if (!PdfConstructor) throw new Error("Biblioteca jsPDF indisponível.");
     validatePdfModel(computed);
     const generatedAt = config.generatedAt || new Date();
-    const logoData = Object.prototype.hasOwnProperty.call(config, "logoData")
-      ? config.logoData
-      : await getEfetivoLogoPng();
+    const logo = Object.prototype.hasOwnProperty.call(config, "logoData")
+      ? (config.logoData ? { data: config.logoData, ratio: config.logoRatio || 4 } : null)
+      : await getBuildcoPdfLogo();
     const doc = new PdfConstructor({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
-    drawPdfDashboard(doc, computed, logoData, generatedAt);
-    drawPdfTablePages(doc, computed, logoData);
+    drawPdfDashboard(doc, computed, generatedAt);
+    drawPdfTablePages(doc, computed, logo);
     drawPdfFooters(doc, computed, generatedAt);
     const fileName = pdfFileName(computed);
     if (config.save !== false) doc.save(fileName);
