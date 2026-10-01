@@ -923,7 +923,6 @@ function updatePermissionUI() {
   setElementsDisabled("#btnFreqExportExcel", !canExport);
   setElementsDisabled("#btnFreqExportPDF", !canExport);
   setElementsDisabled("#efetivo-import-button", !canEfetivo);
-  setElementsDisabled("#efetivo-save-button", !canEfetivo);
   setElementsDisabled("#efetivo-file-input", !canEfetivo);
   setElementsDisabled("#btnAtaTercExcel", !canExport);
   setElementsDisabled("#btnAtaTercPDF", !canExport);
@@ -1543,7 +1542,20 @@ window.saveEmpresa = async function () {
     }
 
     const dataInicioObra = $("e-data-inicio-obra")?.value || null;
-    const categoriaEfetivo = $("e-categoria-efetivo")?.value?.trim() || "";
+    const requestedStatus = $("e-status")?.value === "inativa" ? "inativa" : "ativa";
+    const requestedDataFimObra = $("e-data-fim-obra")?.value || null;
+    const categoriaEfetivo = typeof window.normalizeEmpresaCategoriaEfetivo === "function"
+      ? window.normalizeEmpresaCategoriaEfetivo($("e-categoria-efetivo")?.value)
+      : ($("e-categoria-efetivo")?.value?.trim() || "OUTROS");
+
+    if (requestedStatus === "inativa" && !requestedDataFimObra) {
+      safeToast("Informe a data de encerramento da empresa.", "error");
+      return;
+    }
+    if (requestedDataFimObra && dataInicioObra && requestedDataFimObra < dataInicioObra) {
+      safeToast("A data de encerramento não pode ser anterior à data de início.", "error");
+      return;
+    }
     const empresaEditada = db.currentEmpresaEditId === null
       ? null
       : db.empresas.find((item) => String(item.id) === String(db.currentEmpresaEditId));
@@ -1579,8 +1591,8 @@ window.saveEmpresa = async function () {
       return;
     }
     const empresaId = empresaEditada?.id || crypto.randomUUID();
-    const status = empresaEditada?.status === "inativa" ? "inativa" : "ativa";
-    const dataFimObra = status === "inativa" ? (empresaEditada?.dataFimObra || null) : null;
+    const status = requestedStatus;
+    const dataFimObra = status === "inativa" ? requestedDataFimObra : null;
     const row = {
       nome,
       cnpj,
@@ -1625,11 +1637,13 @@ window.openInativarEmpresaModal = function openInativarEmpresaModal(id) {
 
   db.pendingInactiveEmpresaId = String(empresa.id);
   const message = $("inativarEmpresaMessage");
-  const dateInput = $("e-data-fim-obra");
+  const dateInput = $("e-inativar-data-fim-obra");
   if (message) message.textContent = `Informe a data de encerramento de ${empresa.nome || "esta empresa"}.`;
   if (dateInput) {
     dateInput.value = "";
-    dateInput.min = empresa.dataInicioObra || "";
+    dateInput.min = typeof window.empresaDateInputValue === "function"
+      ? window.empresaDateInputValue(empresa.dataInicioObra)
+      : (empresa.dataInicioObra || "");
   }
 
   const modal = $("modalInativarEmpresa");
@@ -1657,7 +1671,7 @@ window.inativarEmpresa = async function inativarEmpresa() {
 
     const empresaId = db.pendingInactiveEmpresaId;
     const empresa = db.empresas.find((item) => String(item.id) === String(empresaId));
-    const dataFimObra = $("e-data-fim-obra")?.value || "";
+    const dataFimObra = $("e-inativar-data-fim-obra")?.value || "";
     if (!empresa) {
       safeToast("Empresa não encontrada.", "error");
       return;
@@ -1684,9 +1698,21 @@ window.inativarEmpresa = async function inativarEmpresa() {
 // --- EMPRESA: REMOVER ---
 window.removeEmpresa = async function removeEmpresa(id) {
   try {
+    const db = ensureDB();
     if (!requirePermission(window.canEditEmpresas, "Seu perfil não pode remover empresas.")) return;
     if (!fb.auth.currentUser) {
       safeToast("Você precisa estar autenticado.", "error");
+      return;
+    }
+
+    const empresa = db.empresas.find((item) => String(item.id) === String(id));
+    const hasLinkedEmployees = Boolean(empresa && db.funcionarios.some((funcionario) => (
+      typeof window.isFuncionarioLinkedToEmpresa === "function"
+        ? window.isFuncionarioLinkedToEmpresa(funcionario, empresa)
+        : String(funcionario?.empresaId || "") === String(empresa.id)
+    )));
+    if (hasLinkedEmployees) {
+      safeToast("A empresa possui funcionários vinculados. Inative-a para preservar o histórico.", "error");
       return;
     }
 

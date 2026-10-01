@@ -387,6 +387,19 @@ async function obterUltimoPeriodoComFrequencia() {
   return keys[keys.length - 1] || "";
 }
 
+async function obterFrequencia(periodoKey) {
+  const docId = String(periodoKey);
+
+  if (dbHasObraAtiva()) {
+    const snap = await dbGetFrequenciaDocRef(docId).get();
+    if (!snap.exists) return null;
+    return { id: docId, data: dbNormalizeFrequenciaData(snap.data() || {}) };
+  }
+
+  const snap = await firebase.database().ref(`${COL_FREQUENCIA}/${docId}`).get();
+  return snap.exists() ? { id: docId, data: snap.val() || {} } : null;
+}
+
 function ouvirEfetivo(periodoKey, cb) {
   const docId = String(periodoKey);
   dbLog("listener efetivo:start", { periodoKey: docId });
@@ -619,6 +632,10 @@ function listenObra(cb) {
 
 function listenFrequencia(periodoKey, cb) {
   return ouvirFrequencia(periodoKey, cb);
+}
+
+async function getFrequencia(periodoKey) {
+  return obterFrequencia(periodoKey);
 }
 
 async function upsertFuncionario(row) {

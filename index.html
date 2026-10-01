@@ -400,47 +400,63 @@
             <div class="efetivo-module__period">
               <label class="efetivo-module__label" for="efetivo-month-select">Mês</label>
               <select class="efetivo-module__select" id="efetivo-month-select"></select>
+              <label class="efetivo-module__label" for="efetivo-year-input">Ano</label>
+              <input class="efetivo-module__select" id="efetivo-year-input" type="number" min="2000" max="2100" step="1">
               <span class="efetivo-module__status" id="efetivo-status">Aguardando carregamento.</span>
             </div>
             <div class="efetivo-module__actions">
               <input id="efetivo-file-input" type="file" accept=".csv,.xlsx,.xls" hidden>
               <button class="efetivo-module__button efetivo-module__button--primary" id="efetivo-import-button" type="button">
                 <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 15v4h14v-4"/></svg>
-                Importar
+                Importar histórico
               </button>
               <button class="efetivo-module__button" id="efetivo-save-button" type="button">
                 <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
-                Salvar
+                Salvar consolidação
               </button>
               <button class="efetivo-module__button" id="efetivo-refresh-button" type="button">
                 <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15 6.7"/><path d="M3 12A9 9 0 0 1 18 5.3"/><path d="M18 2v4h-4"/><path d="M6 22v-4h4"/></svg>
                 Atualizar
               </button>
-              <button class="efetivo-module__button" id="efetivo-print-button" type="button">
-                <svg viewBox="0 0 24 24"><path d="M7 8V3h10v5"/><path d="M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7Z"/></svg>
-                Imprimir
+              <button class="efetivo-module__button" id="efetivo-pdf-button" type="button">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15h8"/><path d="M8 18h5"/></svg>
+                <span>Emitir PDF</span>
               </button>
             </div>
           </div>
 
+          <div class="efetivo-module__notice" id="efetivo-link-warning" hidden></div>
+
           <div class="efetivo-module__kpis">
             <article class="efetivo-module__kpi">
-              <span>Efetivo total</span>
+              <span>Efetivo atual</span>
               <strong id="efetivo-kpi-total">0</strong>
+              <small id="efetivo-kpi-total-caption">Sem dia consolidado</small>
             </article>
             <article class="efetivo-module__kpi">
               <span>Empresas ativas</span>
               <strong id="efetivo-kpi-companies">0</strong>
+              <small>Empresas na competência</small>
             </article>
             <article class="efetivo-module__kpi">
-              <span>Média diária</span>
+              <span>Média semanal</span>
               <strong id="efetivo-kpi-daily-average">0,0</strong>
+              <small id="efetivo-kpi-week-caption">Semana mais recente com dados</small>
             </article>
             <article class="efetivo-module__kpi">
               <span>Média mensal</span>
               <strong id="efetivo-kpi-month-average">0,0</strong>
+              <small>Apenas dias com informação</small>
             </article>
           </div>
+
+          <section class="efetivo-module__weekly-section" aria-labelledby="efetivo-weekly-title">
+            <div class="efetivo-module__section-title">
+              <h3 id="efetivo-weekly-title">Média dos colaboradores por semana</h3>
+              <span id="efetivo-month-average-label">Média do mês: —</span>
+            </div>
+            <div class="efetivo-module__weekly-grid" id="efetivo-weekly-grid"></div>
+          </section>
 
           <section class="efetivo-module__chart-section" aria-labelledby="efetivo-chart-title">
             <div class="efetivo-module__section-title">
@@ -456,7 +472,7 @@
           <section class="efetivo-module__table-section" aria-labelledby="efetivo-table-title">
             <div class="efetivo-module__section-title">
               <h3 id="efetivo-table-title">Controle diário por empresa</h3>
-              <span>Edição liberada para admin/editor</span>
+              <span>Valores derivados da frequência registrada</span>
             </div>
             <div class="efetivo-module__empty" id="efetivo-empty" hidden></div>
             <div class="efetivo-module__table-wrap">
@@ -465,7 +481,7 @@
           </section>
 
           <footer class="efetivo-module__dashboard-footer">
-            <div>Fonte: <strong id="efetivo-source">Manual</strong></div>
+            <div>Fonte: <strong id="efetivo-source">Frequência / histórico</strong></div>
             <div>Atualizado: <strong id="efetivo-updated-at">--</strong></div>
             <div class="efetivo-module__footer-brand"><span>build</span><strong>co</strong></div>
           </footer>
@@ -582,20 +598,26 @@
       <div class="field"><label>CNPJ *</label><input type="text" id="e-cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" maxlength="18" oninput="formatCNPJ(this)"></div>
       <div class="field"><label>Responsável</label><input type="text" id="e-resp" placeholder="Nome do responsável"></div>
       <div class="grid-2">
-        <div class="field"><label>Data de início da obra</label><input type="date" id="e-data-inicio-obra"></div>
         <div class="field">
-          <label>Categoria do efetivo</label>
-          <input type="text" id="e-categoria-efetivo" list="categoriasEfetivoSuggestions" placeholder="Ex.: Civil">
-          <datalist id="categoriasEfetivoSuggestions">
-            <option value="INDIRETOS"></option>
-            <option value="CIVIL"></option>
-            <option value="SERRALHARIA / OUTROS"></option>
-            <option value="TERRAPLANAGEM"></option>
-            <option value="ESTRUTURA / METALICA"></option>
-            <option value="INSTALACOES"></option>
-            <option value="OUTROS"></option>
-          </datalist>
+          <label>Status na obra *</label>
+          <select id="e-status" onchange="toggleEmpresaLifecycleFields()">
+            <option value="ativa">Ativa</option>
+            <option value="inativa">Inativa</option>
+          </select>
         </div>
+        <div class="field">
+          <label>Categoria do efetivo *</label>
+          <select id="e-categoria-efetivo">
+            <option value="OUTROS">Outros</option>
+            <option value="INDIRETOS">Indiretos</option>
+            <option value="CIVIL">Civil</option>
+            <option value="TERRAPLANAGEM">Terraplanagem</option>
+            <option value="ESTRUTURA_METALICA">Estrutura / Metálica</option>
+            <option value="INSTALACOES">Instalações</option>
+          </select>
+        </div>
+        <div class="field"><label>Data de início na obra</label><input type="date" id="e-data-inicio-obra" onchange="toggleEmpresaLifecycleFields()"></div>
+        <div class="field" id="e-data-fim-obra-field"><label>Data de encerramento</label><input type="date" id="e-data-fim-obra"></div>
       </div>
       <div class="doc-section">
         <h4>Documentos da Empresa</h4>
@@ -634,7 +656,7 @@
       <p id="inativarEmpresaMessage" style="color:var(--text2);margin-bottom:16px;"></p>
       <div class="field">
         <label>Data de encerramento *</label>
-        <input type="date" id="e-data-fim-obra" required>
+        <input type="date" id="e-inativar-data-fim-obra" required>
       </div>
     </div>
     <div class="modal-footer">
@@ -1094,6 +1116,8 @@ function renderDeleteActionButton(onclickCode){
 const TRAININGS_DATA = {
   'NR18': { desc: 'Condições e meio ambiente de trabalho na indústria da construção', icon: SVG_BUILDING_PLUS, cor: '#f5a623' },
   'NR06': { desc: 'Equipamentos de Proteção Individual - EPIs obrigatórios', icon: SVG_SHIELD_CHECK, cor: '#22c55e' },
+  'NR10': { desc: 'Segurança em instalações e serviços em eletricidade', icon: '⚡', cor: '#f59e0b' },
+  'NR11': { desc: 'Transporte, movimentação, armazenagem e manuseio de materiais', icon: '🏗️', cor: '#06b6d4' },
   'NR12': { desc: 'Segurança em máquinas e equipamentos', icon: '⚙️', cor: '#3b82f6' },
   'NR35': { desc: 'Trabalho em Altura - uso de cinto de segurança e equipamentos', icon: '🪢', cor: '#ef4444' },
   'NR23': { desc: 'Proteção contra incêndios - brigada e combate a princípio', icon: '🔥', cor: '#ef4444' },
@@ -1102,8 +1126,10 @@ const TRAININGS_DATA = {
   'NR20': { desc: 'Líquidos inflamáveis e combustíveis', icon: '⛽', cor: '#a855f7' }
 };
 const TRAINS_OBRIG_TERC = ['NR18','NR06','NR12'];
-const TRAINS_COND_TERC = ['NR35','NR23','NR26','NR13','NR20'];
+const TRAINS_COND_TERC = ['NR10','NR11','NR13','NR20','NR23','NR26','NR35'];
 const TRAINS_ATACAREJO = ['NR18','NR06','NR12','NR26','NR35'];
+const TRAINS_COND_ATACAREJO = ['NR10','NR11'];
+const TRAINS_COND_STATUS = ['NR10','NR11'];
 
 // Função auxiliar para coletar dados do formulário da obra
 window.getObraFormData = function() {
@@ -1239,7 +1265,7 @@ function formatDate(d){ return new Date(d).toLocaleDateString('pt-BR'); }
 // ============================================================
 function computeStatus(func){
   const docs = func.docs||{};
-  const requiredDocs = getRequiredDocs(func.tipo);
+  const requiredDocs = getApplicableDocs(func);
   
   // Verificar se todos os documentos obrigatórios existem (usando makeKey)
   const missingDocs = requiredDocs.filter(r => !docs[makeKey(r)]);
@@ -1263,7 +1289,7 @@ function computeStatus(func){
 }
 function docsProgress(func){
   const docs = func.docs||{};
-  const req = getRequiredDocs(func.tipo);
+  const req = getApplicableDocs(func);
   const total = req.length;
   const done = req.filter(r=>isResolvedDocumentStatus(docs[makeKey(r)]?.status)).length;
   return {done, total, pct: total?Math.round(done/total*100):0};
@@ -1275,6 +1301,13 @@ function isResolvedDocumentStatus(status){
 function getRequiredDocs(tipo){
   if(tipo==='Terceirizado') return [...DOCS_TERCEIRIZADO,...TRAINS_OBRIG_TERC];
   return [...DOCS_ATACAREJO,...TRAINS_ATACAREJO];
+}
+function getApplicableDocs(func){
+  const docs = func?.docs || {};
+  const applicableConditionals = TRAINS_COND_STATUS.filter(name =>
+    Object.prototype.hasOwnProperty.call(docs, makeKey(name))
+  );
+  return [...getRequiredDocs(func?.tipo), ...applicableConditionals];
 }
 
 // ============================================================
@@ -1361,6 +1394,22 @@ function buildTrainFields(tipo, existingDocs={}){
       const key = makeKey(t);
       const ex = existingDocs[key]||{status:'Pendente'};
       html += trainItemHtml(t, info, ex, key);
+    });
+    html += '</div>';
+    html += `<div class="doc-section"><h4>${SVG_DOC_FILE}Treinamentos Condicionais</h4><p style="color:var(--text2);font-size:12px;margin-bottom:12px;">Selecione conforme a função do colaborador</p><div class="checkbox-group">`;
+    TRAINS_COND_ATACAREJO.forEach(t=>{
+      const info = TRAININGS_DATA[t] || { desc: '', icon: SVG_DOC_FILE, cor: '#9ba3b8' };
+      const key = makeKey(t);
+      const checked = existingDocs[key] ? 'checked' : '';
+      html += `<label class="checkbox-item" style="border-left:3px solid ${info.cor};"><input type="checkbox" id="chk_${key}" value="${t}" ${checked} onchange="toggleConditionalDoc(this)"> <span class="train-icon">${info.icon}</span> <strong>${t}</strong> - ${info.desc}</label>`;
+    });
+    html += '</div></div><div id="conditionalDocs">';
+    TRAINS_COND_ATACAREJO.forEach(t=>{
+      const info = TRAININGS_DATA[t] || { desc: '', icon: SVG_DOC_FILE, cor: '#9ba3b8' };
+      const key = makeKey(t);
+      const ex = existingDocs[key]||{status:'Pendente'};
+      const display = existingDocs[key] ? 'block' : 'none';
+      html += `<div id="cdoc_${key}" style="display:${display};">${trainItemHtml(t, info, ex, key)}</div>`;
     });
     html += '</div>';
   }
@@ -1806,32 +1855,45 @@ function handleEmpresaDoc(input, key){
 
 // Firebase CRUD now handles saveFuncionario in js/main.js
 function collectDocs(tipo){
-  const docs = {};
+  const currentFuncionario = DB.currentEditId !== null
+    ? DB.funcionarios.find(f=>String(f.id)===String(DB.currentEditId))
+    : null;
+  const previousDocs = currentFuncionario?.docs && typeof currentFuncionario.docs === 'object'
+    ? currentFuncionario.docs
+    : {};
+  const docs = { ...previousDocs };
   const allDocs = tipo==='Terceirizado'
     ? [...DOCS_TERCEIRIZADO,...TRAINS_OBRIG_TERC]
     : [...DOCS_ATACAREJO,...TRAINS_ATACAREJO];
+  const conditionalTrainings = tipo==='Terceirizado'
+    ? TRAINS_COND_TERC
+    : TRAINS_COND_ATACAREJO;
+
+  // Limpa apenas as chaves gerenciadas pelo formulário; documentos adicionais
+  // de cadastros antigos permanecem intactos.
+  [...DOCS_TERCEIRIZADO, ...DOCS_ATACAREJO, ...TRAINS_OBRIG_TERC, ...TRAINS_ATACAREJO,
+    ...TRAINS_COND_TERC, ...TRAINS_COND_ATACAREJO].forEach(name=>{
+    delete docs[makeKey(name)];
+  });
   // Conditional
-  if(tipo==='Terceirizado'){
-    TRAINS_COND_TERC.forEach(t=>{
-      const key = makeKey(t);
-      const chk = document.getElementById('chk_'+key);
-      if(chk&&chk.checked) allDocs.push(t);
-    });
-  }
+  conditionalTrainings.forEach(t=>{
+    const key = makeKey(t);
+    const chk = document.getElementById('chk_'+key);
+    if(chk&&chk.checked) allDocs.push(t);
+  });
   allDocs.forEach(name=>{
     const key = makeKey(name);
     const sel = document.getElementById('doc_'+key);
     if(!sel) return;
     const status = sel.value;
-    const prev = DB.currentEditId !== null
-      ? DB.funcionarios.find(f=>f.id===DB.currentEditId)?.docs?.[key]
-      : null;
+    const prev = previousDocs[key] || null;
     let deadline = prev?.deadline || null;
     if(status==='Pendente' && !deadline){
       deadline = addBusinessDays(new Date(), 3).toISOString();
     }
     const fileData = DB.tempDocs[key] || prev || null;
     docs[key] = {
+      ...(prev || {}),
       docName: name, status,
       deadline: status==='Pendente' ? deadline : null,
       fileName: fileData?.name || fileData?.fileName || null,
@@ -1895,8 +1957,11 @@ function openEmpresaModal(id=null){
     : '';
   document.getElementById('e-cnpj').value = empresa?.cnpj || '';
   document.getElementById('e-resp').value = empresa?.resp || '';
-  document.getElementById('e-data-inicio-obra').value = empresa?.dataInicioObra || '';
-  document.getElementById('e-categoria-efetivo').value = empresa?.categoriaEfetivo || '';
+  document.getElementById('e-status').value = normalizeEmpresaLifecycleStatus(empresa);
+  document.getElementById('e-data-inicio-obra').value = empresaDateInputValue(empresa?.dataInicioObra);
+  document.getElementById('e-data-fim-obra').value = empresaDateInputValue(empresa?.dataFimObra);
+  document.getElementById('e-categoria-efetivo').value = normalizeEmpresaCategoriaEfetivo(empresa?.categoriaEfetivo);
+  toggleEmpresaLifecycleFields();
   ['pgr','pcmso','art'].forEach(key => {
     syncStatusDropdownValue(`e-${key}`, empresa?.docs?.[key]?.status || 'Pendente');
   });
@@ -1908,9 +1973,60 @@ function openEmpresaModal(id=null){
 function normalizeEmpresaLifecycleStatus(empresa){
   return empresa?.status === 'inativa' ? 'inativa' : 'ativa';
 }
+function normalizeEmpresaCategoriaEfetivo(value){
+  const normalized = String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s*\/\s*/g, '_')
+    .replace(/\s+/g, '_');
+  const aliases = {
+    ESTRUTURA_METALICA: 'ESTRUTURA_METALICA',
+    ESTRUTURA__METALICA: 'ESTRUTURA_METALICA',
+    ESTRUTURAS_METALICA: 'ESTRUTURA_METALICA',
+    TERRAPLENAGEM: 'TERRAPLANAGEM',
+    SERRALHARIA_OUTROS: 'OUTROS'
+  };
+  const category = aliases[normalized] || normalized;
+  return ['INDIRETOS','CIVIL','TERRAPLANAGEM','ESTRUTURA_METALICA','INSTALACOES','OUTROS'].includes(category)
+    ? category
+    : 'OUTROS';
+}
+function formatEmpresaCategoriaEfetivo(value){
+  return {
+    INDIRETOS: 'Indiretos',
+    CIVIL: 'Civil',
+    TERRAPLANAGEM: 'Terraplanagem',
+    ESTRUTURA_METALICA: 'Estrutura / Metálica',
+    INSTALACOES: 'Instalações',
+    OUTROS: 'Outros'
+  }[normalizeEmpresaCategoriaEfetivo(value)];
+}
+function toggleEmpresaLifecycleFields(){
+  const status = document.getElementById('e-status')?.value || 'ativa';
+  const field = document.getElementById('e-data-fim-obra-field');
+  const input = document.getElementById('e-data-fim-obra');
+  if(field) field.style.display = status === 'inativa' ? '' : 'none';
+  if(input) {
+    input.required = status === 'inativa';
+    input.min = document.getElementById('e-data-inicio-obra')?.value || '';
+    if(status !== 'inativa') input.value = '';
+  }
+}
+window.normalizeEmpresaCategoriaEfetivo = normalizeEmpresaCategoriaEfetivo;
+window.toggleEmpresaLifecycleFields = toggleEmpresaLifecycleFields;
 function formatEmpresaLifecycleDate(value){
-  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const match = empresaDateInputValue(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return match ? `${match[3]}/${match[2]}/${match[1]}` : '';
+}
+function empresaDateInputValue(value){
+  const raw = String(value || '');
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(match) return `${match[1]}-${match[2]}-${match[3]}`;
+  const date = value?.toDate instanceof Function ? value.toDate() : value instanceof Date ? value : null;
+  if(!date || Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 }
 function renderEmpresas(){
   const el = document.getElementById('empresasList');
@@ -1936,7 +2052,7 @@ function renderEmpresas(){
       </div>
       <div class="docs-mini">
         <span class="badge-status ${lifecycleStatus === 'ativa' ? 'conforme' : 'irregular'}" style="font-size:11px;">${lifecycleStatus === 'ativa' ? 'Ativa' : 'Inativa'}</span>
-        ${e.categoriaEfetivo ? `<span class="badge-status" style="font-size:11px;">${e.categoriaEfetivo}</span>` : ''}
+        <span class="badge-status" style="font-size:11px;">${formatEmpresaCategoriaEfetivo(e.categoriaEfetivo)}</span>
         ${inicioObra ? `<span style="font-size:11px;color:var(--text2);align-self:center;">Início: ${inicioObra}</span>` : ''}
         ${fimObra ? `<span style="font-size:11px;color:var(--text2);align-self:center;">Encerramento: ${fimObra}</span>` : ''}
         ${['pgr','pcmso','art'].map(k=>{
