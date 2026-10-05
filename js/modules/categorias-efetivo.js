@@ -312,7 +312,14 @@
       return true;
     } catch (error) {
       console.error("[categorias-efetivo] erro ao salvar", error);
-      notify(error?.message || "Não foi possível salvar as categorias.", "error");
+      const permissionDenied = error?.code === "permission-denied"
+        || /missing or insufficient permissions/i.test(String(error?.message || ""));
+      notify(
+        permissionDenied
+          ? "Você não possui permissão para alterar as categorias desta obra."
+          : (error?.message || "Não foi possível salvar as categorias."),
+        "error"
+      );
       return false;
     }
   }

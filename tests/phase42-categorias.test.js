@@ -21,7 +21,13 @@ const efetivo = global.efetivoUtils;
 
 async function run() {
   let writes = 0;
-  global.saveEfetivoCategorias = async () => { writes += 1; };
+  let lastWrite = null;
+  const notifications = [];
+  global.saveEfetivoCategorias = async (payload) => {
+    writes += 1;
+    lastWrite = payload;
+  };
+  global.toast = (message, type) => { notifications.push({ message, type }); };
 
   categories.applyCategoriesPayload({ exists: false, categorias: [] });
   assert.equal(categories.getCategories().length, 6, "fallback padrão");
@@ -63,6 +69,34 @@ async function run() {
   await global.initializeDefaultEfetivoCategories();
   assert.equal(writes, 0, "viewer não grava");
   global.canEditEmpresas = () => true;
+
+  await global.initializeDefaultEfetivoCategories();
+  assert.equal(writes, 1, "admin/editor inicializa por uma gravação explícita");
+  assert.equal(lastWrite.length, 6, "inicialização persiste as seis categorias padrão no documento único");
+
+  global.saveEfetivoCategorias = async () => {
+    const error = new Error("Missing or insufficient permissions.");
+    error.code = "permission-denied";
+    throw error;
+  };
+  const originalConsoleError = console.error;
+  let loggedPermissionError = null;
+  console.error = (...args) => { loggedPermissionError = args; };
+  try {
+    await global.initializeDefaultEfetivoCategories();
+  } finally {
+    console.error = originalConsoleError;
+  }
+  assert.equal(loggedPermissionError?.[0], "[categorias-efetivo] erro ao salvar",
+    "erro técnico continua registrado no console");
+  assert.deepEqual(notifications.at(-1), {
+    message: "Você não possui permissão para alterar as categorias desta obra.",
+    type: "error",
+  }, "erro técnico de permissão recebe mensagem amigável");
+  global.saveEfetivoCategorias = async (payload) => {
+    writes += 1;
+    lastWrite = payload;
+  };
 
   const configured = [
     { id: "unused", nome: "Sem empresas", nomeNormalizado: "SEM_EMPRESAS", ordem: 1, ativa: true },

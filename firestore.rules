@@ -158,9 +158,10 @@ service cloud.firestore {
         allow write: if canWriteObraData(obraId);
       }
 
-      match /efetivoConfig/{docId} {
+      match /efetivoConfig/categorias {
         allow read: if canAccessObra(obraId);
-        allow write: if canWriteObraData(obraId);
+        allow create, update: if canWriteObraData(obraId);
+        allow delete: if false;
       }
 
       match /efetivoImportacoes/{docId} {
