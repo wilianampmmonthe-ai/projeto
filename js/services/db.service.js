@@ -835,6 +835,10 @@ function dataURLToBlob(dataURL) {
 }
 
 async function uploadDocDataURL({ funcionarioId, docKey, fileName, dataURL }) {
+  if (typeof firebase.storage !== "function") {
+    if (!window.appDependencies) throw new Error("Carregador do Firebase Storage indisponível.");
+    await window.appDependencies.loadFirebaseStorage();
+  }
   const safeName = String(fileName || "arquivo").replace(/[^\w.\-]+/g, "_");
   const path = `documentos/${String(funcionarioId)}/${String(docKey)}/${Date.now()}_${safeName}`;
 

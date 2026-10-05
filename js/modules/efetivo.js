@@ -22,11 +22,14 @@
     root: null,
     elements: {},
     initialized: false,
+    active: false,
+    dirty: true,
     periodoKey: "",
     dataset: null,
     computed: null,
     chart: null,
     unsubscribe: null,
+    subscribedPeriod: "",
     saveTimer: null,
     isRemoteApplying: false,
     hasRemoteSnapshot: false,
@@ -36,6 +39,7 @@
     frequencyLoadToken: 0,
     loadStatus: "idle",
     pdfGenerating: false,
+    pendingStatus: null,
   };
 
   function currentYear() {
@@ -797,6 +801,15 @@
 
   function render() {
     if (!state.root) return;
+    if (!state.active) {
+      state.dirty = true;
+      return;
+    }
+    if (state.pendingStatus) {
+      const pending = state.pendingStatus;
+      state.pendingStatus = null;
+      setStatus(pending.message, pending.busy);
+    }
     if (!canView()) {
       renderNoAccess();
       return;
@@ -813,6 +826,7 @@
     renderTable();
     renderChart();
     syncPermissions();
+    state.dirty = false;
   }
 
   function renderNoAccess() {
@@ -1026,7 +1040,6 @@
       fallback.innerHTML = "";
     }
     canvas.hidden = false;
-    destroyChart();
 
     const labels = computed.dataset.days.map((day) => pad2(day.day));
     const data = computed.dailyTotals.map((value, index) => (
@@ -1034,6 +1047,14 @@
     ));
     const numericData = data.filter((value) => value !== null);
     const max = Math.max(10, Math.ceil(Math.max(...numericData, 0) / 10) * 10 + 10);
+
+    if (state.chart) {
+      state.chart.data.labels = labels;
+      state.chart.data.datasets[0].data = data;
+      state.chart.options.scales.y.suggestedMax = max;
+      state.chart.update("none");
+      return;
+    }
 
     state.chart = new Chart(canvas.getContext("2d"), {
       type: "line",
@@ -1134,6 +1155,10 @@
   }
 
   function setStatus(message, busy) {
+    if (!state.active) {
+      state.pendingStatus = { message, busy };
+      return;
+    }
     const status = state.elements["efetivo-status"];
     if (!status) return;
     status.textContent = message;
@@ -1209,6 +1234,9 @@
   }
 
   function subscribeToCurrentPeriod(forceFrequencyReload) {
+    if (typeof state.unsubscribe === "function" && state.subscribedPeriod === state.periodoKey && !forceFrequencyReload) {
+      return;
+    }
     if (typeof state.unsubscribe === "function") {
       state.unsubscribe();
       state.unsubscribe = null;
@@ -1236,6 +1264,7 @@
     }
     render();
     const subscribedPeriod = state.periodoKey;
+    state.subscribedPeriod = subscribedPeriod;
     state.unsubscribe = window.listenEfetivo(subscribedPeriod, (payload) => {
       if (state.periodoKey !== subscribedPeriod) return;
       state.isRemoteApplying = true;
@@ -1416,7 +1445,11 @@
   }
 
   async function parseWorkbook(file) {
-    if (!window.XLSX) throw new Error("Biblioteca XLSX nao esta disponivel.");
+    if (!window.XLSX) {
+      setStatus("Carregando leitor de Excel...", true);
+      if (!window.appDependencies) throw new Error("Carregador XLSX nao esta disponivel.");
+      await window.appDependencies.loadXLSX();
+    }
     const buffer = await file.arrayBuffer();
     const workbook = window.XLSX.read(buffer, { type: "array", cellDates: true, cellFormula: true });
     const sheetName = findEffectiveSheet(workbook);
@@ -2302,15 +2335,22 @@
       notify("Não há dados de efetivo para emitir nesta competência.", "error");
       return;
     }
+    const previousStatus = state.elements["efetivo-status"]?.textContent || "";
     state.pdfGenerating = true;
     syncPermissions();
     try {
+      if (!window.jspdf?.jsPDF) {
+        setStatus("Carregando gerador de PDF...", true);
+        if (!window.appDependencies) throw new Error("Carregador de PDF nao esta disponivel.");
+        await window.appDependencies.loadJsPDF();
+      }
       await createEfetivoPdf(state.computed);
       notify("PDF do efetivo gerado com sucesso.", "success");
     } catch (error) {
       console.error("[efetivo] erro ao gerar PDF", error);
       notify(error?.message || "Não foi possível gerar o PDF do efetivo.", "error");
     } finally {
+      setStatus(previousStatus, false);
       state.pdfGenerating = false;
       syncPermissions();
     }
@@ -2320,6 +2360,7 @@
     const root = pageRoot?.querySelector?.(".efetivo-module") || pageRoot;
     if (!root) return;
     state.root = root;
+    state.active = true;
     ensurePdfButton(root);
     state.elements = getElements(root);
     bindPdfButton();
@@ -2334,9 +2375,15 @@
     ensurePeriodOption(preferredPeriod);
     state.periodoKey = preferredPeriod;
     state.dataset = state.dataset || createEmptyDataset(preferredPeriod);
+    if (typeof state.unsubscribe === "function" && state.subscribedPeriod === preferredPeriod) {
+      if (state.dirty || window.appRenderLifecycle?.isDirty("efetivo")) window.efetivoRefresh();
+      window.appRenderLifecycle?.clear("efetivo");
+      return;
+    }
     state.loadStatus = "loading";
     render();
     subscribeToCurrentPeriod();
+    window.appRenderLifecycle?.clear("efetivo");
   };
 
   window.efetivoRefresh = function efetivoRefresh() {
@@ -2352,12 +2399,39 @@
     render();
   };
 
+  window.efetivoApplyFrequencySnapshot = function efetivoApplyFrequencySnapshot(periodoKey, frequencyData, options) {
+    if (!state.periodoKey || String(periodoKey) !== String(state.periodoKey)) return false;
+    state.frequencyData = frequencyData || null;
+    state.frequencyLoaded = true;
+    state.frequencyLoading = false;
+    const current = normalizeDataset(
+      state.dataset || createEmptyDataset(state.periodoKey),
+      state.periodoKey
+    );
+    const merged = mergeEligibleCompanies(current, state.periodoKey);
+    state.dataset = frequencyData
+      ? applyFrequencyToDataset(merged.dataset, state.periodoKey, frequencyData)
+      : merged.dataset;
+    state.loadStatus = frequencyData
+      ? (state.dataset.dayHasData.some(Boolean) ? "real" : "empty")
+      : (hasHistoricalSnapshot(merged.dataset) ? "legacy" : "empty");
+    state.dirty = true;
+    if (options?.render !== false && state.active) render();
+    return true;
+  };
+
+  window.efetivoDeactivate = function efetivoDeactivate() {
+    state.active = false;
+  };
+
   window.efetivoDestroyPage = function efetivoDestroyPage() {
+    state.active = false;
     destroyChart();
     if (typeof state.unsubscribe === "function") {
       state.unsubscribe();
       state.unsubscribe = null;
     }
+    state.subscribedPeriod = "";
     state.hasRemoteSnapshot = false;
     state.frequencyLoadToken += 1;
     state.frequencyData = null;
@@ -2365,8 +2439,10 @@
     state.frequencyLoading = false;
     state.loadStatus = "idle";
     state.pdfGenerating = false;
+    state.pendingStatus = null;
     state.dataset = null;
     state.computed = null;
+    state.dirty = true;
   };
 
   window.empresaEstaAtivaNaCompetencia = function empresaEstaAtivaNaCompetencia(empresa, ano, mes) {

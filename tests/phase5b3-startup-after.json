@@ -1,0 +1,331 @@
+﻿{
+  "url": "http://127.0.0.1:8765/index.html",
+  "cacheDisabled": true,
+  "requestCount": 35,
+  "transferredBytes": 489024,
+  "decodedBytes": 1268161,
+  "scriptRequests": 22,
+  "timing": {
+    "domContentLoaded": 1081.199999988079,
+    "load": 1097,
+    "firstPaint": 732,
+    "firstContentfulPaint": 1076
+  },
+  "resourceDecodedBytes": 288038,
+  "scripts": [
+    "inline",
+    "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js",
+    "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js",
+    "https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js",
+    "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js",
+    "http://127.0.0.1:8765/js/config/firebase-config.js",
+    "http://127.0.0.1:8765/js/config/firebase.js",
+    "http://127.0.0.1:8765/js/utils/dependency-loader.js",
+    "http://127.0.0.1:8765/js/services/auth.service.js",
+    "http://127.0.0.1:8765/js/services/db.service.js",
+    "http://127.0.0.1:8765/js/utils/formatters.js",
+    "http://127.0.0.1:8765/js/utils/validators.js",
+    "http://127.0.0.1:8765/js/utils/permissions.js",
+    "http://127.0.0.1:8765/js/utils/export.js",
+    "http://127.0.0.1:8765/js/modules/dashboard.js",
+    "http://127.0.0.1:8765/js/modules/funcionarios.js",
+    "http://127.0.0.1:8765/js/modules/empresas.js",
+    "http://127.0.0.1:8765/js/modules/render-lifecycle.js",
+    "http://127.0.0.1:8765/js/modules/frequencia.js",
+    "http://127.0.0.1:8765/js/modules/categorias-efetivo.js",
+    "http://127.0.0.1:8765/js/modules/atas.js",
+    "http://127.0.0.1:8765/js/modules/admin.js",
+    "http://127.0.0.1:8765/js/main.js",
+    "inline"
+  ],
+  "globals": {
+    "jsPDF": false,
+    "XLSX": false,
+    "Chart": false,
+    "efetivo": false,
+    "firebaseStorage": false,
+    "mainLoaded": true
+  },
+  "resources": [
+    {
+      "url": "http://127.0.0.1:8765/index.html",
+      "type": "Document",
+      "encodedBytes": 0,
+      "decodedBytes": 249672,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap",
+      "type": "Stylesheet",
+      "encodedBytes": 0,
+      "decodedBytes": 15700,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/css/base.css",
+      "type": "Stylesheet",
+      "encodedBytes": 5623,
+      "decodedBytes": 5623,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/css/layout.css",
+      "type": "Stylesheet",
+      "encodedBytes": 12875,
+      "decodedBytes": 12875,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/css/components.css",
+      "type": "Stylesheet",
+      "encodedBytes": 40812,
+      "decodedBytes": 40812,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/css/pages.css",
+      "type": "Stylesheet",
+      "encodedBytes": 12546,
+      "decodedBytes": 12546,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/css/frequency.css",
+      "type": "Stylesheet",
+      "encodedBytes": 17761,
+      "decodedBytes": 17761,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/css/print.css",
+      "type": "Stylesheet",
+      "encodedBytes": 8238,
+      "decodedBytes": 8238,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/css/efetivo.css",
+      "type": "Stylesheet",
+      "encodedBytes": 18724,
+      "decodedBytes": 18724,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js",
+      "type": "Script",
+      "encodedBytes": 5832,
+      "decodedBytes": 31444,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js",
+      "type": "Script",
+      "encodedBytes": 34214,
+      "decodedBytes": 139582,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js",
+      "type": "Script",
+      "encodedBytes": 45261,
+      "decodedBytes": 166145,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js",
+      "type": "Script",
+      "encodedBytes": 94216,
+      "decodedBytes": 341174,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/config/firebase-config.js",
+      "type": "Script",
+      "encodedBytes": 737,
+      "decodedBytes": 737,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/config/firebase.js",
+      "type": "Script",
+      "encodedBytes": 698,
+      "decodedBytes": 698,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/utils/dependency-loader.js",
+      "type": "Script",
+      "encodedBytes": 5739,
+      "decodedBytes": 5739,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/services/auth.service.js",
+      "type": "Script",
+      "encodedBytes": 485,
+      "decodedBytes": 485,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/services/db.service.js",
+      "type": "Script",
+      "encodedBytes": 27036,
+      "decodedBytes": 27036,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/utils/formatters.js",
+      "type": "Script",
+      "encodedBytes": 2056,
+      "decodedBytes": 2056,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/utils/validators.js",
+      "type": "Script",
+      "encodedBytes": 1672,
+      "decodedBytes": 1672,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/utils/permissions.js",
+      "type": "Script",
+      "encodedBytes": 4063,
+      "decodedBytes": 4063,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/utils/export.js",
+      "type": "Script",
+      "encodedBytes": 265,
+      "decodedBytes": 265,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/modules/dashboard.js",
+      "type": "Script",
+      "encodedBytes": 73,
+      "decodedBytes": 73,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/modules/funcionarios.js",
+      "type": "Script",
+      "encodedBytes": 76,
+      "decodedBytes": 76,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/modules/empresas.js",
+      "type": "Script",
+      "encodedBytes": 72,
+      "decodedBytes": 72,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/modules/render-lifecycle.js",
+      "type": "Script",
+      "encodedBytes": 3687,
+      "decodedBytes": 3687,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/modules/frequencia.js",
+      "type": "Script",
+      "encodedBytes": 10943,
+      "decodedBytes": 10943,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/modules/categorias-efetivo.js",
+      "type": "Script",
+      "encodedBytes": 22013,
+      "decodedBytes": 22013,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/modules/atas.js",
+      "type": "Script",
+      "encodedBytes": 68,
+      "decodedBytes": 68,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/modules/admin.js",
+      "type": "Script",
+      "encodedBytes": 77,
+      "decodedBytes": 77,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "http://127.0.0.1:8765/js/main.js",
+      "type": "Script",
+      "encodedBytes": 75999,
+      "decodedBytes": 75999,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "data:image/svg+xml;base64,77u/PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MjguMyIgaGVpZ2h0PSIxODAuMCIgdmlld0JveD0iMCAwIDUyOC4zIDE4MC4wIj48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyNC4wMCwxNDAuMDApIHNjYWxlKDAuMTIwMDAsLTAuMTIwMDApIiBmaWxsPSIjRkZGRkZGIj48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLjAsMCkiIGQ9Ik0zNzIgLTZRMzE0IC02IDI2NS4wIDE2LjVRMjE2IDM5IDE4MyA4M1YwSDkxVjc0MkgxODdWNDUxUTIyMCA0OTMgMjY4LjAgNTE0LjBRMzE2IDUzNSAzNzIgNTM1UTQ0OSA1MzUgNTA5LjUgNTAxLjVRNTcwIDQ2OCA2MDUuMCA0MDcuMFE2NDAgMzQ2IDY0MCAyNjVRNjQwIDE4NCA2MDUuMCAxMjMuMFE1NzAgNjIgNTA5LjUgMjguMFE0NDkgLTYgMzcyIC02Wk0zNjQgNzhRNDE1IDc4IDQ1NS41IDEwMS41UTQ5NiAxMjUgNTE5LjUgMTY3LjBRNTQzIDIwOSA1NDMgMjY1UTU0MyAzMjEgNTE5LjUgMzYzLjBRNDk2IDQwNSA0NTUuNSA0MjguMFE0MTUgNDUxIDM2NCA0NTFRMzE0IDQ1MSAyNzMuNSA0MjguMFEyMzMgNDA1IDIwOS41IDM2My4wUTE4NiAzMjEgMTg2IDI2NVExODYgMjA5IDIwOS41IDE2Ny4wUTIzMyAxMjUgMjczLjUgMTAxLjVRMzE0IDc4IDM2NCA3OFoiLz48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSg2NzcuOCwwKSIgZD0iTTMxNCAtNlEyMTIgLTYgMTQ5LjAgNTEuMFE4NiAxMDggODYgMjI1VjUzMEgxODJWMjM2UTE4MiAxNTggMjE5LjUgMTE5LjBRMjU3IDgwIDMyNSA4MFE0MDAgODAgNDQ0LjUgMTI1LjVRNDg5IDE3MSA0ODkgMjU2VjUzMEg1ODVWMEg0OTRWNzlRNDY0IDM4IDQxNy4wIDE2LjBRMzcwIC02IDMxNCAtNloiLz48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMzUwLjcsMCkiIGQ9Ik05MSAwVjUzMEgxODdWMFpNMTM5IDYzMlExMTEgNjMyIDkyLjUgNjUwLjBRNzQgNjY4IDc0IDY5NFE3NCA3MjAgOTIuNSA3MzguNVExMTEgNzU3IDEzOSA3NTdRMTY3IDc1NyAxODUuNSA3MzkuNVEyMDQgNzIyIDIwNCA2OTZRMjA0IDY2OSAxODUuNSA2NTAuNVExNjcgNjMyIDEzOSA2MzJaIi8+PHBhdGggdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTYyNS41LDApIiBkPSJNOTEgMFY3NDJIMTg3VjBaIi8+PHBhdGggdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTkwMC4zLDApIiBkPSJNMzEwIC02UTIzMyAtNiAxNzIuNSAyOC4wUTExMiA2MiA3Ny4wIDEyMy4wUTQyIDE4NCA0MiAyNjVRNDIgMzQ2IDc3LjAgNDA3LjBRMTEyIDQ2OCAxNzIuNSA1MDEuNVEyMzMgNTM1IDMxMCA1MzVRMzY2IDUzNSA0MTQuMCA1MTQuMFE0NjIgNDkzIDQ5NSA0NTFWNzQySDU5MVYwSDQ5OVY4M1E0NjYgMzkgNDE3LjAgMTYuNVEzNjggLTYgMzEwIC02Wk0zMTggNzhRMzY4IDc4IDQwOC41IDEwMS41UTQ0OSAxMjUgNDcyLjUgMTY3LjBRNDk2IDIwOSA0OTYgMjY1UTQ5NiAzMjEgNDcyLjUgMzYzLjBRNDQ5IDQwNSA0MDguNSA0MjguMFEzNjggNDUxIDMxOCA0NTFRMjY3IDQ1MSAyMjYuNSA0MjguMFExODYgNDA1IDE2Mi41IDM2My4wUTEzOSAzMjEgMTM5IDI2NVExMzkgMjA5IDE2Mi41IDE2Ny4wUTE4NiAxMjUgMjI2LjUgMTAxLjVRMjY3IDc4IDMxOCA3OFoiLz48L2c+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMzMzLjM4LDE0MC4wMCkgc2NhbGUoMC4xMjAwMCwtMC4xMjAwMCkiIGZpbGw9IiNFODcyMkIiPjxwYXRoIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAuMCwwKSIgZD0iTTMyMiAtNlEyNDAgLTYgMTc3LjAgMjkuMFExMTQgNjQgNzguMCAxMjUuMFE0MiAxODYgNDIgMjY1UTQyIDM0NCA3OC4wIDQwNS4wUTExNCA0NjYgMTc3LjAgNTAwLjVRMjQwIDUzNSAzMjIgNTM1UTM5MyA1MzUgNDUwLjAgNTA2LjVRNTA3IDQ3OCA1MzggNDIyTDQ2NSAzNzVRNDM5IDQxNCA0MDEuNSA0MzIuNVEzNjQgNDUxIDMyMSA0NTFRMjY5IDQ1MSAyMjguMCA0MjguMFExODcgNDA1IDE2My4wIDM2My41UTEzOSAzMjIgMTM5IDI2NVExMzkgMjA4IDE2My4wIDE2Ni4wUTE4NyAxMjQgMjI4LjAgMTAxLjBRMjY5IDc4IDMyMSA3OFEzNjQgNzggNDAxLjUgOTYuNVE0MzkgMTE1IDQ2NSAxNTRMNTM4IDEwOFE1MDcgNTMgNDUwLjAgMjMuNVEzOTMgLTYgMzIyIC02WiIvPjxwYXRoIHRyYW5zZm9ybT0idHJhbnNsYXRlKDU2Ni44LDApIiBkPSJNMzE4IC02UTIzOCAtNiAxNzYuMCAyOS4wUTExNCA2NCA3OC4wIDEyNS4wUTQyIDE4NiA0MiAyNjVRNDIgMzQ0IDc4LjAgNDA1LjBRMTE0IDQ2NiAxNzYuMCA1MDAuNVEyMzggNTM1IDMxOCA1MzVRMzk3IDUzNSA0NTkuNSA1MDAuNVE1MjIgNDY2IDU1Ny41IDQwNS4wUTU5MyAzNDQgNTkzIDI2NVE1OTMgMTg2IDU1Ny41IDEyNS4wUTUyMiA2NCA0NTkuNSAyOS4wUTM5NyAtNiAzMTggLTZaTTMxOCA3OFEzNjkgNzggNDA5LjUgMTAxLjVRNDUwIDEyNSA0NzMuMCAxNjcuMFE0OTYgMjA5IDQ5NiAyNjVRNDk2IDMyMSA0NzMuMCAzNjMuMFE0NTAgNDA1IDQwOS41IDQyOC4wUTM2OSA0NTEgMzE4IDQ1MVEyNjcgNDUxIDIyNi41IDQyOC4wUTE4NiA0MDUgMTYyLjUgMzYzLjBRMTM5IDMyMSAxMzkgMjY1UTEzOSAyMDkgMTYyLjUgMTY3LjBRMTg2IDEyNSAyMjYuNSAxMDEuNVEyNjcgNzggMzE4IDc4WiIvPjxwYXRoIHRyYW5zZm9ybT0idHJhbnNsYXRlKDExOTcuNywwKSIgZD0iTTExNCAtNlE4NiAtNiA2Ni4wIDEzLjVRNDYgMzMgNDYgNjNRNDYgOTMgNjYuMCAxMTIuMFE4NiAxMzEgMTE0IDEzMVExNDEgMTMxIDE2MC41IDExMi4wUTE4MCA5MyAxODAgNjNRMTgwIDMzIDE2MC41IDEzLjVRMTQxIC02IDExNCAtNloiLz48L2c+PC9zdmc+DQo=",
+      "type": "Image",
+      "encodedBytes": 0,
+      "decodedBytes": 2780,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTUgOWExIDEgMCAxMDAtMiAxIDEgMCAwMDAgMnpNNiAxMWExIDEgMCAxMS0yIDAgMSAxIDAgMDEyIDB6TTggOWExIDEgMCAxMDAtMiAxIDEgMCAwMDAgMnpNOSAxMWExIDEgMCAxMS0yIDAgMSAxIDAgMDEyIDB6TTExIDlhMSAxIDAgMTAwLTIgMSAxIDAgMDAwIDJ6IiBmaWxsPSJXaW5kb3dUZXh0Ii8+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xNSAzLjVBMi41IDIuNSAwIDAwMTIuNSAxaC05QTIuNSAyLjUgMCAwMDEgMy41djlBMi41IDIuNSAwIDAwMy41IDE1aDlhMi41IDIuNSAwIDAwMi41LTIuNXYtOXpNMiA1aDEydjcuNWMwIC44My0uNjcgMS41LTEuNSAxLjVoLTlBMS41IDEuNSAwIDAxMiAxMi41VjV6bTEuNS0zaDljLjgzIDAgMS41LjY3IDEuNSAxLjVWNEgydi0uNUMyIDIuNjcgMi42NyAyIDMuNSAyeiIgZmlsbD0iV2luZG93VGV4dCIvPjwvc3ZnPg==",
+      "type": "Image",
+      "encodedBytes": 0,
+      "decodedBytes": 541,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "type": "Font",
+      "encodedBytes": 37163,
+      "decodedBytes": 48256,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "url": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTUgOWExIDEgMCAxMDAtMiAxIDEgMCAwMDAgMnpNNiAxMWExIDEgMCAxMS0yIDAgMSAxIDAgMDEyIDB6TTggOWExIDEgMCAxMDAtMiAxIDEgMCAwMDAgMnpNOSAxMWExIDEgMCAxMS0yIDAgMSAxIDAgMDEyIDB6TTExIDlhMSAxIDAgMTAwLTIgMSAxIDAgMDAwIDJ6IiBmaWxsPSIjZmZmIi8+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xNSAzLjVBMi41IDIuNSAwIDAwMTIuNSAxaC05QTIuNSAyLjUgMCAwMDEgMy41djlBMi41IDIuNSAwIDAwMy41IDE1aDlhMi41IDIuNSAwIDAwMi41LTIuNXYtOXpNMiA1aDEydjcuNWMwIC44My0uNjcgMS41LTEuNSAxLjVoLTlBMS41IDEuNSAwIDAxMiAxMi41VjV6bTEuNS0zaDljLjgzIDAgMS41LjY3IDEuNSAxLjVWNEgydi0uNUMyIDIuNjcgMi42NyAyIDMuNSAyeiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==",
+      "type": "Image",
+      "encodedBytes": 0,
+      "decodedBytes": 529,
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    }
+  ]
+}

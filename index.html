@@ -12,10 +12,6 @@
 <link rel="stylesheet" href="./css/frequency.css">
 <link rel="stylesheet" href="./css/print.css">
 <link rel="stylesheet" href="./css/efetivo.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-
 </head>
 <body>
 
@@ -2343,10 +2339,6 @@ function updateObraInterface(){
   const iniciais = obraNome ? obraNome.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase() : 'NA';
   document.querySelectorAll('#app .badge').forEach(b => b.textContent = iniciais);
 
-  if(typeof window.updateDynamicObraLabels === 'function') {
-    window.updateDynamicObraLabels();
-  }
-
   if(typeof window.updateTopbarTitle === 'function') {
     window.updateTopbarTitle();
   }
@@ -2611,45 +2603,30 @@ function refreshDashboard(){
   if (capacityText) capacityText.textContent = 'Capacidade utilizada';
   if (capacityPercent) capacityPercent.textContent = `${pct}%`;
   if (capacityCount) capacityCount.textContent = `${total} / ${capacityLimit}`;
-  // Sidebar badges
+  updateFuncionarioBadges();
+}
+
+function updateFuncionarioBadges(){
   const tercPend = DB.funcionarios.filter(f=>f.tipo==='Terceirizado'&&computeStatus(f)!=='conforme').length;
   const atacPend = DB.funcionarios.filter(f=>f.tipo==='Novo Atacarejo'&&computeStatus(f)!=='conforme').length;
-  document.getElementById('badgeTerc').textContent = tercPend||'';
-  document.getElementById('badgeAtac').textContent = atacPend||'';
-  document.getElementById('badgeTerc').style.display = tercPend?'':'none';
-  document.getElementById('badgeAtac').style.display = atacPend?'':'none';
-}
-function refreshAll() {
-  refreshDashboard();
-  renderDashTable(DB.funcionarios || []);
-  renderTerceirizados();
-  renderAtacarejo();
-
-  if (typeof renderEmpresas === "function") {
-    renderEmpresas();
+  const badgeTerc = document.getElementById('badgeTerc');
+  const badgeAtac = document.getElementById('badgeAtac');
+  if(badgeTerc){
+    badgeTerc.textContent = tercPend||'';
+    badgeTerc.style.display = tercPend?'':'none';
   }
-
-  if (typeof updateEmpresasSuggestions === "function") {
-    updateEmpresasSuggestions();
-  }
-
-  const obraName = typeof window.getCurrentObraLabel === 'function'
-    ? window.getCurrentObraLabel()
-    : getObraDisplayName();
-  const atacTitle = document.getElementById('atacarejoTitle');
-  if (atacTitle) {
-    atacTitle.textContent = `Funcionários ${obraName}`;
-  }
-  if (typeof window.updateDynamicObraLabels === 'function') {
-    window.updateDynamicObraLabels();
+  if(badgeAtac){
+    badgeAtac.textContent = atacPend||'';
+    badgeAtac.style.display = atacPend?'':'none';
   }
 }
-
 // ============================================================
 // SEARCH
 // ============================================================
 function handleSearch(q){
   const term = q.toLowerCase().trim();
+  // Activate first so a pending lifecycle refresh cannot overwrite the filtered result.
+  showPage('dashboard', document.querySelector('.nav-item'));
   if(!term){ renderDashTable(DB.funcionarios); return; }
   const filtered = DB.funcionarios.filter(f=>
     f.nome.toLowerCase().includes(term)||
@@ -2658,8 +2635,6 @@ function handleSearch(q){
     f.funcao.toLowerCase().includes(term)
   );
   renderDashTable(filtered);
-  // Switch to dashboard if not already
-  showPage('dashboard', document.querySelector('.nav-item'));
 }
 
 // ============================================================
@@ -2740,6 +2715,13 @@ function exportAtaPDF(tipo){
     return match && computeStatus(f)==='conforme';
   });
   if(!list.length){ toast('Nenhum funcionário com documentação concluída para gerar ata','warning'); return; }
+  if(!window.jspdf?.jsPDF){
+    return window.appDependencies.runWhenReady('jspdf', {
+      button: document.activeElement,
+      loadingText: 'Carregando PDF...',
+      errorMessage: 'Não foi possível carregar o gerador de PDF. Tente novamente.'
+    }, ()=>exportAtaPDF(tipo));
+  }
   // Ordenar por empresa para agrupar funcionários da mesma empresa
   list.sort((a, b) => a.empresa.localeCompare(b.empresa));
 
@@ -2797,6 +2779,13 @@ function exportAtaExcel(tipo){
     return match && computeStatus(f)==='conforme';
   });
   if(!list.length){ toast('Nenhum funcionário com documentação concluída','warning'); return; }
+  if(!window.XLSX){
+    return window.appDependencies.runWhenReady('xlsx', {
+      button: document.activeElement,
+      loadingText: 'Carregando Excel...',
+      errorMessage: 'Não foi possível carregar o exportador Excel. Tente novamente.'
+    }, ()=>exportAtaExcel(tipo));
+  }
   // Ordenar por empresa para agrupar funcionários da mesma empresa
   list.sort((a, b) => a.empresa.localeCompare(b.empresa));
 
@@ -3054,6 +3043,9 @@ function ensureInlineFreqState(){
   if (!Object.prototype.hasOwnProperty.call(state, 'ano')) state.ano = null;
   if (!state.data || typeof state.data !== 'object' || Array.isArray(state.data)) state.data = {};
   if (!Object.prototype.hasOwnProperty.call(state, 'ctxTarget')) state.ctxTarget = null;
+  if (!Object.prototype.hasOwnProperty.call(state, 'initialized')) state.initialized = false;
+  if (!Object.prototype.hasOwnProperty.call(state, 'initializing')) state.initializing = false;
+  if (!Object.prototype.hasOwnProperty.call(state, 'listenerPeriodKey')) state.listenerPeriodKey = '';
   if (!Array.isArray(state.feriadoDates)) state.feriadoDates = [];
   if (!state.feriadoDateObs || typeof state.feriadoDateObs !== 'object' || Array.isArray(state.feriadoDateObs)) {
     state.feriadoDateObs = {};
@@ -3355,7 +3347,16 @@ async function freqChangePeriod(){
 
 /* ── Init ───────────────────────────────────────────────────── */
 async function freqInit(){
+  if(freqState.initializing) return;
+  freqState.initializing = true;
   try {
+    if(freqState.initialized){
+      freqState.periodoKey = freqGetPeriodoKey();
+      const lifecycleDirty = window.appRenderLifecycle?.isDirty('frequencia');
+      if(freqState.remoteDirty || lifecycleDirty) freqRender();
+      window.appRenderLifecycle?.clear('frequencia');
+      return;
+    }
     freqLoadData();
     freqBuildMonthSelector();
     if (typeof window.getLatestFrequenciaPeriodoKey === 'function') {
@@ -3371,14 +3372,18 @@ async function freqInit(){
     }
     freqState.periodoKey = freqGetPeriodoKey();
     freqLogButtonState();
-    if (typeof window.syncFrequenciaListener === 'function') {
+    if (typeof window.syncFrequenciaListener === 'function' && freqState.listenerPeriodKey !== freqState.periodoKey) {
       window.syncFrequenciaListener();
     }
     freqRender();
     freqBindKeyboard();
+    freqState.initialized = true;
+    window.appRenderLifecycle?.clear('frequencia');
   } catch (e) {
     console.error('[freq] init:error', e);
     freqRenderState('Erro ao carregar frequência', 'Não foi possível inicializar a tela de frequência.');
+  } finally {
+    freqState.initializing = false;
   }
 }
 
@@ -4089,6 +4094,13 @@ function freqGetFuncsFromRenderedTable(wrapId){
 
 /* ── Export Excel ───────────────────────────────────────────── */
 function freqExportExcel(){
+  if(!window.XLSX){
+    return window.appDependencies.runWhenReady('xlsx', {
+      button: document.activeElement,
+      loadingText: 'Carregando Excel...',
+      errorMessage: 'Não foi possível carregar o exportador Excel. Tente novamente.'
+    }, ()=>freqExportExcel());
+  }
   const pk = freqState.periodoKey;
   const days = freqGetDaysInMonth(pk);
   const [y,m] = pk.split('-').map(Number);
@@ -4208,6 +4220,13 @@ function freqExportExcel(){
 
 /* ── Export PDF ─────────────────────────────────────────────── */
 function freqExportPDF(){
+  if(!window.jspdf?.jsPDF){
+    return window.appDependencies.runWhenReady('jspdf', {
+      button: document.activeElement,
+      loadingText: 'Carregando PDF...',
+      errorMessage: 'Não foi possível carregar o gerador de PDF. Tente novamente.'
+    }, ()=>freqExportPDF());
+  }
   const pk = freqState.periodoKey;
   const days = freqGetDaysInMonth(pk);
   const [y,m] = pk.split('-').map(Number);
@@ -4864,11 +4883,11 @@ document.addEventListener('DOMContentLoaded',()=>{
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 
 <!-- Configuração e integração Firebase -->
 <script src="./js/config/firebase-config.js"></script>
 <script src="./js/config/firebase.js"></script>
+<script src="./js/utils/dependency-loader.js"></script>
 <script src="./js/services/auth.service.js"></script>
 <script src="./js/services/db.service.js"></script>
 <script src="./js/utils/formatters.js"></script>
@@ -4878,9 +4897,9 @@ document.addEventListener('DOMContentLoaded',()=>{
 <script src="./js/modules/dashboard.js"></script>
 <script src="./js/modules/funcionarios.js"></script>
 <script src="./js/modules/empresas.js"></script>
+<script src="./js/modules/render-lifecycle.js"></script>
 <script src="./js/modules/frequencia.js"></script>
 <script src="./js/modules/categorias-efetivo.js"></script>
-<script src="./js/modules/efetivo.js"></script>
 <script src="./js/modules/atas.js"></script>
 <script src="./js/modules/admin.js"></script>
 <script src="./js/main.js"></script>

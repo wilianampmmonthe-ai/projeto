@@ -1,0 +1,94 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Fase 5B.2 - benchmark seletivo</title>
+<div class="page active" id="page-dashboard"><div data-host="dashboard"></div></div>
+<div class="page" id="page-terceirizados"><div data-host="terceirizados"></div></div>
+<div class="page" id="page-atacarejo"><div data-host="atacarejo"></div></div>
+<div class="page" id="page-empresas"><div data-host="empresas"></div></div>
+<div class="page" id="page-frequencia"><div data-host="frequencia"></div></div>
+<div class="page" id="efetivo-page"><div data-host="efetivo"></div></div>
+<div class="page" id="page-ata-terc"><div data-host="ata-terc"></div></div>
+<div class="page" id="page-ata-atac"><div data-host="ata-atac"></div></div>
+<pre id="result">running</pre>
+<script src="../js/modules/render-lifecycle.js"></script>
+<script>
+(() => {
+  const lifecycle = window.appRenderLifecycle;
+  const counts = {};
+  const row = (prefix, index, cells = 8) => `<tr><td>${prefix} ${index}</td>${'<td>valor</td>'.repeat(cells)}</tr>`;
+  const renderers = {
+    dashboard: () => document.querySelector('[data-host="dashboard"]').innerHTML = `<table>${Array.from({length:121},(_,i)=>row('D',i)).join('')}</table>`,
+    terceirizados: () => document.querySelector('[data-host="terceirizados"]').innerHTML = `<table>${Array.from({length:92},(_,i)=>row('T',i)).join('')}</table>`,
+    atacarejo: () => document.querySelector('[data-host="atacarejo"]').innerHTML = `<table>${Array.from({length:29},(_,i)=>row('A',i)).join('')}</table>`,
+    empresas: () => document.querySelector('[data-host="empresas"]').innerHTML = Array.from({length:18},(_,i)=>`<article><h3>Empresa ${i}</h3>${'<span>documento</span>'.repeat(20)}</article>`).join(''),
+    frequencia: () => document.querySelector('[data-host="frequencia"]').innerHTML = `<table>${Array.from({length:121},(_,i)=>row('F',i,31)).join('')}</table>`,
+    efetivo: () => document.querySelector('[data-host="efetivo"]').innerHTML = `<table>${Array.from({length:22},(_,i)=>row('E',i,31)).join('')}</table>`,
+    'ata-terc': () => document.querySelector('[data-host="ata-terc"]').innerHTML = `<table>${Array.from({length:92},(_,i)=>row('AT',i)).join('')}</table>`,
+    'ata-atac': () => document.querySelector('[data-host="ata-atac"]').innerHTML = `<table>${Array.from({length:29},(_,i)=>row('AA',i)).join('')}</table>`,
+  };
+  Object.entries(renderers).forEach(([module, renderer]) => lifecycle.register(module, () => {
+    counts[module] = (counts[module] || 0) + 1;
+    renderer();
+  }));
+
+  function activate(module) {
+    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+    const id = window.renderLifecycleUtils.PAGE_IDS[module];
+    document.getElementById(id).classList.add('active');
+  }
+  function resetCounts() { Object.keys(counts).forEach(key => { counts[key] = 0; }); }
+  function totalCounts() { return Object.values(counts).reduce((sum, value) => sum + value, 0); }
+  function oldRefresh() {
+    renderers.dashboard(); renderers.terceirizados(); renderers.atacarejo(); renderers.empresas();
+    if (document.getElementById('page-frequencia').classList.contains('active')) renderers.frequencia();
+    if (document.getElementById('efetivo-page').classList.contains('active')) renderers.efetivo();
+  }
+  function measure(action, iterations = 20) {
+    const samples = [];
+    for (let index = 0; index < iterations; index++) {
+      const start = performance.now(); action(); samples.push(performance.now() - start);
+    }
+    samples.sort((a,b)=>a-b);
+    return Number(samples[Math.floor(samples.length / 2)].toFixed(3));
+  }
+  function scenario(active, source, oldAction = oldRefresh) {
+    activate(active); lifecycle.invalidateAll(); resetCounts();
+    const beforeMs = measure(oldAction);
+    const beforeRenders = source === 'frequencia' ? 0 : (active === 'frequencia' ? 5 : 4);
+    lifecycle.invalidateAll(); resetCounts();
+    const afterMs = measure(() => lifecycle.notify(source));
+    return { before: { renders: beforeRenders, medianMs: beforeMs }, after: { renders: totalCounts() / 20, medianMs: afterMs } };
+  }
+
+  const results = {};
+  results.A = scenario('dashboard', 'funcionarios');
+  results.B = scenario('empresas', 'funcionarios');
+  results.C = scenario('frequencia', 'empresas');
+  results.D = scenario('empresas', 'frequencia', () => {});
+
+  const route = ['dashboard','terceirizados','empresas','frequencia','efetivo','dashboard'];
+  lifecycle.invalidateAll(); resetCounts();
+  const oldNavMs = measure(() => route.forEach(module => { activate(module); renderers[module](); }));
+  lifecycle.invalidateAll(); resetCounts();
+  const newNavStart = performance.now();
+  route.forEach(module => { activate(module); lifecycle.activate(module); });
+  results.E = {
+    before: { renders: 6, medianMs: oldNavMs },
+    after: { renders: totalCounts(), medianMs: Number((performance.now() - newNavStart).toFixed(3)) },
+  };
+
+  activate('dashboard'); resetCounts();
+  const oldTenStart = performance.now();
+  for (let index = 0; index < 10; index++) oldRefresh();
+  const oldTenMs = performance.now() - oldTenStart;
+  lifecycle.invalidateAll(); resetCounts();
+  const newTenStart = performance.now();
+  for (let index = 0; index < 10; index++) lifecycle.notify('funcionarios');
+  results.F = {
+    before: { renders: 40, totalMs: Number(oldTenMs.toFixed(3)) },
+    after: { renders: totalCounts(), totalMs: Number((performance.now() - newTenStart).toFixed(3)) },
+  };
+
+  document.getElementById('result').textContent = JSON.stringify(results);
+})();
+</script>

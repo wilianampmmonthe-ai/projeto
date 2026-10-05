@@ -214,7 +214,6 @@
       : DEFAULT_CATEGORIES.map((category) => ({ ...category }));
     renderCategoryManager();
     populateCompanyCategorySelect();
-    if (typeof window.efetivoRefresh === "function") window.efetivoRefresh();
   }
 
   function getCategories(options) {

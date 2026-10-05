@@ -745,6 +745,7 @@ function stopRealtime() {
   unsubEfetivoCategorias = null;
   unsubFreq = null;
   unsubUsuarios = null;
+  ensureFreqState().listenerPeriodKey = "";
   if (window.DB) {
     window.DB.efetivoCategorias = [];
     window.DB.efetivoCategoriasConfiguradas = false;
@@ -1188,7 +1189,11 @@ function syncFrequenciaListener() {
       freqState.data[pk] = visibleData;
       persistFreqCacheState(freqState.data);
     }
+    const efetivoAffected = typeof window.efetivoApplyFrequencySnapshot === "function"
+      && window.efetivoApplyFrequencySnapshot(pk, visibleData, { render: false });
+    if (efetivoAffected) window.appRenderLifecycle?.notify("frequencia");
   });
+  ensureFreqState().listenerPeriodKey = pk;
 }
 
 window.syncFrequenciaListener = syncFrequenciaListener;
@@ -1211,14 +1216,15 @@ function wireRealtimeForUser() {
       quantidade: Array.isArray(rows) ? rows.length : 0,
       source: window.APP_CTX?.obraAtivaId ? "firestore-multiobra" : "fallback-legado",
     });
-    if (typeof window.refreshAll === "function") window.refreshAll();
+    if (typeof window.updateFuncionarioBadges === "function") window.updateFuncionarioBadges();
+    window.appRenderLifecycle?.notify("funcionarios");
   });
   console.log("[LOGIN WIRE 3 OK] listenFuncionarios:registered");
 
   console.log("[LOGIN WIRE 4] listenEmpresas:register");
   unsubEmpresas = listenEmpresas((rows) => {
     window.DB.empresas = rows;
-    if (typeof window.refreshAll === "function") window.refreshAll();
+    window.appRenderLifecycle?.notify("empresas");
   });
   console.log("[LOGIN WIRE 4 OK] listenEmpresas:registered");
 
@@ -1227,16 +1233,15 @@ function wireRealtimeForUser() {
     if (typeof window.applyEfetivoCategoriesPayload === "function") {
       window.applyEfetivoCategoriesPayload(payload);
     }
-    if (typeof window.renderEmpresas === "function") window.renderEmpresas();
+    window.appRenderLifecycle?.notify("categorias");
   });
   console.log("[LOGIN WIRE 4.1 OK] listenEfetivoCategorias:registered");
 
   console.log("[LOGIN WIRE 5] listenObra:register");
   unsubObra = listenObra((obra) => {
     window.DB.obra = obra;
-    if (typeof window.updateDynamicObraLabels === "function") window.updateDynamicObraLabels();
     if (typeof window.updateObraInterface === "function") window.updateObraInterface();
-    if (typeof window.refreshAll === "function") window.refreshAll();
+    window.appRenderLifecycle?.notify("obra");
   });
   console.log("[LOGIN WIRE 5 OK] listenObra:registered");
 
@@ -1244,7 +1249,7 @@ function wireRealtimeForUser() {
     console.log("[LOGIN WIRE 6] ouvirUsuarios:register", { path: "/usuarios", obraAtivaId: ensureAppContext().obraAtivaId });
     unsubUsuarios = ouvirUsuarios((rows) => {
       window.appUsers = rows.map((row) => normalizeUserProfile(row));
-      renderAdminUsers();
+      window.appRenderLifecycle?.notify("usuarios");
     });
     console.log("[LOGIN WIRE 6 OK] ouvirUsuarios:registered");
   } else {
@@ -1327,10 +1332,8 @@ watchSession(async (user) => {
     console.log("[LOGIN 6] wireRealtimeForUser:start", ensureAppContext());
     wireRealtimeForUser();
     console.log("[LOGIN 6 OK] wireRealtimeForUser:listeners-registered");
-    loginStage = "renderAdminUsers";
-    console.log("[LOGIN 7] renderAdminUsers:start");
-    renderAdminUsers();
-    console.log("[LOGIN 7 OK] renderAdminUsers");
+    loginStage = "invalidateAdmin";
+    window.appRenderLifecycle?.mark("admin");
     loginStage = "safeToast";
     console.log("[LOGIN 8] safeToast:start");
     safeToast("Sessão autenticada.", "success");
@@ -1820,7 +1823,34 @@ window.saveObra = async function () {
 // UI NAVEGAÇÃO
 // ==============================
 
+let effectiveActivationSequence = 0;
+
+async function activateEffectivePage(page, activationId) {
+  const status = page?.querySelector?.("#efetivoStatus");
+  page?.setAttribute?.("aria-busy", "true");
+  if (status) status.textContent = "Carregando módulo do Efetivo...";
+  try {
+    if (!window.appDependencies) throw new Error("Carregador de dependências indisponível.");
+    await Promise.all([
+      window.appDependencies.loadEfetivoModule(),
+      window.appDependencies.loadChartJS(),
+    ]);
+    if (activationId !== effectiveActivationSequence || !page?.classList?.contains("active")) return;
+    window.efetivoInit(page);
+    window.appRenderLifecycle?.clear("efetivo");
+  } catch (error) {
+    console.error("[startup] falha ao carregar módulo do Efetivo", error);
+    if (activationId === effectiveActivationSequence && page?.classList?.contains("active")) {
+      if (status) status.textContent = "Falha ao carregar. Abra a aba novamente para tentar de novo.";
+      safeToast("Não foi possível carregar o Efetivo. Tente novamente.", "error");
+    }
+  } finally {
+    if (activationId === effectiveActivationSequence) page?.removeAttribute?.("aria-busy");
+  }
+}
+
 window.showPage = function showPage(id, el) {
+  const activationId = ++effectiveActivationSequence;
   if (id === "admin" && !requirePermission(window.canManageUsers, "Aba Admin disponível apenas para administradores.")) {
     return;
   }
@@ -1829,8 +1859,8 @@ window.showPage = function showPage(id, el) {
   if (previousPageId === "page-frequencia" && id !== "frequencia" && typeof window.freqFlushPending === "function") {
     window.freqFlushPending().catch(() => {});
   }
-  if (previousPageId === "efetivo-page" && id !== "efetivo" && typeof window.efetivoDestroyPage === "function") {
-    window.efetivoDestroyPage();
+  if (previousPageId === "efetivo-page" && id !== "efetivo" && typeof window.efetivoDeactivate === "function") {
+    window.efetivoDeactivate();
   }
 
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1841,23 +1871,15 @@ window.showPage = function showPage(id, el) {
   if (el) el.classList.add('active');
   updateTopbarTitle(id);
 
-  if (id === 'ata-terc' && typeof window.renderAta === 'function') {
-    window.renderAta('terceirizado');
-  }
-  if (id === 'ata-atac' && typeof window.renderAta === 'function') {
-    window.renderAta('Novo Atacarejo');
-  }
-  if (id === 'empresas' && typeof window.renderEmpresas === 'function') {
-    window.renderEmpresas();
-  }
   if (id === 'frequencia' && typeof window.freqInit === 'function') {
     window.freqInit();
-  }
-  if (id === 'efetivo' && typeof window.efetivoInit === 'function') {
-    window.efetivoInit(page);
-  }
-  if (id === 'admin') {
-    renderAdminUsers();
+    window.appRenderLifecycle?.clear('frequencia');
+  } else if (id === 'efetivo') {
+    activateEffectivePage(page, activationId);
+  } else if (id === 'admin') {
+    window.appRenderLifecycle?.activate('admin');
+  } else {
+    window.appRenderLifecycle?.activate(id);
   }
 };
 
@@ -1975,48 +1997,30 @@ window.freqExportExcel = function freqExportExcelWithPermission() {
 // ==============================
 // REFRESH GERAL
 // ==============================
+function configureSelectiveRenders() {
+  const lifecycle = window.appRenderLifecycle;
+  if (!lifecycle) return;
+  lifecycle.register("dashboard", () => {
+    window.refreshDashboard?.();
+    window.renderDashTable?.(ensureDB().funcionarios);
+  });
+  lifecycle.register("terceirizados", () => window.renderTerceirizados?.());
+  lifecycle.register("atacarejo", () => window.renderAtacarejo?.());
+  lifecycle.register("empresas", () => window.renderEmpresas?.());
+  lifecycle.register("frequencia", () => window.freqRender?.());
+  lifecycle.register("efetivo", () => window.efetivoRefresh?.());
+  lifecycle.register("ata-terc", () => window.renderAta?.("terceirizado"));
+  lifecycle.register("ata-atac", () => window.renderAta?.("Novo Atacarejo"));
+  lifecycle.register("admin", () => renderAdminUsers());
+}
+
+configureSelectiveRenders();
+
 window.refreshAll = function refreshAll() {
-  const db = ensureDB();
-  const freqState = ensureFreqState();
-  const funcionarios = db.funcionarios;
-
-  if (typeof window.refreshDashboard === "function") {
-    window.refreshDashboard();
-  }
-
-  if (typeof window.renderDashTable === "function") {
-    window.renderDashTable(funcionarios);
-  }
-
-  if (typeof window.renderTerceirizados === "function") {
-    window.renderTerceirizados();
-  }
-
-  if (typeof window.renderAtacarejo === "function") {
-    window.renderAtacarejo();
-  }
-
-  if (typeof window.renderEmpresas === "function") {
-    window.renderEmpresas();
-  }
-
-  if (typeof window.updateEmpresasSuggestions === "function") {
-    window.updateEmpresasSuggestions();
-  }
-
-  const activePageId = document.querySelector(".page.active")?.id;
-  if (activePageId === "page-ata-terc" && typeof window.renderAta === "function") {
-    window.renderAta("terceirizado");
-  }
-  if (activePageId === "page-ata-atac" && typeof window.renderAta === "function") {
-    window.renderAta("Novo Atacarejo");
-  }
-  if (activePageId === "page-frequencia" && freqState.periodoKey && typeof window.freqRender === "function") {
-    window.freqRender();
-  }
-  if (activePageId === "efetivo-page" && typeof window.efetivoRefresh === "function") {
-    window.efetivoRefresh();
-  }
+  ensureDB();
+  window.appRenderLifecycle?.invalidateAll();
+  if (typeof window.updateFuncionarioBadges === "function") window.updateFuncionarioBadges();
+  window.appRenderLifecycle?.renderActive();
 
   const obraName = typeof window.getCurrentObraLabel === "function"
     ? window.getCurrentObraLabel()
@@ -2038,7 +2042,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ensureCurrentUserProfile();
   ensureAppContext();
   updatePermissionUI();
-  renderAdminUsers();
+  window.appRenderLifecycle?.mark("admin");
   if (typeof window.initDarkMode === "function") window.initDarkMode();
   updateDynamicObraLabels();
   updateTopbarTitle();
