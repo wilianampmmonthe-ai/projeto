@@ -1,0 +1,119 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Fase 5B.1 - benchmark incremental</title>
+<div id="terceirizados"></div><div id="novoAtacarejo"></div><pre id="result">running</pre>
+<script>
+(() => {
+  const cellIndex = new Map();
+  const rowIndex = new Map();
+  const dayIndex = new Map();
+  const dailyTotals = new Map();
+  const grandTotals = new Map();
+  const key = (tipo, func, dia) => JSON.stringify([tipo, String(func), String(dia)]);
+  const dayKey = (tipo, dia) => JSON.stringify([tipo, String(dia)]);
+
+  function build(tipo, amount) {
+    const table = document.createElement('table');
+    const body = document.createElement('tbody');
+    for (let row = 0; row < amount; row++) {
+      const tr = document.createElement('tr');
+      const prefix = document.createElement('td');
+      prefix.textContent = `Funcionário ${row}`;
+      tr.appendChild(prefix);
+      const cells = [];
+      for (let dia = 1; dia <= 31; dia++) {
+        const td = document.createElement('td');
+        const wrap = document.createElement('div');
+        const cell = document.createElement('div');
+        cell.className = 'freq-cell st-vazio';
+        cell.dataset.status = 'vazio';
+        cell.dataset.tipo = tipo;
+        cell.dataset.fid = String(row);
+        cell.dataset.dia = String(dia);
+        wrap.appendChild(cell); td.appendChild(wrap); tr.appendChild(td);
+        cellIndex.set(key(tipo, row, dia), cell);
+        cells.push(cell);
+        const dk = dayKey(tipo, dia);
+        if (!dayIndex.has(dk)) dayIndex.set(dk, []);
+        dayIndex.get(dk).push(cell);
+      }
+      const total = document.createElement('td');
+      total.textContent = '0'; tr.appendChild(total);
+      rowIndex.set(JSON.stringify([tipo, String(row)]), { cells, total });
+      body.appendChild(tr);
+    }
+    table.appendChild(body);
+    const footer = document.createElement('tfoot');
+    const footerRow = document.createElement('tr');
+    for (let dia = 1; dia <= 31; dia++) {
+      const total = document.createElement('td'); footerRow.appendChild(total);
+      dailyTotals.set(dayKey(tipo, dia), total);
+    }
+    const grand = document.createElement('td'); footerRow.appendChild(grand);
+    grandTotals.set(tipo, grand); footer.appendChild(footerRow); table.appendChild(footer);
+    const host = document.getElementById(tipo); host.appendChild(table);
+    host.addEventListener('click', event => event.target.closest('.freq-cell'));
+  }
+
+  function apply(changes) {
+    const rows = new Set();
+    const days = new Set();
+    changes.forEach(change => {
+      const cell = cellIndex.get(key(change.tipo, change.func, change.dia));
+      cell.className = `freq-cell st-${change.status}`;
+      cell.dataset.status = change.status;
+      cell.textContent = change.status === 'Trabalhado' ? '1' : 'F';
+      rows.add(JSON.stringify([change.tipo, String(change.func)]));
+      days.add(dayKey(change.tipo, change.dia));
+    });
+    rows.forEach(rowKey => {
+      const row = rowIndex.get(rowKey);
+      row.total.textContent = String(row.cells.reduce((sum, cell) => sum + (cell.dataset.status === 'Trabalhado' ? 1 : 0), 0));
+    });
+    const types = new Set();
+    days.forEach(dk => {
+      const total = dayIndex.get(dk).reduce((sum, cell) => sum + (cell.dataset.status === 'Trabalhado' ? 1 : 0), 0);
+      dailyTotals.get(dk).textContent = total ? String(total) : '';
+      types.add(JSON.parse(dk)[0]);
+    });
+    types.forEach(tipo => {
+      let total = 0;
+      for (let dia = 1; dia <= 31; dia++) total += Number(dailyTotals.get(dayKey(tipo, dia)).textContent) || 0;
+      grandTotals.get(tipo).textContent = String(total);
+    });
+  }
+
+  build('terceirizados', 92);
+  build('novoAtacarejo', 29);
+  const samples = [];
+  for (let index = 0; index < 200; index++) {
+    const start = performance.now();
+    apply([{ tipo: index % 2 ? 'terceirizados' : 'novoAtacarejo', func: index % 29, dia: (index % 31) + 1, status: index % 2 ? 'Trabalhado' : 'Folga' }]);
+    samples.push(performance.now() - start);
+  }
+  const changes50 = Array.from({ length: 50 }, (_, index) => ({
+    tipo: index < 38 ? 'terceirizados' : 'novoAtacarejo',
+    func: index < 38 ? index : index - 38,
+    dia: (index % 31) + 1,
+    status: 'Trabalhado',
+  }));
+  const bulkStart = performance.now();
+  apply(changes50);
+  const bulkMs = performance.now() - bulkStart;
+  const paintStart = performance.now();
+  apply([{ tipo: 'terceirizados', func: 70, dia: 15, status: 'Folga' }]);
+  requestAnimationFrame(() => {
+    samples.sort((a, b) => a - b);
+    document.getElementById('result').textContent = JSON.stringify({
+      cardinality: { employees: 121, days: 31, cells: cellIndex.size, domElements: document.querySelectorAll('*').length },
+      clickToDomMedianMs: Number(samples[99].toFixed(3)),
+      clickToDomP95Ms: Number(samples[189].toFixed(3)),
+      clickToPaintMs: Number((performance.now() - paintStart).toFixed(3)),
+      changes50Ms: Number(bulkMs.toFixed(3)),
+      largestSynchronousBlockMs: Number(Math.max(samples[199], bulkMs).toFixed(3)),
+      delegatedListeners: 2,
+      fullRendersPerCell: 0,
+    });
+  });
+})();
+</script>

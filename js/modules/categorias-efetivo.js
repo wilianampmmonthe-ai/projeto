@@ -17,6 +17,8 @@
     SERRALHARIA_OUTROS: "OUTROS",
   };
 
+  const DELETE_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
+
   function cleanCategoryName(value) {
     return String(value || "").replace(/\s+/g, " ").trim();
   }
@@ -166,6 +168,36 @@
     }));
   }
 
+  function companyUsesCategory(company, category, categories) {
+    if (!company || !category) return false;
+    const categoryId = cleanCategoryName(company.categoriaEfetivoId || company.categoryId);
+    if (categoryId) {
+      if (categoryId === category.id) return true;
+      const referencesAnotherCategory = normalizeCategories(categories)
+        .some((item) => item.id === categoryId);
+      if (referencesAnotherCategory) return false;
+    }
+
+    const legacyName = normalizeCategoryName(
+      company.categoriaEfetivo || company.categoria || company.categoryName
+    );
+    return Boolean(legacyName && categoryUsesName(category, legacyName));
+  }
+
+  function isCategoryLinkedToCompanies(category, companies, categories) {
+    return (Array.isArray(companies) ? companies : [])
+      .some((company) => companyUsesCategory(company, category, categories));
+  }
+
+  function removeCategoryRecord(categories, id) {
+    const normalized = normalizeCategories(categories);
+    const targetId = cleanCategoryName(id);
+    if (!normalized.some((category) => category.id === targetId)) {
+      throw new Error("Categoria não encontrada.");
+    }
+    return normalizeCategories(normalized.filter((category) => category.id !== targetId));
+  }
+
   function getStore() {
     const db = window.DB || (window.DB = {});
     if (!Array.isArray(db.efetivoCategorias)) db.efetivoCategorias = [];
@@ -276,6 +308,7 @@
         <span class="badge-status ${category.ativa ? "conforme" : "irregular"}">${category.ativa ? "Ativa" : "Inativa"}</span>
         <button type="button" class="btn btn-outline btn-sm" data-category-action="rename" ${editable ? "" : "disabled"}>Salvar nome</button>
         <button type="button" class="btn btn-outline btn-sm" data-category-action="toggle" ${editable ? "" : "disabled"}>${category.ativa ? "Inativar" : "Reativar"}</button>
+        ${editable ? `<button type="button" class="btn btn-danger btn-sm btn-icon efetivo-category-delete" data-category-action="delete" title="Excluir categoria" aria-label="Excluir categoria">${DELETE_ICON}</button>` : ""}
       </div>
     `).join("");
     list.querySelectorAll("[data-category-action]").forEach((button) => {
@@ -287,6 +320,7 @@
         if (action === "down") moveCategory(id, 1);
         if (action === "rename") renameCategory(id);
         if (action === "toggle") toggleCategory(id);
+        if (action === "delete") deleteCategory(id);
       });
     });
     const createControls = document.getElementById("efetivo-category-create");
@@ -295,7 +329,7 @@
     if (initializeButton) initializeButton.hidden = configured || !editable;
   }
 
-  async function persistCategories(categories, successMessage) {
+  async function persistCategories(categories, successMessage, options) {
     if (!canEdit()) {
       notify("Seu perfil não pode alterar categorias do efetivo.", "error");
       return false;
@@ -315,9 +349,11 @@
       const permissionDenied = error?.code === "permission-denied"
         || /missing or insufficient permissions/i.test(String(error?.message || ""));
       notify(
-        permissionDenied
-          ? "Você não possui permissão para alterar as categorias desta obra."
-          : (error?.message || "Não foi possível salvar as categorias."),
+        options?.errorMessage
+          ? options.errorMessage
+          : (permissionDenied
+              ? "Você não possui permissão para alterar as categorias desta obra."
+              : (error?.message || "Não foi possível salvar as categorias.")),
         "error"
       );
       return false;
@@ -368,9 +404,62 @@
     await persistCategories(next, "Ordem das categorias atualizada.");
   }
 
-  function deleteCategory() {
-    notify("Categorias não são excluídas para preservar empresas e históricos. Utilize Inativar.", "error");
-    return false;
+  async function deleteCategory(id) {
+    if (!canEdit()) return false;
+
+    const categories = getCategories({ includeInactive: true });
+    const category = categories.find((item) => item.id === cleanCategoryName(id));
+    if (!category) {
+      notify("Categoria não encontrada.", "error");
+      return false;
+    }
+
+    const companies = Array.isArray(getStore().empresas) ? getStore().empresas : [];
+    if (isCategoryLinkedToCompanies(category, companies, categories)) {
+      notify(
+        "Esta categoria está vinculada a uma ou mais empresas e não pode ser excluída. Inative a categoria caso ela não seja mais utilizada.",
+        "error"
+      );
+      return false;
+    }
+
+    if (typeof window.openConfirmModal !== "function") {
+      console.error("[categorias-efetivo] modal de confirmação indisponível");
+      notify("Não foi possível excluir a categoria.", "error");
+      return false;
+    }
+
+    const confirmed = await window.openConfirmModal({
+      title: "Excluir categoria?",
+      message: `A categoria '${category.nome}' será removida permanentemente. Esta ação não poderá ser desfeita.`,
+      confirmText: "Excluir categoria",
+      cancelText: "Cancelar",
+      variant: "danger",
+    });
+    if (!confirmed) return false;
+
+    // O listener pode receber uma versão mais nova enquanto o modal está aberto.
+    // Reaplicar a remoção sobre o estado local mais recente evita persistir a
+    // fotografia anterior à confirmação.
+    const latestCategories = getCategories({ includeInactive: true });
+    const latestCategory = latestCategories.find((item) => item.id === category.id);
+    if (!latestCategory) {
+      notify("Categoria não encontrada.", "error");
+      return false;
+    }
+    const latestCompanies = Array.isArray(getStore().empresas) ? getStore().empresas : [];
+    if (isCategoryLinkedToCompanies(latestCategory, latestCompanies, latestCategories)) {
+      notify(
+        "Esta categoria está vinculada a uma ou mais empresas e não pode ser excluída. Inative a categoria caso ela não seja mais utilizada.",
+        "error"
+      );
+      return false;
+    }
+
+    const next = removeCategoryRecord(latestCategories, latestCategory.id);
+    return persistCategories(next, "Categoria excluída com sucesso.", {
+      errorMessage: "Não foi possível excluir a categoria.",
+    });
   }
 
   function openManager() {
@@ -404,6 +493,9 @@
     renameCategoryRecord,
     toggleCategoryRecord,
     moveCategoryRecord,
+    companyUsesCategory,
+    isCategoryLinkedToCompanies,
+    removeCategoryRecord,
     applyCategoriesPayload,
     getCategories,
     getCategoryById,

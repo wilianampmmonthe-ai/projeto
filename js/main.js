@@ -407,12 +407,22 @@ function updateObraSelectorLabel() {
 
 window.updateObraSelectorLabel = updateObraSelectorLabel;
 
-function handleObraSelectorChange(event) {
+async function handleObraSelectorChange(event) {
   const nextObraId = normalizeObraId(event?.target?.value);
   const ctx = ensureAppContext();
   const currentObraId = normalizeObraId(ctx.obraAtivaId);
 
   if (!nextObraId || nextObraId === currentObraId) return;
+
+  if (typeof window.freqFlushPending === "function") {
+    try {
+      await window.freqFlushPending({ obraId: currentObraId || "" });
+    } catch (error) {
+      safeToast("Não foi possível sincronizar a frequência. A troca de obra foi cancelada para preservar os dados.", "error");
+      if (event?.target) event.target.value = currentObraId;
+      return;
+    }
+  }
 
   persistObraAtivaId(nextObraId);
   ctx.obraAtivaId = nextObraId;
@@ -1086,23 +1096,6 @@ function createEmptyFreqPeriod() {
   return { feriados: {}, terceirizados: {}, novoAtacarejo: {} };
 }
 
-async function persistFreqStateSnapshot(periodoKey) {
-  const state = ensureFreqState();
-  persistFreqCacheState(state.data);
-
-  if (!fb.auth.currentUser || typeof window.freqGetPeriodoKey !== "function") return;
-
-  const pk = periodoKey || window.freqGetPeriodoKey();
-  if (!pk) return;
-
-  try {
-    const periodData = cloneData(state.data?.[pk] || createEmptyFreqPeriod(), createEmptyFreqPeriod());
-    await salvarFrequencia(pk, periodData);
-  } catch (e) {
-    console.error("Erro ao sincronizar frequencia:", e);
-  }
-}
-
 function buildPrunedFreqPeriods(funcId) {
   const state = ensureFreqState();
   const targetId = String(funcId);
@@ -1137,6 +1130,7 @@ function buildPrunedFreqPeriods(funcId) {
 }
 
 async function pruneFuncionarioReferences(funcId) {
+  if (typeof window.freqFlushPending === "function") await window.freqFlushPending();
   const changedPeriods = buildPrunedFreqPeriods(funcId);
   const periodoKeys = Object.keys(changedPeriods);
 
@@ -1148,8 +1142,6 @@ async function pruneFuncionarioReferences(funcId) {
 
   return true;
 }
-
-window.syncRemoteFreqState = persistFreqStateSnapshot;
 
 function syncFrequenciaListener() {
   if (typeof unsubFreq === "function") {
@@ -1176,20 +1168,25 @@ function syncFrequenciaListener() {
 
   unsubFreq = ouvirFrequencia(pk, (payload) => {
     const freqState = ensureFreqState();
-    freqState.data[pk] = cloneData(payload?.data || createEmptyFreqPeriod(), createEmptyFreqPeriod());
-    persistFreqCacheState(freqState.data);
+    const remoteData = cloneData(payload?.data || createEmptyFreqPeriod(), createEmptyFreqPeriod());
+    const visibleData = typeof window.freqMergePendingChanges === "function"
+      ? window.freqMergePendingChanges(pk, remoteData, window.APP_CTX?.obraAtivaId || "")
+      : remoteData;
     console.log("[freq] listener:received", {
       obraAtivaId: window.APP_CTX?.obraAtivaId || null,
       periodoKey: pk,
       hasData: Boolean(payload?.data),
       funcionarios: Array.isArray(window.DB?.funcionarios) ? window.DB.funcionarios.length : 0,
     });
-    if (typeof window.freqRender === "function") {
+    if (typeof window.freqApplyRemoteSnapshot === "function") {
       try {
-        window.freqRender();
+        window.freqApplyRemoteSnapshot(pk, visibleData);
       } catch (error) {
-        console.error("[freq] listener:render-error", error);
+        console.error("[freq] listener:reconcile-error", error);
       }
+    } else {
+      freqState.data[pk] = visibleData;
+      persistFreqCacheState(freqState.data);
     }
   });
 }
@@ -1362,23 +1359,6 @@ watchSession(async (user) => {
 });
 
 */
-window.freqSaveData = function () {
-  if (!requirePermission(window.canEditFrequencia, "Seu perfil não pode editar a frequência.")) return;
-  if (!fb.auth.currentUser) return;
-  if (!window.freqState || typeof window.freqGetPeriodoKey !== "function") return;
-
-  const pk = window.freqGetPeriodoKey();
-  if (!pk) return;
-
-  const data = window.freqState.data?.[pk] || createEmptyFreqPeriod();
-
-  console.log("[ui] salvar frequencia", { periodoKey: pk });
-  salvarFrequencia(pk, data).catch((e) => {
-    console.error("ERRO AO SALVAR FREQUÊNCIA:", e);
-    safeToast(e?.message || "Erro ao salvar frequ?ncia", "error");
-  });
-};
-
 // --- FUNCIONÁRIO: SALVAR ---
 window.saveFuncionario = async function () {
   try {
@@ -1846,6 +1826,9 @@ window.showPage = function showPage(id, el) {
   }
 
   const previousPageId = document.querySelector(".page.active")?.id || "";
+  if (previousPageId === "page-frequencia" && id !== "frequencia" && typeof window.freqFlushPending === "function") {
+    window.freqFlushPending().catch(() => {});
+  }
   if (previousPageId === "efetivo-page" && id !== "efetivo" && typeof window.efetivoDestroyPage === "function") {
     window.efetivoDestroyPage();
   }

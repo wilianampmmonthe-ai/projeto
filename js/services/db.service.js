@@ -62,6 +62,16 @@ function dbGetFrequenciaDocRef(periodoKey) {
   return dbGetObraCollection(COL_FREQUENCIA).doc(String(periodoKey));
 }
 
+function dbGetFrequenciaDocRefForObra(periodoKey, obraId) {
+  const normalizedObraId = dbNormalizeObraId(obraId);
+  if (!normalizedObraId) return null;
+  return firebase.firestore()
+    .collection("obras")
+    .doc(normalizedObraId)
+    .collection(COL_FREQUENCIA)
+    .doc(String(periodoKey));
+}
+
 function dbGetEfetivoDocRef(periodoKey) {
   return dbGetObraCollection(COL_EFETIVO).doc(String(periodoKey));
 }
@@ -387,6 +397,84 @@ async function obterUltimoPeriodoComFrequencia() {
   return keys[keys.length - 1] || "";
 }
 
+function dbSetNestedValue(target, segments, value) {
+  let cursor = target;
+  segments.forEach((segment, index) => {
+    const key = String(segment);
+    if (index === segments.length - 1) {
+      cursor[key] = value;
+      return;
+    }
+    if (!cursor[key] || typeof cursor[key] !== "object" || Array.isArray(cursor[key])) cursor[key] = {};
+    cursor = cursor[key];
+  });
+}
+
+/**
+ * Persiste somente folhas alteradas da frequência. `segments` é relativo a `data`
+ * (ex.: ["terceirizados", funcionarioId, dia]). IDs nunca são concatenados em
+ * caminhos Firestore; FieldPath preserva inclusive IDs que contenham ponto.
+ */
+async function atualizarCamposFrequencia(periodoKey, changes, obraId = dbGetObraAtivaId()) {
+  const docId = String(periodoKey || "").trim();
+  const normalizedChanges = (Array.isArray(changes) ? changes : []).filter((change) => (
+    change && Array.isArray(change.segments) && change.segments.length > 0
+  ));
+  if (!docId || !normalizedChanges.length) return docId;
+
+  const normalizedObraId = dbNormalizeObraId(obraId);
+  dbLog("atualizar campos frequencia", {
+    periodoKey: docId,
+    obraId: normalizedObraId || null,
+    campos: normalizedChanges.length,
+  });
+
+  // Compatibilidade com a base legada: update multipath do RTDB também é atômico
+  // e não lê nem reenvia o mês inteiro.
+  if (!normalizedObraId) {
+    const patch = {};
+    normalizedChanges.forEach((change) => {
+      const path = change.segments.map((part) => String(part)).join("/");
+      patch[path] = change.remove ? null : change.value;
+    });
+    await firebase.database().ref(`${COL_FREQUENCIA}/${docId}`).update(patch);
+    return docId;
+  }
+
+  const ref = dbGetFrequenciaDocRefForObra(docId, normalizedObraId);
+  const updateArgs = [];
+  normalizedChanges.forEach((change) => {
+    updateArgs.push(
+      new firebase.firestore.FieldPath("data", ...change.segments.map((part) => String(part))),
+      change.remove ? firebase.firestore.FieldValue.delete() : change.value
+    );
+  });
+  updateArgs.push("updatedAt", dbServerTimestamp());
+
+  try {
+    await ref.update(...updateArgs);
+  } catch (error) {
+    const code = String(error?.code || "").toLowerCase();
+    if (code !== "not-found" && code !== "firestore/not-found" && code !== "5") throw error;
+
+    // Primeiro uso da competência: cria somente as folhas não removidas.
+    // set(..., merge:true) mantém a mesma segurança entre campos independentes.
+    const initialData = {};
+    normalizedChanges.forEach((change) => {
+      if (!change.remove) dbSetNestedValue(initialData, change.segments, change.value);
+    });
+    if (Object.keys(initialData).length) {
+      await ref.set({
+        data: initialData,
+        createdAt: dbServerTimestamp(),
+        updatedAt: dbServerTimestamp(),
+      }, { merge: true });
+    }
+  }
+
+  return docId;
+}
+
 async function obterFrequencia(periodoKey) {
   const docId = String(periodoKey);
 
@@ -694,6 +782,10 @@ async function setObra(obra) {
 
 async function saveFrequencia(periodoKey, data) {
   return salvarFrequencia(periodoKey, data);
+}
+
+async function updateFrequenciaFields(periodoKey, changes, obraId) {
+  return atualizarCamposFrequencia(periodoKey, changes, obraId);
 }
 
 async function getLatestFrequenciaPeriodoKey() {

@@ -59,19 +59,161 @@ async function run() {
   list = categories.moveCategoryRecord(list, "cat-civil", -1, "2026-01-05");
   assert.deepEqual(list.map((item) => item.id), ["cat-civil", "cat-imp"], "reordenação");
 
+  const afterRemoval = categories.removeCategoryRecord([
+    { id: "a", nome: "A", nomeNormalizado: "A", ordem: 1, ativa: true },
+    { id: "b", nome: "B", nomeNormalizado: "B", ordem: 2, ativa: false },
+    { id: "c", nome: "C", nomeNormalizado: "C", ordem: 3, ativa: true },
+  ], "b");
+  assert.deepEqual(afterRemoval.map((item) => [item.id, item.ordem]), [["a", 1], ["c", 2]],
+    "exclusão remove somente a categoria e normaliza a ordem");
+  assert.throws(() => categories.removeCategoryRecord(afterRemoval, "inexistente"), /não encontrada/i);
+
+  const linkedCategory = {
+    id: "imp",
+    nome: "Impermeabilização especial",
+    nomeNormalizado: "IMPERMEABILIZACAO_ESPECIAL",
+    nomesAnterioresNormalizados: ["IMPERMEABILIZACAO"],
+    ordem: 1,
+    ativa: true,
+  };
+  const linkCategories = [
+    linkedCategory,
+    { id: "civil", nome: "Civil", nomeNormalizado: "CIVIL", ordem: 2, ativa: true },
+  ];
+  assert.equal(categories.isCategoryLinkedToCompanies(linkedCategory,
+    [{ categoriaEfetivoId: "imp" }], linkCategories), true, "vínculo por ID bloqueia exclusão");
+  assert.equal(categories.isCategoryLinkedToCompanies(linkedCategory,
+    [{ categoriaEfetivo: "Impermeabilização" }], linkCategories), true, "nome legado e anterior bloqueia exclusão");
+  assert.equal(categories.isCategoryLinkedToCompanies(linkedCategory,
+    [{ categoriaEfetivoId: "civil", categoriaEfetivo: "IMPERMEABILIZACAO" }], linkCategories), false,
+    "ID válido de outra categoria prevalece sobre nome legado desatualizado");
+  assert.equal(categories.isCategoryLinkedToCompanies(linkedCategory,
+    [{ categoriaEfetivoId: "id-removido", categoriaEfetivo: "IMPERMEABILIZACAO" }], linkCategories), true,
+    "nome legado recupera vínculo quando o ID não existe mais");
+
+  const configured = [
+    { id: "unused", nome: "Sem empresas", nomeNormalizado: "SEM_EMPRESAS", ordem: 1, ativa: true },
+    { id: "imp", nome: "Impermeabilização", nomeNormalizado: "IMPERMEABILIZACAO", ordem: 2, ativa: true },
+    { id: "civil", nome: "Civil", nomeNormalizado: "CIVIL", ordem: 3, ativa: true },
+    { id: "pais", nome: "Paisagismo", nomeNormalizado: "PAISAGISMO", ordem: 4, ativa: false },
+    { id: "outros", nome: "Outros", nomeNormalizado: "OUTROS", ordem: 5, ativa: true },
+  ];
+
   categories.applyCategoriesPayload({ exists: true, categorias: [{ id: "a", nome: "Obra A", nomeNormalizado: "OBRA_A", ordem: 1, ativa: true }] });
   assert.equal(categories.getCategories()[0].id, "a");
-  categories.applyCategoriesPayload({ exists: true, categorias: [{ id: "b", nome: "Obra B", nomeNormalizado: "OBRA_B", ordem: 1, ativa: true }] });
-  assert.deepEqual(categories.getCategories().map((item) => item.id), ["b"], "troca de obra não mistura listas");
-  assert.equal(categories.deleteCategory(), false, "exclusão destrutiva indisponível");
+  categories.applyCategoriesPayload({ exists: true, categorias: [
+    { id: "a", nome: "Obra A", nomeNormalizado: "OBRA_A", ordem: 1, ativa: true },
+    { id: "b", nome: "Obra B", nomeNormalizado: "OBRA_B", ordem: 2, ativa: true },
+  ] });
+  assert.deepEqual(categories.getCategories().map((item) => item.id), ["a", "b"], "troca de obra não mistura listas");
+  global.DB.empresas = [];
+  let confirmOptions = null;
+  global.openConfirmModal = async (options) => {
+    confirmOptions = options;
+    return true;
+  };
+  const writesBeforeDelete = writes;
+  assert.equal(await global.deleteEfetivoCategory("b"), true, "categoria sem vínculo pode ser excluída");
+  assert.equal(writes, writesBeforeDelete + 1, "exclusão persiste o array atualizado");
+  assert.deepEqual(lastWrite.map((item) => item.id), ["a"], "somente a categoria selecionada foi removida");
+  assert.deepEqual(categories.getCategories().map((item) => item.id), ["a"],
+    "estado local reflete a exclusão imediatamente");
+  assert.deepEqual(confirmOptions, {
+    title: "Excluir categoria?",
+    message: "A categoria 'Obra B' será removida permanentemente. Esta ação não poderá ser desfeita.",
+    confirmText: "Excluir categoria",
+    cancelText: "Cancelar",
+    variant: "danger",
+  }, "confirmação descreve a exclusão permanente");
+  assert.deepEqual(notifications.at(-1), { message: "Categoria excluída com sucesso.", type: "success" });
 
+  categories.applyCategoriesPayload({ exists: true, categorias: [
+    { id: "a", nome: "Nome anterior", nomeNormalizado: "NOME_ANTERIOR", ordem: 1, ativa: true },
+    { id: "b", nome: "Excluir", nomeNormalizado: "EXCLUIR", ordem: 2, ativa: true },
+  ] });
+  global.openConfirmModal = async () => {
+    categories.applyCategoriesPayload({ exists: true, categorias: [
+      { id: "a", nome: "Nome concorrente", nomeNormalizado: "NOME_CONCORRENTE", ordem: 1, ativa: true },
+      { id: "b", nome: "Excluir", nomeNormalizado: "EXCLUIR", ordem: 2, ativa: true },
+    ] });
+    return true;
+  };
+  assert.equal(await global.deleteEfetivoCategory("b"), true, "exclusão usa estado atualizado durante a confirmação");
+  assert.equal(lastWrite[0].nome, "Nome concorrente", "alteração concorrente recebida pelo listener é preservada");
+  global.openConfirmModal = async (options) => {
+    confirmOptions = options;
+    return true;
+  };
+
+  categories.applyCategoriesPayload({ exists: true, categorias: configured });
+  global.DB.empresas = [{ id: "e-vinculada", categoriaEfetivoId: "imp" }];
+  confirmOptions = null;
+  const writesBeforeBlockedDelete = writes;
+  assert.equal(await global.deleteEfetivoCategory("imp"), false, "categoria vinculada não pode ser excluída");
+  assert.equal(writes, writesBeforeBlockedDelete, "categoria vinculada não grava");
+  assert.equal(confirmOptions, null, "categoria vinculada é bloqueada antes da confirmação");
+  assert.deepEqual(notifications.at(-1), {
+    message: "Esta categoria está vinculada a uma ou mais empresas e não pode ser excluída. Inative a categoria caso ela não seja mais utilizada.",
+    type: "error",
+  });
+
+  global.DB.empresas = [];
+  categories.applyCategoriesPayload({ exists: true, categorias: configured });
+  assert.equal(await global.deleteEfetivoCategory("pais"), true,
+    "categoria inativa e sem vínculo pode ser excluída");
+  assert.ok(!lastWrite.some((item) => item.id === "pais"), "categoria inativa removida sem afetar as demais");
+
+  const defaultsWithoutTerraplanagem = categories.removeCategoryRecord(
+    categories.DEFAULT_CATEGORIES,
+    "padrao-terraplanagem"
+  );
+  assert.equal(defaultsWithoutTerraplanagem.length, categories.DEFAULT_CATEGORIES.length - 1,
+    "categoria padrão sem vínculo pode ser removida");
+  assert.equal(categories.isCategoryLinkedToCompanies(
+    categories.DEFAULT_CATEGORIES.find((item) => item.id === "padrao-terraplanagem"),
+    [{ categoriaEfetivoId: "padrao-terraplanagem" }],
+    categories.DEFAULT_CATEGORIES
+  ), true, "categoria padrão vinculada é reconhecida");
+
+  categories.applyCategoriesPayload({ exists: true, categorias: configured });
+  global.saveEfetivoCategorias = async () => { throw new Error("falha técnica simulada"); };
+  const originalDeleteConsoleError = console.error;
+  console.error = () => {};
+  try {
+    assert.equal(await global.deleteEfetivoCategory("unused"), false, "falha do Firestore não altera o estado");
+  } finally {
+    console.error = originalDeleteConsoleError;
+  }
+  assert.deepEqual(notifications.at(-1), {
+    message: "Não foi possível excluir a categoria.",
+    type: "error",
+  }, "erro técnico de exclusão não é exposto na interface");
+  assert.ok(categories.getCategories({ includeInactive: true }).some((item) => item.id === "unused"),
+    "falha ao persistir preserva a categoria local");
+  global.saveEfetivoCategorias = async (payload) => {
+    writes += 1;
+    lastWrite = payload;
+  };
+
+  const categoryList = { innerHTML: "", querySelectorAll: () => [] };
+  global.document.getElementById = (id) => id === "efetivo-category-list" ? categoryList : null;
+  global.canEditEmpresas = () => true;
+  global.renderEfetivoCategoryManager();
+  assert.match(categoryList.innerHTML, /title="Excluir categoria"/, "admin/editor visualiza botão de exclusão");
   global.canEditEmpresas = () => false;
+  global.renderEfetivoCategoryManager();
+  assert.doesNotMatch(categoryList.innerHTML, /title="Excluir categoria"/, "viewer não visualiza botão de exclusão");
+  global.document.getElementById = () => null;
+
+  const writesBeforeViewer = writes;
+  assert.equal(await global.deleteEfetivoCategory("unused"), false, "viewer não executa exclusão diretamente");
   await global.initializeDefaultEfetivoCategories();
-  assert.equal(writes, 0, "viewer não grava");
+  assert.equal(writes, writesBeforeViewer, "viewer não grava");
   global.canEditEmpresas = () => true;
 
+  const writesBeforeInitialize = writes;
   await global.initializeDefaultEfetivoCategories();
-  assert.equal(writes, 1, "admin/editor inicializa por uma gravação explícita");
+  assert.equal(writes, writesBeforeInitialize + 1, "admin/editor inicializa por uma gravação explícita");
   assert.equal(lastWrite.length, 6, "inicialização persiste as seis categorias padrão no documento único");
 
   global.saveEfetivoCategorias = async () => {
@@ -98,13 +240,6 @@ async function run() {
     lastWrite = payload;
   };
 
-  const configured = [
-    { id: "unused", nome: "Sem empresas", nomeNormalizado: "SEM_EMPRESAS", ordem: 1, ativa: true },
-    { id: "imp", nome: "Impermeabilização", nomeNormalizado: "IMPERMEABILIZACAO", ordem: 2, ativa: true },
-    { id: "civil", nome: "Civil", nomeNormalizado: "CIVIL", ordem: 3, ativa: true },
-    { id: "pais", nome: "Paisagismo", nomeNormalizado: "PAISAGISMO", ordem: 4, ativa: false },
-    { id: "outros", nome: "Outros", nomeNormalizado: "OUTROS", ordem: 5, ativa: true },
-  ];
   const companyCategorySelect = { innerHTML: "", value: "", disabled: false };
   global.document.getElementById = (id) => id === "e-categoria-efetivo" ? companyCategorySelect : null;
   categories.applyCategoriesPayload({ exists: true, categorias: configured });

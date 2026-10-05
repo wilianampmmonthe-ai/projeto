@@ -1662,7 +1662,7 @@ td .status-badge--tipo-atacarejo {
 
 .efetivo-category-row {
   display: grid;
-  grid-template-columns: auto minmax(180px, 1fr) auto auto auto;
+  grid-template-columns: auto minmax(180px, 1fr) auto auto auto auto;
   align-items: center;
   gap: 8px;
   padding: 10px;
@@ -1678,6 +1678,15 @@ td .status-badge--tipo-atacarejo {
 
 .efetivo-category-name {
   width: 100%;
+}
+
+.efetivo-category-delete {
+  min-width: 34px;
+  padding-inline: 7px;
+}
+
+.efetivo-category-delete svg {
+  display: block;
 }
 
 .efetivo-category-create {

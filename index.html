@@ -320,6 +320,7 @@
             <span id="freqCountAtac" style="color:var(--accent);">0 Obra</span>
             <span class="sub" style="margin-left:4px;">funcionários</span>
           </div>
+          <span id="freqSyncStatus" class="freq-sync-status" data-state="saved" aria-live="polite">✓ Salvo</span>
         </div>
 
         <!-- Tabela Terceirizados -->
@@ -3061,7 +3062,13 @@ function ensureInlineFreqState(){
 }
 
 var freqState = ensureInlineFreqState();
-let freqSaveTimer = null;
+const freqDomIndex = {
+  cells: new Map(),
+  rows: new Map(),
+  typeDays: new Map(),
+  dayTotals: new Map(),
+  grandTotals: new Map(),
+};
 
 /* ── helpers ────────────────────────────────────────────────── */
 function freqGetPeriodoKey(){
@@ -3186,17 +3193,6 @@ function freqLoadData(){
   freqMigrateLegacyFeriados();
 }
 
-function freqSaveData(){
-  clearTimeout(freqSaveTimer);
-  freqSaveTimer = setTimeout(()=>{
-    try { writeFreqCache(freqState.data); }
-    catch(e){ toast('Erro ao salvar frequência','error'); }
-    if (typeof window.syncRemoteFreqState === 'function') {
-      window.syncRemoteFreqState();
-    }
-  }, 1200);
-}
-
 function freqEnsurePeriod(pk){
   if(!freqState.data[pk]) freqState.data[pk] = { feriados:{}, terceirizados:{}, novoAtacarejo:{} };
   if(!freqState.data[pk].feriados)       freqState.data[pk].feriados = {};
@@ -3222,7 +3218,10 @@ function freqSetCell(pk, tipo, funcId, dia, status){
   } else {
     freqState.data[pk][tipo][funcId][String(dia)] = status;
   }
-  freqSaveData();
+  if(typeof window.freqQueueCellChange === 'function'){
+    window.freqQueueCellChange(pk, tipo, funcId, dia, status);
+  }
+  return { tipo, funcId: String(funcId), dia: Number(dia) };
 }
 
 /* ── Global feriado helpers ──────────────────────────────── */
@@ -3234,12 +3233,15 @@ function freqGetFeriado(pk, dia){
 function freqSetFeriado(pk, dia, nome){
   freqEnsurePeriod(pk);
   freqState.data[pk].feriados[String(dia)] = nome || '';
-  freqSaveData();
+  if(typeof window.freqQueueFeriadoChange === 'function') window.freqQueueFeriadoChange(pk, dia, nome || '');
+  return { holiday: true, dia: Number(dia) };
 }
 
 function freqRemoveFeriado(pk, dia){
   freqEnsurePeriod(pk);
   delete freqState.data[pk].feriados[String(dia)];
+  const changes = [{ holiday: true, dia: Number(dia) }];
+  if(typeof window.freqQueueFeriadoChange === 'function') window.freqQueueFeriadoChange(pk, dia, null);
   // Also clear the 'Feriado' status from all employee cells on that day
   ['terceirizados','novoAtacarejo'].forEach(tipo=>{
     const sub = freqState.data[pk][tipo];
@@ -3248,10 +3250,12 @@ function freqRemoveFeriado(pk, dia){
       const key = freqGetStatusKey(val);
       if(key === 'Feriado'){
         delete sub[funcId][String(dia)];
+        if(typeof window.freqQueueCellChange === 'function') window.freqQueueCellChange(pk, tipo, funcId, dia, null);
+        changes.push({ tipo, funcId: String(funcId), dia: Number(dia) });
       }
     });
   });
-  freqSaveData();
+  return changes;
 }
 
 /* Migration: convert old { status:'Feriado', obs } cells to global feriados */
@@ -3275,7 +3279,6 @@ function freqMigrateLegacyFeriados(){
       });
     });
   });
-  freqSaveData();
 }
 
 /* Compute default status for a cell based on admission date */
@@ -3333,7 +3336,12 @@ function freqSelectPeriodo(pk){
   return true;
 }
 
-function freqChangePeriod(){
+async function freqChangePeriod(){
+  const previousPeriod = freqState.periodoKey;
+  if(previousPeriod && typeof window.freqFlushPending === 'function'){
+    try { await window.freqFlushPending({ periodoKey: previousPeriod }); }
+    catch(e){ toast('A sincronização continuará tentando em segundo plano.','warning'); }
+  }
   freqState.periodoKey = freqGetPeriodoKey();
   freqDebug('periodo-alterado', {
     obraAtivaId: (window.APP_CTX && APP_CTX.obraAtivaId) ? APP_CTX.obraAtivaId : null,
@@ -3453,6 +3461,7 @@ freqRender = function freqRenderSafe(){
 
     freqBindCellEvents();
     freqRenderFeriadosList(pk);
+    freqState.remoteDirty = false;
 
     const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     const [pky, pkm] = pk.split('-').map(Number);
@@ -3497,6 +3506,46 @@ function freqOrdenarPorEmpresa(lista){
   return empresasOrdenadas.flatMap(emp => grupos.get(emp));
 }
 
+function freqCellDomKey(tipo, funcId, dia){
+  return JSON.stringify([String(tipo), String(funcId), String(dia)]);
+}
+
+function freqEscapeAttr(value){
+  return String(value).replace(/[&<>'"]/g, char=>({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;'
+  })[char]);
+}
+
+function freqGetCellPresentation(pk, tipo, func, dia){
+  const rawVal = freqGetCell(pk, tipo, func.id, dia);
+  const cellKey = freqGetStatusKey(rawVal);
+  const cellObs = freqGetObsText(rawVal);
+  const nomeFeriado = freqState.data[pk].feriados?.[String(dia)];
+  let status;
+  const titleParts = [];
+  let hasObs = false;
+
+  if(cellKey !== null){
+    status = cellKey;
+    if(cellObs){ hasObs = true; titleParts.push(`Obs: ${cellObs}`); }
+    if(status === 'Feriado') titleParts.unshift(nomeFeriado || 'Feriado');
+  } else if(nomeFeriado !== undefined){
+    status = 'Feriado';
+    titleParts.push(nomeFeriado || 'Feriado');
+  } else {
+    status = freqDefaultStatus(func, pk, dia) || 'vazio';
+  }
+
+  const info = FREQ_STATUS[status];
+  return {
+    status,
+    label: info ? info.label : '?',
+    counts: Boolean(info && info.counts),
+    title: titleParts.join(' • '),
+    hasObs: hasObs && tipo === 'novoAtacarejo',
+  };
+}
+
 function freqBuildTableHTML(funcList, tipo, pk, days){
   if(!funcList.length){
     return `<div class="empty-state" style="padding:40px;text-align:center;color:var(--text2);font-size:14px;">
@@ -3532,7 +3581,8 @@ function freqBuildTableHTML(funcList, tipo, pk, days){
   let tbody = '<tbody>';
   funcList.forEach((func, idx)=>{
     let rowTotal = 0;
-    tbody += `<tr>
+    const funcIdAttr = freqEscapeAttr(func.id);
+    tbody += `<tr data-freq-tipo="${tipo}" data-freq-funcionario="${funcIdAttr}">
       <td class="col-fixed col-num" style="text-align:center;color:var(--text2);font-size:11px;">${idx+1}</td>
       <td class="col-fixed col-nome" style="font-size:12px;font-weight:600;">${func.nome}</td>
       <td class="col-fixed col-func" style="font-size:11px;color:var(--text2);">${func.funcao}</td>
@@ -3567,36 +3617,196 @@ function freqBuildTableHTML(funcList, tipo, pk, days){
       const label = info ? info.label : '?';
       if(info && info.counts){ rowTotal++; dailyTotals[d-1]++; }
 
-      const titleAttr = titleParts.length ? `title="${titleParts.join(' ? ')}"` : '';
+      const titleAttr = titleParts.length ? `title="${freqEscapeAttr(titleParts.join(' • '))}"` : '';
       const obsDot = (hasObs && isAtacarejo) ? '<span class="freq-obs-dot"></span>' : '';
       const weekendClass = isWeekend ? ' fim-semana' : '';
-      tbody += `<td class="${weekendClass.trim()}" style="padding:2px;"><div class="freq-cell-wrap"><div class="freq-cell st-${stDisplay}" ${titleAttr} data-tipo="${tipo}" data-fid="${func.id}" data-dia="${d}" data-status="${stDisplay}">${label}</div>${obsDot}</div></td>`;
+      tbody += `<td class="${weekendClass.trim()}" style="padding:2px;"><div class="freq-cell-wrap"><div class="freq-cell st-${stDisplay}" ${titleAttr} data-tipo="${tipo}" data-fid="${funcIdAttr}" data-dia="${d}" data-status="${stDisplay}">${label}</div>${obsDot}</div></td>`;
     }
-    tbody += `<td class="freq-total-cell">${rowTotal}</td></tr>`;
+    tbody += `<td class="freq-total-cell" data-freq-row-total>${rowTotal}</td></tr>`;
   });
   tbody += '</tbody>';
 
   // Footer totals
   let tfoot = '<tfoot><tr><td class="col-fixed col-num"></td><td class="col-fixed col-nome" style="font-size:11px;font-weight:700;color:var(--text2);padding:6px 8px;">TOTAL DIÁRIO</td><td class="col-fixed col-func"></td><td class="col-fixed col-emp"></td><td class="col-fixed col-aloj"></td>';
-  dailyTotals.forEach(t=>{
-    tfoot += `<td class="freq-daily-total">${t||''}</td>`;
+  dailyTotals.forEach((t, index)=>{
+    tfoot += `<td class="freq-daily-total" data-freq-day-total="${index + 1}">${t||''}</td>`;
   });
-  tfoot += `<td class="freq-total-cell" style="color:var(--green);">${dailyTotals.reduce((a,b)=>a+b,0)}</td></tr></tfoot>`;
+  tfoot += `<td class="freq-total-cell" data-freq-grand-total style="color:var(--green);">${dailyTotals.reduce((a,b)=>a+b,0)}</td></tr></tfoot>`;
 
-  return `<table class="freq-table">${thead}${tbody}${tfoot}</table>`;
+  return `<table class="freq-table" data-freq-tipo="${tipo}">${thead}${tbody}${tfoot}</table>`;
 }
+
+function freqRebuildDomIndex(){
+  Object.values(freqDomIndex).forEach(index=>index.clear());
+  ['freqWrapTerc','freqWrapAtac'].forEach(wrapId=>{
+    const wrap = document.getElementById(wrapId);
+    const table = wrap?.querySelector('table[data-freq-tipo]');
+    if(!table) return;
+    const tipo = table.dataset.freqTipo;
+    table.querySelectorAll('.freq-cell').forEach(cell=>{
+      const key = freqCellDomKey(cell.dataset.tipo, cell.dataset.fid, cell.dataset.dia);
+      freqDomIndex.cells.set(key, cell);
+      const dayKey = JSON.stringify([tipo, String(cell.dataset.dia)]);
+      if(!freqDomIndex.typeDays.has(dayKey)) freqDomIndex.typeDays.set(dayKey, []);
+      freqDomIndex.typeDays.get(dayKey).push(cell);
+    });
+    table.querySelectorAll('tbody tr[data-freq-funcionario]').forEach(row=>{
+      freqDomIndex.rows.set(
+        JSON.stringify([tipo, String(row.dataset.freqFuncionario)]),
+        { row, total: row.querySelector('[data-freq-row-total]') }
+      );
+    });
+    table.querySelectorAll('[data-freq-day-total]').forEach(total=>{
+      freqDomIndex.dayTotals.set(JSON.stringify([tipo, String(total.dataset.freqDayTotal)]), total);
+    });
+    freqDomIndex.grandTotals.set(tipo, table.querySelector('[data-freq-grand-total]'));
+  });
+}
+
+function freqUpdateCellElement(pk, cell){
+  const tipo = cell.dataset.tipo;
+  const funcId = String(cell.dataset.fid || '');
+  const dia = Number(cell.dataset.dia);
+  const func = DB.funcionarios.find(item=>String(item.id) === funcId);
+  if(!func) return;
+  const presentation = freqGetCellPresentation(pk, tipo, func, dia);
+  cell.className = `freq-cell st-${presentation.status}`;
+  cell.dataset.status = presentation.status;
+  cell.textContent = presentation.label;
+  if(presentation.title) cell.title = presentation.title;
+  else cell.removeAttribute('title');
+
+  const wrap = cell.parentElement;
+  let dot = wrap?.querySelector('.freq-obs-dot');
+  if(presentation.hasObs && !dot){
+    dot = document.createElement('span');
+    dot.className = 'freq-obs-dot';
+    wrap.appendChild(dot);
+  } else if(!presentation.hasObs && dot){
+    dot.remove();
+  }
+}
+
+function freqUpdateIncrementalTotals(affectedRows, affectedDays){
+  affectedRows.forEach(rowKey=>{
+    const indexed = freqDomIndex.rows.get(rowKey);
+    if(!indexed?.total) return;
+    let total = 0;
+    indexed.row.querySelectorAll('.freq-cell').forEach(cell=>{
+      if(FREQ_STATUS[cell.dataset.status]?.counts) total++;
+    });
+    indexed.total.textContent = String(total);
+  });
+
+  const affectedTypes = new Set();
+  affectedDays.forEach(dayKey=>{
+    const totalEl = freqDomIndex.dayTotals.get(dayKey);
+    if(!totalEl) return;
+    const cells = freqDomIndex.typeDays.get(dayKey) || [];
+    const total = cells.reduce((sum, cell)=>sum + (FREQ_STATUS[cell.dataset.status]?.counts ? 1 : 0), 0);
+    totalEl.textContent = total ? String(total) : '';
+    affectedTypes.add(JSON.parse(dayKey)[0]);
+  });
+  affectedTypes.forEach(tipo=>{
+    const grand = freqDomIndex.grandTotals.get(tipo);
+    if(!grand) return;
+    let total = 0;
+    freqDomIndex.dayTotals.forEach((node, key)=>{
+      if(JSON.parse(key)[0] === tipo) total += Number(node.textContent) || 0;
+    });
+    grand.textContent = String(total);
+  });
+}
+
+function freqApplyIncrementalChanges(pk, changes){
+  const cells = new Map();
+  changes.filter(Boolean).forEach(change=>{
+    if(change.holiday){
+      ['terceirizados','novoAtacarejo'].forEach(tipo=>{
+        (freqDomIndex.typeDays.get(JSON.stringify([tipo, String(change.dia)])) || []).forEach(cell=>{
+          cells.set(freqCellDomKey(tipo, cell.dataset.fid, change.dia), cell);
+        });
+      });
+      return;
+    }
+    const key = freqCellDomKey(change.tipo, change.funcId, change.dia);
+    const cell = freqDomIndex.cells.get(key);
+    if(cell) cells.set(key, cell);
+  });
+
+  const affectedRows = new Set();
+  const affectedDays = new Set();
+  cells.forEach(cell=>{
+    freqUpdateCellElement(pk, cell);
+    affectedRows.add(JSON.stringify([cell.dataset.tipo, String(cell.dataset.fid)]));
+    affectedDays.add(JSON.stringify([cell.dataset.tipo, String(cell.dataset.dia)]));
+  });
+  freqUpdateIncrementalTotals(affectedRows, affectedDays);
+}
+
+function freqCollectVisibleChanges(previous, next){
+  const changes = [];
+  const beforeHolidays = previous?.feriados || {};
+  const afterHolidays = next?.feriados || {};
+  new Set([...Object.keys(beforeHolidays), ...Object.keys(afterHolidays)]).forEach(dia=>{
+    if(JSON.stringify(beforeHolidays[dia]) !== JSON.stringify(afterHolidays[dia])) changes.push({ holiday:true, dia:Number(dia) });
+  });
+  ['terceirizados','novoAtacarejo'].forEach(tipo=>{
+    const beforeType = previous?.[tipo] || {};
+    const afterType = next?.[tipo] || {};
+    new Set([...Object.keys(beforeType), ...Object.keys(afterType)]).forEach(funcId=>{
+      const beforeDays = beforeType[funcId] || {};
+      const afterDays = afterType[funcId] || {};
+      new Set([...Object.keys(beforeDays), ...Object.keys(afterDays)]).forEach(dia=>{
+        if(JSON.stringify(beforeDays[dia]) !== JSON.stringify(afterDays[dia])){
+          changes.push({ tipo, funcId:String(funcId), dia:Number(dia) });
+        }
+      });
+    });
+  });
+  return changes;
+}
+
+function freqApplyRemoteSnapshot(pk, remoteData){
+  const previous = freqState.data[pk] || { feriados:{}, terceirizados:{}, novoAtacarejo:{} };
+  const next = remoteData || { feriados:{}, terceirizados:{}, novoAtacarejo:{} };
+  if(!next.feriados) next.feriados = {};
+  if(!next.terceirizados) next.terceirizados = {};
+  if(!next.novoAtacarejo) next.novoAtacarejo = {};
+  const changes = freqCollectVisibleChanges(previous, next);
+  freqState.data[pk] = next;
+  try { writeFreqCache(freqState.data); } catch(e){}
+
+  const pageActive = document.getElementById('page-frequencia')?.classList.contains('active');
+  if(!pageActive || pk !== freqState.periodoKey){
+    freqState.remoteDirty = true;
+    return changes.length;
+  }
+  if(changes.length) freqRenderLive(pk, changes);
+  return changes.length;
+}
+
+window.freqApplyRemoteSnapshot = freqApplyRemoteSnapshot;
 
 /* ── Cell Events ────────────────────────────────────────────── */
 function freqBindCellEvents(){
-  document.querySelectorAll('.freq-cell').forEach(cell=>{
-    cell.addEventListener('click', freqCellClick);
+  ['freqWrapTerc','freqWrapAtac'].forEach(wrapId=>{
+    const wrap = document.getElementById(wrapId);
+    if(!wrap || wrap.dataset.freqDelegated === 'true') return;
+    wrap.addEventListener('click', freqCellClick);
+    wrap.dataset.freqDelegated = 'true';
   });
-  document.addEventListener('click', freqHideCtxMenu);
+  if(!window.__freqCtxMenuBound){
+    document.addEventListener('click', freqHideCtxMenu);
+    window.__freqCtxMenuBound = true;
+  }
+  freqRebuildDomIndex();
 }
 
 function freqCellClick(e){
+  const cell = e.target.closest('.freq-cell');
+  if(!cell || !e.currentTarget.contains(cell)) return;
   e.stopPropagation();
-  const cell = e.currentTarget;
   const tipo = cell.dataset.tipo;
   const funcId = String(cell.dataset.fid || '');
   const dia = Number(cell.dataset.dia);
@@ -3622,17 +3832,6 @@ function freqHideCtxMenu(e){
   }
 }
 
-freqBindCellEvents = function freqBindCellEventsSafe(){
-  document.querySelectorAll('.freq-cell').forEach(cell=>{
-    cell.removeEventListener('click', freqCellClick);
-    cell.addEventListener('click', freqCellClick);
-  });
-  if(!window.__freqCtxMenuBound){
-    document.addEventListener('click', freqHideCtxMenu);
-    window.__freqCtxMenuBound = true;
-  }
-};
-
 freqHideCtxMenu = function freqHideCtxMenuSafe(e){
   const menu = document.getElementById('freqContextMenu');
   if(!menu) return;
@@ -3649,14 +3848,15 @@ function freqCtxApply(status){
 
   // Feriado INDIVIDUAL — set only for the selected cell(s)
   // (use "Feriado para Todos" button for mass feriado)
+  const changes = [];
   targets.forEach(t=>{
     if(!t.tipo || !t.funcId || !t.dia) return;
     if(status === null){
-      freqSetCell(pk, t.tipo, t.funcId, t.dia, null);
+      changes.push(freqSetCell(pk, t.tipo, t.funcId, t.dia, null));
     } else {
-      freqSetCell(pk, t.tipo, t.funcId, t.dia, status);
-      if(status === 'Demitido')      freqAutoFillForward(pk, t.tipo, t.funcId, t.dia, 'Demitido');
-      if(status === 'NaoContratado') freqAutoFillBackward(pk, t.tipo, t.funcId, t.dia, 'NaoContratado');
+      changes.push(freqSetCell(pk, t.tipo, t.funcId, t.dia, status));
+      if(status === 'Demitido')      changes.push(...freqAutoFillForward(pk, t.tipo, t.funcId, t.dia, 'Demitido'));
+      if(status === 'NaoContratado') changes.push(...freqAutoFillBackward(pk, t.tipo, t.funcId, t.dia, 'NaoContratado'));
     }
   });
 
@@ -3664,33 +3864,38 @@ function freqCtxApply(status){
   if(status !== null && status !== 'Demitido' && status !== 'NaoContratado'
      && targets.length === 1 && targets[0].tipo === 'novoAtacarejo'){
     const t = targets[0];
-    freqRenderLive(pk);
+    freqRenderLive(pk, changes);
     openCellObsModal(pk, t.tipo, t.funcId, t.dia);
     return;
   }
 
-  freqRenderLive(pk);
+  freqRenderLive(pk, changes);
 }
 
 /* Auto-fill forward (for Demitido) */
 function freqAutoFillForward(pk, tipo, funcId, fromDay, status){
   const days = freqGetDaysInMonth(pk);
+  const changes = [];
   for(let d = fromDay + 1; d <= days; d++){
-    freqSetCell(pk, tipo, funcId, d, status);
+    changes.push(freqSetCell(pk, tipo, funcId, d, status));
   }
+  return changes;
 }
 
 /* Auto-fill backward (for NaoContratado) */
 function freqAutoFillBackward(pk, tipo, funcId, fromDay, status){
+  const changes = [];
   for(let d = 1; d < fromDay; d++){
     const existing = freqGetCell(pk, tipo, funcId, d);
-    if(!existing) freqSetCell(pk, tipo, funcId, d, status);
+    if(!existing) changes.push(freqSetCell(pk, tipo, funcId, d, status));
   }
+  return changes;
 }
 
-/* Live re-render (lightweight - just update cells in DOM) */
-function freqRenderLive(pk){
-  freqRender(); // Full re-render for simplicity with totals
+/* Live render incremental: célula + totais diretamente dependentes. */
+function freqRenderLive(pk, changes){
+  if(pk !== freqState.periodoKey || !Array.isArray(changes) || !freqDomIndex.cells.size) return;
+  freqApplyIncrementalChanges(pk, changes);
 }
 
 /* ── Feriados footer list ───────────────────────────────────── */
@@ -3732,8 +3937,9 @@ function freqRenderFeriadosList(pk){
 
 /* Remove feriado from UI + data then re-render */
 function freqRemoveFeriadoUI(pk, dia){
-  freqRemoveFeriado(pk, dia);
-  freqRender();
+  const changes = freqRemoveFeriado(pk, dia);
+  freqRenderLive(pk, changes);
+  freqRenderFeriadosList(pk);
   toast(`Feriado do dia ${dia} removido.`, 'warning');
 }
 
@@ -3832,6 +4038,7 @@ function feriadoAplicar(){
   const [y,m] = pk.split('-').map(Number);
   let totalDias = 0;
   let totalCelulas = 0;
+  const changes = [];
 
   freqState.feriadoDates.forEach(dateStr=>{
     const d = new Date(dateStr+'T12:00:00');
@@ -3839,14 +4046,14 @@ function feriadoAplicar(){
       const dia = d.getDate();
       const dateObs = (freqState.feriadoDateObs || {})[dateStr] || '';
       // Save to global feriados map
-      freqSetFeriado(pk, dia, dateObs);
+      changes.push(freqSetFeriado(pk, dia, dateObs));
       // Apply 'Feriado' string to all employee cells
       ['terceirizados','novoAtacarejo'].forEach(tipo=>{
         const funcs = tipo==='terceirizados'
           ? DB.funcionarios.filter(f=>f.tipo==='Terceirizado')
           : DB.funcionarios.filter(f=>f.tipo==='Novo Atacarejo');
         funcs.forEach(func=>{
-          freqSetCell(pk, tipo, func.id, dia, 'Feriado');
+          changes.push(freqSetCell(pk, tipo, func.id, dia, 'Feriado'));
           totalCelulas++;
         });
       });
@@ -3855,7 +4062,8 @@ function feriadoAplicar(){
   });
 
   closeModal('modalFeriado');
-  freqRender();
+  freqRenderLive(pk, changes);
+  freqRenderFeriadosList(pk);
   toast(`${totalDias} feriado(s) aplicado(s) — ${totalCelulas} células marcadas!`, 'success');
   freqState.feriadoDates = [];
   freqState.feriadoDateObs = {};
@@ -4383,11 +4591,12 @@ function freqGetObsText(val){
 function freqCtxApplyFeriado(targets){
   // Just apply Feriado string to selected cells individually
   const pk = freqState.periodoKey;
+  const changes = [];
   targets.forEach(t=>{
     if(!t.tipo || !t.funcId || !t.dia) return;
-    freqSetCell(pk, t.tipo, t.funcId, t.dia, 'Feriado');
+    changes.push(freqSetCell(pk, t.tipo, t.funcId, t.dia, 'Feriado'));
   });
-  freqRenderLive(pk);
+  freqRenderLive(pk, changes);
 }
 
 function feriadoSug(name){
@@ -4438,7 +4647,7 @@ function feriadoTodosAplicar(){
   const dia = d.getDate();
 
   // Save to global feriados map
-  freqSetFeriado(pk, dia, nome);
+  const changes = [freqSetFeriado(pk, dia, nome)];
 
   // Apply 'Feriado' to ALL employees on that day
   let count = 0;
@@ -4450,14 +4659,15 @@ function feriadoTodosAplicar(){
       // Only set if no individual override already exists
       const existing = freqGetCell(pk, tipo, func.id, dia);
       if(existing === null){
-        freqSetCell(pk, tipo, func.id, dia, 'Feriado');
+        changes.push(freqSetCell(pk, tipo, func.id, dia, 'Feriado'));
       }
       count++;
     });
   });
 
   closeModal('modalFeriadoTodos');
-  freqRender();
+  freqRenderLive(pk, changes);
+  freqRenderFeriadosList(pk);
   const nomeLabel = nome ? ` ? ${nome}` : '';
   toast(`Feriado${nomeLabel} marcado para o dia ${dia} (${count} funcionários).`, 'success');
 }
@@ -4470,6 +4680,7 @@ function aplicarFolgaFimDeSemana(){
   if(!pk){ toast('Selecione um mês/ano.','warning'); return; }
   const days = freqGetDaysInMonth(pk);
   let updated = 0;
+  const changes = [];
 
   for(let dia = 1; dia <= days; dia++){
     const dow = freqGetDayOfWeek(pk, dia); // 0=Dom, 6=Sáb
@@ -4489,13 +4700,13 @@ function aplicarFolgaFimDeSemana(){
         const def = freqDefaultStatus(func, pk, dia);
         if(def === 'Demitido' || def === 'NaoContratado') return;
 
-        freqSetCell(pk, tipo, func.id, dia, 'Folga');
+        changes.push(freqSetCell(pk, tipo, func.id, dia, 'Folga'));
         updated++;
       });
     });
   }
 
-  freqRender();
+  freqRenderLive(pk, changes);
   toast(`Folga (fim de semana) aplicada para todos — ${updated} células atualizadas.`, 'success');
 }
 
@@ -4614,12 +4825,12 @@ function cellObsConfirm(){
   const currentStatus = freqGetStatusKey(rawVal) || freqDefaultStatus(DB.funcionarios.find(f=>String(f.id) === String(funcId)), pk, dia) || 'vazio';
 
   if(obs){
-    freqSetCell(pk, tipo, funcId, dia, { status: currentStatus, obs });
+    var change = freqSetCell(pk, tipo, funcId, dia, { status: currentStatus, obs });
   } else {
     // Remove obs — keep plain status string
-    freqSetCell(pk, tipo, funcId, dia, currentStatus);
+    var change = freqSetCell(pk, tipo, funcId, dia, currentStatus);
   }
-  freqRenderLive(pk);
+  freqRenderLive(pk, [change]);
 }
 
 function cellObsRemove(){
@@ -4629,9 +4840,10 @@ function cellObsRemove(){
   _cellObsCtx = null;
   const rawVal = freqGetCell(pk, tipo, funcId, dia);
   const currentStatus = freqGetStatusKey(rawVal);
-  if(currentStatus) freqSetCell(pk, tipo, funcId, dia, currentStatus);
-  else freqSetCell(pk, tipo, funcId, dia, null);
-  freqRenderLive(pk);
+  const change = currentStatus
+    ? freqSetCell(pk, tipo, funcId, dia, currentStatus)
+    : freqSetCell(pk, tipo, funcId, dia, null);
+  freqRenderLive(pk, [change]);
 }
 
 // ============================================================

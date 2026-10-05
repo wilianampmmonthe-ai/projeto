@@ -108,6 +108,15 @@
 .freq-counter .total { color: var(--accent); font-family: var(--font-head); font-size: 16px; font-weight: 800; }
 .freq-counter .sep { color: var(--text2); }
 .freq-counter .sub { color: var(--text2); font-size: 12px; font-weight: 400; }
+.freq-sync-status {
+  margin-left: auto;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.freq-sync-status[data-state="saving"] { color: var(--accent); }
+.freq-sync-status[data-state="error"] { color: var(--red); }
 
 /* Frequency Table Container */
 .freq-table-section { margin-bottom: 28px; }
