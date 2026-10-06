@@ -295,23 +295,39 @@
     const categories = getCategories({ includeInactive: true });
     const editable = canEdit();
     const configured = getStore().efetivoCategoriasConfiguradas;
+    const companies = Array.isArray(getStore().empresas) ? getStore().empresas : [];
     const notice = document.getElementById("efetivo-category-default-notice");
     if (notice) notice.hidden = configured;
-    list.innerHTML = categories.map((category, index) => `
-      <div class="efetivo-category-row" data-category-id="${escapeHtml(category.id)}">
-        <div class="efetivo-category-order">
-          <button type="button" class="btn btn-outline btn-sm" data-category-action="up" ${!editable || index === 0 ? "disabled" : ""} aria-label="Subir categoria">↑</button>
-          <button type="button" class="btn btn-outline btn-sm" data-category-action="down" ${!editable || index === categories.length - 1 ? "disabled" : ""} aria-label="Descer categoria">↓</button>
-        </div>
-        <input class="efetivo-category-name" value="${escapeHtml(category.nome)}" ${editable ? "" : "readonly"} aria-label="Nome da categoria">
-        <span class="badge-status ${category.ativa ? "conforme" : "irregular"}">${category.ativa ? "Ativa" : "Inativa"}</span>
-        <button type="button" class="btn btn-outline btn-sm" data-category-action="rename" ${editable ? "" : "disabled"}>Salvar nome</button>
-        <button type="button" class="btn btn-outline btn-sm" data-category-action="toggle" ${editable ? "" : "disabled"}>${category.ativa ? "Inativar" : "Reativar"}</button>
-        ${editable ? `<button type="button" class="btn btn-danger btn-sm btn-icon efetivo-category-delete" data-category-action="delete" title="Excluir categoria" aria-label="Excluir categoria">${DELETE_ICON}</button>` : ""}
-      </div>
-    `).join("");
-    list.querySelectorAll("[data-category-action]").forEach((button) => {
-      button.addEventListener("click", () => {
+    list.classList?.toggle?.("is-readonly", !editable);
+    list.innerHTML = categories.map((category, index) => {
+      const linkedCompanies = companies.filter((company) => companyUsesCategory(company, category, categories)).length;
+      return `
+        <div class="efetivo-category-row${category.ativa ? "" : " is-inactive"}" data-category-id="${escapeHtml(category.id)}">
+          <div class="efetivo-category-position">
+            <span class="efetivo-category-index">${String(index + 1).padStart(2, "0")}</span>
+            ${editable ? `<div class="efetivo-category-order">
+              <button type="button" class="category-order-button" data-category-action="up" ${index === 0 ? "disabled" : ""} aria-label="Subir categoria">↑</button>
+              <button type="button" class="category-order-button" data-category-action="down" ${index === categories.length - 1 ? "disabled" : ""} aria-label="Descer categoria">↓</button>
+            </div>` : ""}
+          </div>
+          <div class="efetivo-category-main">
+            <input class="efetivo-category-name" value="${escapeHtml(category.nome)}" ${editable ? "" : "readonly"} aria-label="Nome da categoria">
+            <span>${linkedCompanies ? `${linkedCompanies} empresa${linkedCompanies === 1 ? "" : "s"} vinculada${linkedCompanies === 1 ? "" : "s"}` : "Sem empresas vinculadas"}</span>
+          </div>
+          <div class="efetivo-category-state">
+            <span class="badge-status ${category.ativa ? "conforme" : "neutral"}">${category.ativa ? "Ativa" : "Inativa"}</span>
+          </div>
+          ${editable ? `<div class="efetivo-category-actions">
+            <button type="button" class="btn btn-outline btn-sm" data-category-action="rename">Salvar nome</button>
+            <button type="button" class="btn btn-outline btn-sm" data-category-action="toggle">${category.ativa ? "Inativar" : "Reativar"}</button>
+            <button type="button" class="btn btn-danger btn-sm btn-icon efetivo-category-delete" data-category-action="delete" title="Excluir categoria" aria-label="Excluir categoria">${DELETE_ICON}</button>
+          </div>` : `<span class="efetivo-category-readonly-row">Consulta</span>`}
+        </div>`;
+    }).join("");
+    if (typeof list.addEventListener === "function" && list.dataset && !list.dataset.actionsBound) {
+      list.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-category-action]");
+        if (!button || !list.contains(button)) return;
         const id = button.closest(".efetivo-category-row")?.dataset.categoryId;
         if (!id) return;
         const action = button.dataset.categoryAction;
@@ -321,11 +337,14 @@
         if (action === "toggle") toggleCategory(id);
         if (action === "delete") deleteCategory(id);
       });
-    });
+      list.dataset.actionsBound = "true";
+    }
     const createControls = document.getElementById("efetivo-category-create");
     if (createControls) createControls.hidden = !editable;
     const initializeButton = document.getElementById("btnInicializarCategoriasEfetivo");
     if (initializeButton) initializeButton.hidden = configured || !editable;
+    const readOnlyNote = document.getElementById("efetivo-category-readonly");
+    if (readOnlyNote) readOnlyNote.hidden = editable;
   }
 
   async function persistCategories(categories, successMessage, options) {

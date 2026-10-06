@@ -23,3 +23,9 @@ serviceAccount*.json
 
 .DS_Store
 Thumbs.db
+
+# Perfis temporários usados nos testes visuais
+.edge-phase6d/
+
+# Perfis temporários do Edge usados em testes/capturas
+.edge-phase*/

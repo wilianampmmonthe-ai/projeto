@@ -12,6 +12,10 @@
 <link rel="stylesheet" href="./css/frequency.css">
 <link rel="stylesheet" href="./css/print.css">
 <link rel="stylesheet" href="./css/efetivo.css">
+<link rel="stylesheet" href="./css/foundation.css">
+<link rel="stylesheet" href="./css/dashboard.css">
+<link rel="stylesheet" href="./css/employees.css">
+<link rel="stylesheet" href="./css/companies.css">
 </head>
 <body>
 
@@ -45,11 +49,16 @@
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <div class="sidebar-logo">
-        <div class="badge">NA</div>
-        <div class="info">
-          <h3>Carregando obra...</h3>
-          <p>Selecione uma obra</p>
+      <div class="product-brand" aria-label="Sistema de Liberação">
+        <div class="product-brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3 19 6v5c0 4.8-2.8 8.1-7 10-4.2-1.9-7-5.2-7-10V6l7-3Z"/>
+            <path d="m9.2 12 1.8 1.8 3.8-4"/>
+          </svg>
+        </div>
+        <div class="product-brand__copy">
+          <span>Sistema de</span>
+          <strong>Liberação</strong>
         </div>
       </div>
     </div>
@@ -106,6 +115,21 @@
       </div>
     </nav>
     <div class="sidebar-footer">
+      <div class="active-worksite" aria-label="Obra ativa">
+        <div class="active-worksite__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 21h16M6 21V8h9v13M15 12h3v9M9 11h2M9 15h2"/>
+          </svg>
+        </div>
+        <div class="sidebar-logo">
+          <div class="badge" aria-hidden="true">OB</div>
+          <div class="info">
+            <span class="active-worksite__label">Obra ativa</span>
+            <h3>Carregando obra...</h3>
+            <p>Selecione uma obra</p>
+          </div>
+        </div>
+      </div>
       <div class="user-info">
         <div class="user-avatar">ST</div>
         <div class="user-meta">
@@ -119,8 +143,13 @@
 
   <main class="main">
     <div class="topbar">
-      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir menu de navegação">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <div class="topbar-heading">
+        <span class="topbar-context">Sistema de Liberação</span>
+        <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      </div>
       <div class="topbar-obra-switch" id="obra-switcher" hidden>
         <span class="topbar-obra-label">Obra</span>
         <span class="topbar-obra-current" id="obra-current-name"></span>
@@ -144,124 +173,205 @@
 
       <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
+        <section class="dashboard-intro" aria-labelledby="dashboardTitle">
+          <div class="dashboard-intro__copy">
+            <span class="dashboard-intro__eyebrow">Visão operacional</span>
+            <h1 id="dashboardTitle">Dashboard</h1>
+            <p>Visão geral da liberação de funcionários na obra ativa.</p>
+          </div>
+          <div class="dashboard-worksite" aria-label="Contexto da obra ativa">
+            <div class="dashboard-worksite__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16M6 21V8h9v13M15 12h3v9M9 11h2M9 15h2"/></svg>
+            </div>
+            <div class="dashboard-worksite__copy">
+              <span>Obra ativa</span>
+              <strong id="dashboardObraName">Carregando obra...</strong>
+              <small id="dashboardObraLocation">Localização não informada</small>
+            </div>
+          </div>
+        </section>
+
         <div class="dash-grid">
+          <div class="stat-card blue clickable" onclick="showDashboardStats('todos')" title="Clique para ver todos os funcionários">
+            <div class="s-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"/><path d="M3 20a5 5 0 0 1 10 0M16 4.5a3 3 0 0 1 0 6M15 15a5 5 0 0 1 6 5"/></svg></div>
+            <div class="s-label">Total de colaboradores</div>
+            <div class="s-value" id="stat-total">0</div>
+            <div class="s-sub" id="dashboardCapacityContext">De 350 vagas na obra</div>
+          </div>
           <div class="stat-card green clickable" onclick="showDashboardStats('conforme')" title="Clique para ver funcionários liberados">
-            <div class="s-label">Liberados</div>
+            <div class="s-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.3 2.3 4.7-4.7"/></svg></div>
+            <div class="s-label">Conformes / Liberados</div>
             <div class="s-value" id="stat-liberados">0</div>
             <div class="s-sub">Documentação concluída</div>
-            <div class="s-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg></div>
           </div>
           <div class="stat-card yellow clickable" onclick="showDashboardStats('pendente')" title="Clique para ver funcionários pendentes">
+            <div class="s-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
             <div class="s-label">Pendentes</div>
             <div class="s-value" id="stat-pendentes">0</div>
             <div class="s-sub">Aguardando documentação</div>
-            <div class="s-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
           </div>
           <div class="stat-card red clickable" onclick="showDashboardStats('irregular')" title="Clique para ver funcionários irregulares">
+            <div class="s-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></svg></div>
             <div class="s-label">Irregulares</div>
             <div class="s-value" id="stat-irregulares">0</div>
-            <div class="s-sub">Prazo vencido</div>
-            <div class="s-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6"/><path d="m15 9-6 6"/></svg></div>
-          </div>
-          <div class="stat-card blue clickable" onclick="showDashboardStats('todos')" title="Clique para ver todos os funcionários">
-            <div class="s-label">Total</div>
-            <div class="s-value" id="stat-total">0</div>
-            <div class="s-sub">De 350 vagas</div>
-            <div class="s-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="7" r="2.5"/><circle cx="12" cy="13" r="2.5"/><path d="M3.5 18a4 4 0 0 1 4-3h1"/><path d="M20.5 18a4 4 0 0 0-4-3h-1"/><path d="M8.5 21a3.5 3.5 0 0 1 7 0"/></svg></div>
-          </div>
-        </div>
-        <div class="capacity-card" aria-labelledby="capacityText">
-          <div class="capacity-card__top">
-            <div class="capacity-card__label" id="capacityText">Capacidade utilizada</div>
-            <div class="capacity-card__percent" id="capacityPercent">0%</div>
-          </div>
-          <div
-            class="progress-bar capacity-card__bar"
-            role="progressbar"
-            aria-label="Capacidade utilizada"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-valuenow="0"
-            aria-valuetext="0% da capacidade utilizada"
-          >
-            <div class="progress-fill capacity-card__fill is-safe" id="capacityBar" style="width:0%"></div>
-          </div>
-          <div class="capacity-card__meta">
-            <span><strong id="capacityCount">0 / 350</strong> colaboradores</span>
-            <span>Limite operacional do dashboard</span>
+            <div class="s-sub">Prazo vencido ou bloqueio</div>
           </div>
         </div>
 
-        <div class="section-header">
-          <h2>Visão Geral dos Funcionários</h2>
-          <button class="btn btn-primary btn-sm" id="btnNovoFuncionarioDashboard" onclick="openCadastroModal()">+ Novo Funcionário</button>
+        <div class="dashboard-operational-grid">
+          <section class="capacity-card" aria-labelledby="capacityText">
+            <div class="capacity-card__top">
+              <div class="dashboard-panel-title">
+                <span class="dashboard-panel-title__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h16M6 18v-5a6 6 0 0 1 12 0v5M12 4v3M4 13h2M18 13h2"/></svg></span>
+                <div><div class="capacity-card__label" id="capacityText">Capacidade da obra</div><small>Ocupação atual da obra ativa</small></div>
+              </div>
+              <div class="capacity-card__percent"><strong id="capacityPercent">0%</strong><span> utilizada</span></div>
+            </div>
+            <div class="progress-bar capacity-card__bar" role="progressbar" aria-label="Capacidade utilizada" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% da capacidade utilizada">
+              <div class="progress-fill capacity-card__fill is-safe" id="capacityBar" style="width:0%"></div>
+            </div>
+            <div class="capacity-card__meta">
+              <span><strong id="capacityCount">0 / 350</strong> colaboradores</span>
+              <span><strong id="capacityAvailableInline">350</strong> vagas disponíveis</span>
+            </div>
+            <div class="capacity-summary" aria-label="Resumo da capacidade">
+              <div><span>Capacidade total</span><strong id="capacityTotal">350</strong></div>
+              <div><span>Colaboradores atuais</span><strong id="capacityCurrent">0</strong></div>
+              <div><span>Vagas disponíveis</span><strong id="capacityAvailable">350</strong></div>
+            </div>
+          </section>
+
+          <section class="attention-panel is-regular" id="dashboardAttention" aria-labelledby="attentionTitle">
+            <div class="attention-panel__header">
+              <div class="dashboard-panel-title">
+                <span class="dashboard-panel-title__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V6l-8-4-8 4v6c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span>
+                <div><h2 id="attentionTitle">Situações que exigem ação</h2><small>Resumo documental dos colaboradores</small></div>
+              </div>
+              <span class="attention-panel__state" id="attentionStateLabel">Situação regular</span>
+            </div>
+            <div class="attention-panel__body">
+              <div class="attention-panel__message-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg></div>
+              <div class="attention-panel__message">
+                <strong id="attentionMessageTitle">Nenhuma pendência ou irregularidade</strong>
+                <p id="attentionMessageText">Toda a documentação está em dia e não há bloqueios de acesso.</p>
+              </div>
+            </div>
+            <div class="attention-panel__counts">
+              <button type="button" class="attention-count attention-count--pending" onclick="showDashboardStats('pendente')"><span>Pendentes</span><strong id="attentionPendingCount">0</strong></button>
+              <button type="button" class="attention-count attention-count--irregular" onclick="showDashboardStats('irregular')"><span>Irregulares</span><strong id="attentionIrregularCount">0</strong></button>
+            </div>
+          </section>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr>
-              <th>#</th><th>Nome</th><th>Empresa</th><th>Função</th><th>Tipo</th><th>Status</th><th>Docs</th><th>Ações</th>
-            </tr></thead>
-            <tbody id="dashTable"><tr><td colspan="8" class="empty-state"><div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-svg"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg></div><p>Nenhum funcionário cadastrado</p></td></tr></tbody>
-          </table>
-        </div>
+
+        <section class="dashboard-employees" aria-labelledby="dashboardEmployeesTitle">
+          <div class="dashboard-section-heading">
+            <div>
+              <span class="dashboard-section-heading__eyebrow">Equipe da obra</span>
+              <h2 id="dashboardEmployeesTitle">Visão Geral dos Funcionários</h2>
+              <p>Acompanhe o status de liberação e a documentação dos colaboradores.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="btnNovoFuncionarioDashboard" onclick="openCadastroModal()">+ Novo Funcionário</button>
+          </div>
+          <div class="table-wrap dashboard-table-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>Nome</th><th>Empresa</th><th>Função</th><th>Tipo</th><th>Status</th><th>Docs</th><th>Ações</th>
+              </tr></thead>
+              <tbody id="dashTable"><tr><td colspan="8" class="empty-state"><div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-svg"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg></div><p>Nenhum funcionário cadastrado</p></td></tr></tbody>
+            </table>
+          </div>
+        </section>
       </div>
 
       <!-- TERCEIRIZADOS -->
-      <div class="page" id="page-terceirizados">
-        <div class="section-header">
-          <h2>Funcionários Terceirizados</h2>
+      <div class="page employee-page" id="page-terceirizados">
+        <header class="employee-page__header">
+          <div class="employee-page__title">
+            <span class="employee-page__eyebrow">Gestão de funcionários</span>
+            <h2>Funcionários Terceirizados</h2>
+            <p>Acompanhe vínculo, documentação e liberação dos colaboradores de empresas contratadas.</p>
+          </div>
           <button class="btn btn-primary btn-sm" id="btnNovoTerceirizado" onclick="openCadastroModal('Terceirizado')">+ Cadastrar</button>
-        </div>
-        <div class="filters">
-          <div class="filter-chip active" onclick="filterTable('terceirizados','todos',this)">Todos</div>
-          <div class="filter-chip" onclick="filterTable('terceirizados','conforme',this)">Conformes</div>
-          <div class="filter-chip" onclick="filterTable('terceirizados','pendente',this)">Pendentes</div>
-          <div class="filter-chip" onclick="filterTable('terceirizados','irregular',this)">Irregulares</div>
-        </div>
-        <div class="table-wrap">
+        </header>
+        <section class="employee-list" aria-labelledby="terceirizados-list-title">
+          <div class="employee-toolbar">
+            <div class="employee-toolbar__copy">
+              <strong id="terceirizados-list-title">Colaboradores</strong>
+              <span>Filtre pela situação documental</span>
+            </div>
+            <div class="filters employee-status-filters" aria-label="Filtrar terceirizados por status">
+              <button type="button" class="filter-chip active" onclick="filterTable('terceirizados','todos',this)">Todos</button>
+              <button type="button" class="filter-chip" onclick="filterTable('terceirizados','conforme',this)">Conformes</button>
+              <button type="button" class="filter-chip" onclick="filterTable('terceirizados','pendente',this)">Pendentes</button>
+              <button type="button" class="filter-chip" onclick="filterTable('terceirizados','irregular',this)">Irregulares</button>
+            </div>
+          </div>
+          <div class="table-wrap employee-table-wrap">
           <table>
             <thead><tr>
               <th>#</th><th>Nome</th><th>CPF</th><th>Empresa</th><th>Função</th><th>Status</th><th>Docs</th><th>Prazo</th><th>Ações</th>
             </tr></thead>
             <tbody id="tercTable"><tr><td colspan="9"><div class="empty-state"><div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-svg"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg></div><p>Nenhum terceirizado cadastrado</p></div></td></tr></tbody>
           </table>
-        </div>
+          </div>
+        </section>
       </div>
 
       <!-- ATACAREJO -->
-      <div class="page" id="page-atacarejo">
-        <div class="section-header">
-          <h2 id="atacarejoTitle" data-dynamic-label="obra-funcionarios-completo">Funcionários Obra</h2>
+      <div class="page employee-page" id="page-atacarejo">
+        <header class="employee-page__header">
+          <div class="employee-page__title">
+            <span class="employee-page__eyebrow">Gestão de funcionários</span>
+            <h2 id="atacarejoTitle" data-dynamic-label="obra-funcionarios-completo">Funcionários Obra</h2>
+            <p>Consulte a situação documental e a liberação da equipe própria da obra.</p>
+          </div>
           <button class="btn btn-primary btn-sm" id="btnNovoAtacarejo" onclick="openCadastroModal('Novo Atacarejo')">+ Cadastrar</button>
-        </div>
-        <div class="filters">
-          <div class="filter-chip active" onclick="filterTable('atacarejo','todos',this)">Todos</div>
-          <div class="filter-chip" onclick="filterTable('atacarejo','conforme',this)">Conformes</div>
-          <div class="filter-chip" onclick="filterTable('atacarejo','pendente',this)">Pendentes</div>
-          <div class="filter-chip" onclick="filterTable('atacarejo','irregular',this)">Irregulares</div>
-        </div>
-        <div class="table-wrap">
+        </header>
+        <section class="employee-list" aria-labelledby="atacarejo-list-title">
+          <div class="employee-toolbar">
+            <div class="employee-toolbar__copy">
+              <strong id="atacarejo-list-title">Colaboradores</strong>
+              <span>Filtre pela situação documental</span>
+            </div>
+            <div class="filters employee-status-filters" aria-label="Filtrar funcionários da obra por status">
+              <button type="button" class="filter-chip active" onclick="filterTable('atacarejo','todos',this)">Todos</button>
+              <button type="button" class="filter-chip" onclick="filterTable('atacarejo','conforme',this)">Conformes</button>
+              <button type="button" class="filter-chip" onclick="filterTable('atacarejo','pendente',this)">Pendentes</button>
+              <button type="button" class="filter-chip" onclick="filterTable('atacarejo','irregular',this)">Irregulares</button>
+            </div>
+          </div>
+          <div class="table-wrap employee-table-wrap">
           <table>
             <thead><tr>
               <th>#</th><th>Nome</th><th>CPF</th><th>Empresa</th><th>Função</th><th>Status</th><th>Docs</th><th>Ações</th>
             </tr></thead>
             <tbody id="atacTable"><tr><td colspan="8"><div class="empty-state"><div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-svg"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg></div><p data-dynamic-label="obra-empty-funcionarios">Nenhum funcionário da obra cadastrado</p></div></td></tr></tbody>
           </table>
-        </div>
+          </div>
+        </section>
       </div>
 
       <!-- EMPRESAS -->
-      <div class="page" id="page-empresas">
-        <div class="section-header">
-          <h2>Gestão de Empresas</h2>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div class="page companies-page" id="page-empresas">
+        <header class="companies-page__header">
+          <div class="companies-page__title">
+            <span class="companies-page__eyebrow">Gestão da obra</span>
+            <h2>Empresas</h2>
+            <p>Gerencie vínculos, períodos de atuação, documentação e categorias do efetivo.</p>
+          </div>
+          <div class="companies-page__actions">
             <button class="btn btn-outline btn-sm" id="btnGerenciarCategoriasEfetivo" onclick="openEfetivoCategoriesModal()">Gerenciar categorias</button>
             <button class="btn btn-primary btn-sm" id="btnNovaEmpresa" onclick="openEmpresaModal()">+ Nova Empresa</button>
           </div>
-        </div>
-        <div id="empresasList">
-          <div class="empty-state"><div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-svg"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg></div><p>Nenhuma empresa cadastrada</p></div>
-        </div>
+        </header>
+        <section class="companies-list" aria-labelledby="companies-list-title">
+          <div class="companies-list__header">
+            <div><strong id="companies-list-title">Empresas vinculadas</strong><span>Situação operacional na obra</span></div>
+          </div>
+          <div class="table-wrap companies-table-wrap" id="empresasList" aria-live="polite">
+            <div class="empty-state company-empty-state"><div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-svg"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg></div><strong>Nenhuma empresa cadastrada</strong><p>As empresas vinculadas à obra aparecerão aqui.</p></div>
+          </div>
+        </section>
       </div>
 
       <!-- ATA TERCEIROS -->
@@ -518,10 +628,14 @@
 
 <!-- MODAL CADASTRO -->
 <div class="modal-overlay" id="modalCadastro">
-  <div class="modal">
+  <div class="modal employee-modal" role="dialog" aria-modal="true" aria-labelledby="modalCadastroTitle">
     <div class="modal-header">
-      <h3 id="modalCadastroTitle">Cadastrar Funcionário</h3>
-      <button class="modal-close" onclick="closeModal('modalCadastro')">×</button>
+      <div class="employee-modal__heading">
+        <span class="employee-modal__eyebrow">Gestão de funcionários</span>
+        <h3 id="modalCadastroTitle">Cadastrar Funcionário</h3>
+        <p>Preencha os dados e confira os requisitos antes de salvar.</p>
+      </div>
+      <button class="modal-close" aria-label="Fechar" onclick="closeModal('modalCadastro')">×</button>
     </div>
     <div class="modal-body">
       <div class="tabs">
@@ -532,22 +646,35 @@
 
       <!-- TAB DADOS -->
       <div class="tab-panel active" id="tab-dados">
-        <div class="grid-2">
-          <div class="field full-col"><label>Nome Completo *</label><input type="text" id="f-nome" placeholder="Nome completo do funcionário"></div>
-          <div class="field"><label>CPF *</label><input type="text" id="f-cpf" placeholder="000.000.000-00" oninput="formatCPF(this)"></div>
-          <div class="field"><label>Tipo de Funcionário *</label>
-            <select id="f-tipo" onchange="updateDocFields()">
-              <option value="">Selecione...</option>
-              <option value="Terceirizado">Terceirizado</option>
-              <option value="Novo Atacarejo" data-dynamic-label="obra">Obra</option>
-            </select>
+        <section class="employee-form-section">
+          <div class="employee-form-section__head"><strong>Dados do colaborador</strong><span>Identificação e admissão</span></div>
+          <div class="grid-2">
+            <div class="field full-col"><label>Nome Completo <span class="required-mark">*</span></label><input type="text" id="f-nome" placeholder="Nome completo do funcionário"></div>
+            <div class="field"><label>CPF <span class="required-mark">*</span></label><input type="text" id="f-cpf" placeholder="000.000.000-00" oninput="formatCPF(this)"></div>
+            <div class="field"><label>Data de Admissão</label><input type="date" id="f-admissao"></div>
           </div>
-          <div class="field"><label>Empresa *</label><select id="f-empresa" required><option value="">Selecione uma empresa...</option></select></div>
-          <div class="field"><label>Função *</label><input type="text" id="f-funcao" placeholder="Cargo / função"></div>
-          <div class="field"><label>Data de Admissão</label><input type="date" id="f-admissao"></div>
-          <div class="field"><label>Telefone</label><input type="text" id="f-tel" placeholder="(00) 00000-0000"></div>
-          <div class="field"><label>E-mail</label><input type="email" id="f-email" placeholder="email@empresa.com"></div>
-        </div>
+        </section>
+        <section class="employee-form-section">
+          <div class="employee-form-section__head"><strong>Vínculo e função</strong><span>Tipo, empresa e atividade exercida</span></div>
+          <div class="grid-2">
+            <div class="field"><label>Tipo de Funcionário <span class="required-mark">*</span></label>
+              <select id="f-tipo" onchange="updateDocFields()">
+                <option value="">Selecione...</option>
+                <option value="Terceirizado">Terceirizado</option>
+                <option value="Novo Atacarejo" data-dynamic-label="obra">Obra</option>
+              </select>
+            </div>
+            <div class="field"><label>Empresa <span class="required-mark">*</span></label><select id="f-empresa" required><option value="">Selecione uma empresa...</option></select></div>
+            <div class="field full-col"><label>Função <span class="required-mark">*</span></label><input type="text" id="f-funcao" placeholder="Cargo / função"></div>
+          </div>
+        </section>
+        <section class="employee-form-section">
+          <div class="employee-form-section__head"><strong>Contato</strong><span>Informações opcionais</span></div>
+          <div class="grid-2">
+            <div class="field"><label>Telefone</label><input type="text" id="f-tel" placeholder="(00) 00000-0000"></div>
+            <div class="field"><label>E-mail</label><input type="email" id="f-email" placeholder="email@empresa.com"></div>
+          </div>
+        </section>
       </div>
 
       <!-- TAB DOCS -->
@@ -588,32 +715,44 @@
 
 <!-- MODAL EMPRESA -->
 <div class="modal-overlay" id="modalEmpresa">
-  <div class="modal" style="max-width:500px;">
+  <div class="modal company-modal" role="dialog" aria-modal="true" aria-labelledby="modalEmpresaTitle">
     <div class="modal-header">
-      <h3 id="modalEmpresaTitle">Cadastrar Empresa</h3>
-      <button class="modal-close" onclick="closeModal('modalEmpresa')">×</button>
+      <div class="company-modal__heading">
+        <span class="company-modal__eyebrow">Gestão de empresas</span>
+        <h3 id="modalEmpresaTitle">Cadastrar Empresa</h3>
+        <p>Registre a identificação, o vínculo com a obra e a situação documental.</p>
+      </div>
+      <button class="modal-close" aria-label="Fechar" onclick="closeModal('modalEmpresa')">×</button>
     </div>
     <div class="modal-body">
-      <div class="field"><label>Nome da Empresa *</label><input type="text" id="e-nome" placeholder="Razão social"></div>
-      <div class="field"><label>CNPJ *</label><input type="text" id="e-cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" maxlength="18" oninput="formatCNPJ(this)"></div>
-      <div class="field"><label>Responsável</label><input type="text" id="e-resp" placeholder="Nome do responsável"></div>
-      <div class="grid-2">
-        <div class="field">
-          <label>Status na obra *</label>
-          <select id="e-status" onchange="toggleEmpresaLifecycleFields()">
-            <option value="ativa">Ativa</option>
-            <option value="inativa">Inativa</option>
-          </select>
+      <section class="company-form-section">
+        <div class="company-form-section__head"><strong>Identificação</strong><span>Dados cadastrais da empresa</span></div>
+        <div class="grid-2">
+          <div class="field full-col"><label>Nome da Empresa <span class="required-mark">*</span></label><input type="text" id="e-nome" placeholder="Razão social"></div>
+          <div class="field"><label>CNPJ <span class="required-mark">*</span></label><input type="text" id="e-cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" maxlength="18" oninput="formatCNPJ(this)"></div>
+          <div class="field"><label>Responsável</label><input type="text" id="e-resp" placeholder="Nome do responsável"></div>
         </div>
-        <div class="field">
-          <label>Categoria do efetivo *</label>
-          <select id="e-categoria-efetivo"></select>
+      </section>
+      <section class="company-form-section">
+        <div class="company-form-section__head"><strong>Atuação na obra</strong><span>Status, categoria e período</span></div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Status na obra <span class="required-mark">*</span></label>
+            <select id="e-status" onchange="toggleEmpresaLifecycleFields()">
+              <option value="ativa">Ativa</option>
+              <option value="inativa">Inativa</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Categoria do efetivo <span class="required-mark">*</span></label>
+            <select id="e-categoria-efetivo"></select>
+          </div>
+          <div class="field"><label>Data de início na obra</label><input type="date" id="e-data-inicio-obra" onchange="toggleEmpresaLifecycleFields()"></div>
+          <div class="field" id="e-data-fim-obra-field"><label>Data de encerramento <span class="required-mark">*</span></label><input type="date" id="e-data-fim-obra"></div>
         </div>
-        <div class="field"><label>Data de início na obra</label><input type="date" id="e-data-inicio-obra" onchange="toggleEmpresaLifecycleFields()"></div>
-        <div class="field" id="e-data-fim-obra-field"><label>Data de encerramento</label><input type="date" id="e-data-fim-obra"></div>
-      </div>
-      <div class="doc-section">
-        <h4>Documentos da Empresa</h4>
+      </section>
+      <section class="company-form-section company-form-section--documents">
+        <div class="company-form-section__head"><strong>Documentos da empresa</strong><span>PGR, PCMSO e ART</span></div>
         <div class="doc-item">
           <span class="doc-name">PGR</span>
           <select class="doc-status-sel" id="e-pgr"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option><option value="Não se aplica">Não se aplica</option></select>
@@ -629,7 +768,7 @@
           <select class="doc-status-sel" id="e-art"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option><option value="Não se aplica">Não se aplica</option></select>
           <label class="file-upload-label"><input type="file" accept=".pdf" onchange="handleEmpresaDoc(this,'art')">Anexar</label>
         </div>
-      </div>
+      </section>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalEmpresa')">Cancelar</button>
@@ -640,24 +779,30 @@
 
 <!-- MODAL CATEGORIAS DO EFETIVO -->
 <div class="modal-overlay" id="modalEfetivoCategorias" aria-hidden="true">
-  <div class="modal" style="max-width:820px;" role="dialog" aria-modal="true" aria-labelledby="modalEfetivoCategoriasTitle">
+  <div class="modal category-modal" role="dialog" aria-modal="true" aria-labelledby="modalEfetivoCategoriasTitle">
     <div class="modal-header">
-      <h3 id="modalEfetivoCategoriasTitle">Categorias do Efetivo</h3>
+      <div class="category-modal__heading">
+        <span class="company-modal__eyebrow">Configuração do efetivo</span>
+        <h3 id="modalEfetivoCategoriasTitle">Categorias do Efetivo</h3>
+        <p>Organize como as empresas são agrupadas nos relatórios de efetivo.</p>
+      </div>
+      <span class="category-readonly-note" id="efetivo-category-readonly" hidden>Somente leitura</span>
       <button class="modal-close" type="button" onclick="closeModal('modalEfetivoCategorias')" aria-label="Fechar">×</button>
     </div>
     <div class="modal-body">
-      <div class="info-box" id="efetivo-category-default-notice" hidden>
+      <div class="info-box category-compatibility-notice" id="efetivo-category-default-notice" hidden>
         Esta obra ainda utiliza as categorias padrão em modo de compatibilidade. Nenhum dado será gravado até uma ação explícita.
         <button class="btn btn-outline btn-sm" id="btnInicializarCategoriasEfetivo" type="button" onclick="initializeDefaultEfetivoCategories()">Inicializar categorias padrão</button>
       </div>
-      <div class="efetivo-category-list" id="efetivo-category-list"></div>
       <div class="efetivo-category-create" id="efetivo-category-create">
-        <div class="field" style="margin:0;flex:1;">
+        <div class="field">
           <label for="efetivo-category-new-name">Nova categoria</label>
           <input id="efetivo-category-new-name" type="text" maxlength="80" placeholder="Ex.: Impermeabilização" onkeydown="if(event.key==='Enter'){event.preventDefault();createEfetivoCategory();}">
         </div>
         <button class="btn btn-primary" type="button" onclick="createEfetivoCategory()">+ Nova categoria</button>
       </div>
+      <div class="category-list-heading" aria-hidden="true"><span>Ordem e categoria</span><span>Situação e ações</span></div>
+      <div class="efetivo-category-list" id="efetivo-category-list"></div>
       <p class="efetivo-category-help">Categorias inativas permanecem disponíveis para empresas e históricos já vinculados, mas não aparecem em novos vínculos.</p>
     </div>
     <div class="modal-footer">
@@ -668,13 +813,13 @@
 
 <!-- MODAL INATIVAR EMPRESA -->
 <div class="modal-overlay" id="modalInativarEmpresa" aria-hidden="true">
-  <div class="modal" style="max-width:460px;" role="dialog" aria-modal="true" aria-labelledby="modalInativarEmpresaTitle">
+  <div class="modal company-deactivate-modal" role="dialog" aria-modal="true" aria-labelledby="modalInativarEmpresaTitle">
     <div class="modal-header">
       <h3 id="modalInativarEmpresaTitle">Inativar empresa</h3>
       <button class="modal-close" type="button" onclick="closeInativarEmpresaModal()" aria-label="Fechar">&times;</button>
     </div>
     <div class="modal-body">
-      <p id="inativarEmpresaMessage" style="color:var(--text2);margin-bottom:16px;"></p>
+      <p class="company-deactivate-modal__message" id="inativarEmpresaMessage"></p>
       <div class="field">
         <label>Data de encerramento *</label>
         <input type="date" id="e-inativar-data-fim-obra" required>
@@ -1182,43 +1327,6 @@ document.getElementById('loginPass').addEventListener('keydown', e => {
 // ============================================================
 // NAVIGATION
 // ============================================================
-function renderEmpresas() {
-  const el = document.getElementById('empresasList');
-  if (!el) return;
-
-  const empresas = (window.DB && Array.isArray(window.DB.empresas)) ? window.DB.empresas : [];
-  const funcionarios = (window.DB && Array.isArray(window.DB.funcionarios)) ? window.DB.funcionarios : [];
-
-  if (!empresas.length) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">${SVG_EMPTY_STATE}</div><p>Nenhuma empresa cadastrada</p></div>`;
-    return;
-  }
-
-  el.innerHTML = empresas.map(e => {
-    const docs = e.docs || {};
-    const funkCount = funcionarios.filter(f => isFuncionarioLinkedToEmpresa(f, e)).length;
-
-    return `<div class="empresa-card">
-      <div class="empresa-header">
-        <div>
-          <h4>${e.nome || ''}</h4>
-          <span style="font-size:12px;color:var(--text2);">${e.cnpj || ''} ${e.resp ? '? ' + e.resp : ''}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:12px;color:var(--text2);">${funkCount} funcionário(s)</span>
-          ${renderDeleteActionButton(`removeEmpresa(${JSON.stringify(e.id)})`)}
-        </div>
-      </div>
-      <div class="docs-mini">
-        ${['pgr', 'pcmso', 'art'].map(k => {
-          const d = docs[k] || { status: 'Pendente' };
-          const label = { pgr: 'PGR', pcmso: 'PCMSO', art: 'ART' }[k];
-          return `<span class="badge-status ${getDocumentStatusBadgeClass(d.status)}" style="font-size:11px;">${label}</span>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }).join('');
-}
 // ============================================================
 // MODAL
 // ============================================================
@@ -1381,7 +1489,7 @@ function buildDocFields(tipo, existingDocs={}){
 function buildTrainFields(tipo, existingDocs={}){
   let html = '';
   if(tipo==='Terceirizado'){
-    html += `<div class="doc-section"><h4>${SVG_TRAINING}Treinamentos Obrigatórios</h4><p style="color:var(--text2);font-size:12px;margin-bottom:12px;">Treinamentos essenciais para todos os colaboradores terceirizados</p>`;
+    html += `<div class="doc-section"><h4>${SVG_TRAINING}Treinamentos Obrigatórios</h4><p class="doc-section__helper">Treinamentos essenciais para todos os colaboradores terceirizados</p>`;
     TRAINS_OBRIG_TERC.forEach(t=>{
       const info = TRAININGS_DATA[t] || { desc: '', icon: SVG_DOC_FILE, cor: '#9ba3b8' };
       const key = makeKey(t);
@@ -1389,7 +1497,7 @@ function buildTrainFields(tipo, existingDocs={}){
       html += trainItemHtml(t, info, ex, key);
     });
     html += '</div>';
-    html += `<div class="doc-section"><h4>${SVG_DOC_FILE}Treinamentos Condicionais</h4><p style="color:var(--text2);font-size:12px;margin-bottom:12px;">Selecione conforme a função do colaborador (ex: NR 35 para trabalho em altura)</p><div class="checkbox-group">`;
+    html += `<div class="doc-section"><h4>${SVG_DOC_FILE}Treinamentos Condicionais</h4><p class="doc-section__helper">Selecione conforme a função do colaborador (ex: NR 35 para trabalho em altura)</p><div class="checkbox-group">`;
     TRAINS_COND_TERC.forEach(t=>{
       const info = TRAININGS_DATA[t] || { desc: '', icon: SVG_DOC_FILE, cor: '#9ba3b8' };
       const key = makeKey(t);
@@ -1411,7 +1519,7 @@ function buildTrainFields(tipo, existingDocs={}){
     const obraLabel = typeof window.getCurrentObraLabel === 'function'
       ? window.getCurrentObraLabel()
       : (typeof getObraDisplayName === 'function' ? getObraDisplayName() : 'Obra');
-    html += `<div class="doc-section"><h4>${SVG_TRAINING}Treinamentos Obrigatórios - ${obraLabel}</h4><p style="color:var(--text2);font-size:12px;margin-bottom:12px;">Treinamentos específicos para funcionários de ${obraLabel}</p>`;
+    html += `<div class="doc-section"><h4>${SVG_TRAINING}Treinamentos Obrigatórios - ${obraLabel}</h4><p class="doc-section__helper">Treinamentos específicos para funcionários de ${obraLabel}</p>`;
     TRAINS_ATACAREJO.forEach(t=>{
       const info = TRAININGS_DATA[t] || { desc: '', icon: SVG_DOC_FILE, cor: '#9ba3b8' };
       const key = makeKey(t);
@@ -1419,7 +1527,7 @@ function buildTrainFields(tipo, existingDocs={}){
       html += trainItemHtml(t, info, ex, key);
     });
     html += '</div>';
-    html += `<div class="doc-section"><h4>${SVG_DOC_FILE}Treinamentos Condicionais</h4><p style="color:var(--text2);font-size:12px;margin-bottom:12px;">Selecione conforme a função do colaborador</p><div class="checkbox-group">`;
+    html += `<div class="doc-section"><h4>${SVG_DOC_FILE}Treinamentos Condicionais</h4><p class="doc-section__helper">Selecione conforme a função do colaborador</p><div class="checkbox-group">`;
     TRAINS_COND_ATACAREJO.forEach(t=>{
       const info = TRAININGS_DATA[t] || { desc: '', icon: SVG_DOC_FILE, cor: '#9ba3b8' };
       const key = makeKey(t);
@@ -1454,9 +1562,9 @@ function trainItemHtml(name, info, ex, key){
     : '';
   return `<div class="doc-item" id="docitem_${key}" style="border-left:3px solid ${info.cor};">
     <span class="train-icon">${info.icon}</span>
-    <div style="flex:1;">
-      <div style="font-weight:600;font-size:13px;">${name}</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:2px;">${info.desc}</div>
+    <div class="doc-item__copy">
+      <div class="doc-item__name">${name}</div>
+      <div class="doc-item__description">${info.desc}</div>
     </div>
     ${deadlineInfo}
     <select class="doc-status-sel" id="doc_${key}" onchange="handleDocStatusChange(this,'${key}','${name}')">
@@ -2047,39 +2155,63 @@ function empresaDateInputValue(value){
 }
 function renderEmpresas(){
   const el = document.getElementById('empresasList');
-  if(!DB.empresas.length){ el.innerHTML=`<div class="empty-state"><div class="icon">${SVG_EMPTY_STATE}</div><p>Nenhuma empresa cadastrada</p></div>`; return; }
-  el.innerHTML = DB.empresas.map(e=>{
+  if(!el) return;
+  const empresas = Array.isArray(DB.empresas) ? DB.empresas : [];
+  const funcionarios = Array.isArray(DB.funcionarios) ? DB.funcionarios : [];
+  if(!empresas.length){
+    el.innerHTML=`<div class="empty-state company-empty-state"><div class="icon">${SVG_EMPTY_STATE}</div><strong>Nenhuma empresa cadastrada</strong><p>As empresas vinculadas à obra aparecerão aqui.</p></div>`;
+    return;
+  }
+  const rows = empresas.map(e=>{
     const docs = e?.docs || {};
-    const funkCount = DB.funcionarios.filter(f=>isFuncionarioLinkedToEmpresa(f, e)).length;
+    const funkCount = funcionarios.filter(f=>isFuncionarioLinkedToEmpresa(f, e)).length;
     const lifecycleStatus = normalizeEmpresaLifecycleStatus(e);
     const inicioObra = formatEmpresaLifecycleDate(e.dataInicioObra);
     const fimObra = formatEmpresaLifecycleDate(e.dataFimObra);
-    return `<div class="empresa-card">
-      <div class="empresa-header">
-        <div>
-          <h4>${e.nome}</h4>
-          <span style="font-size:12px;color:var(--text2);">${e.cnpj||''} ${e.resp?'? '+e.resp:''}</span>
+    const hasCategoryReference = Boolean(e?.categoriaEfetivoId || e?.categoriaEfetivo || e?.categoria || e?.categoryName);
+    const resolvedCategory = hasCategoryReference && typeof window.resolveEfetivoCategoryForEmpresa === 'function'
+      ? window.resolveEfetivoCategoryForEmpresa(e, { includeInactive: true })
+      : null;
+    const categoryLabel = hasCategoryReference
+      ? (resolvedCategory?.nome || formatEmpresaCategoriaEfetivo(e))
+      : 'Sem categoria';
+    const periodLabel = inicioObra
+      ? `${inicioObra}${fimObra ? ` — ${fimObra}` : ' — Atual'}`
+      : (fimObra ? `Até ${fimObra}` : 'Não informado');
+    return `<tr class="${lifecycleStatus === 'inativa' ? 'is-inactive' : ''}">
+      <td>
+        <div class="company-identity">
+          <strong>${escapeEmpresaCategoryLabel(e?.nome || '')}</strong>
+          <span>${escapeEmpresaCategoryLabel(e?.cnpj || 'CNPJ não informado')}${e?.resp ? ` · ${escapeEmpresaCategoryLabel(e.resp)}` : ''}</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-          <span style="font-size:12px;color:var(--text2);">${funkCount} funcionário(s)</span>
-          ${renderEditActionButton(`openEmpresaModal(${JSON.stringify(e.id)})`)}
-          ${lifecycleStatus === 'ativa' ? `<button class="btn btn-danger btn-sm empresa-lifecycle-action" type="button" onclick='openInativarEmpresaModal(${JSON.stringify(e.id)})'>Inativar empresa</button>` : ''}
-          ${renderDeleteActionButton(`removeEmpresa(${JSON.stringify(e.id)})`)}
+      </td>
+      <td><span class="badge-status ${lifecycleStatus === 'ativa' ? 'conforme' : 'neutral'}">${lifecycleStatus === 'ativa' ? 'Ativa' : 'Inativa'}</span></td>
+      <td>
+        <div class="company-category${hasCategoryReference ? '' : ' is-empty'}">
+          <strong>${escapeEmpresaCategoryLabel(categoryLabel)}</strong>
+          ${resolvedCategory?.ativa === false ? '<span>Categoria inativa</span>' : ''}
         </div>
-      </div>
-      <div class="docs-mini">
-        <span class="badge-status ${lifecycleStatus === 'ativa' ? 'conforme' : 'irregular'}" style="font-size:11px;">${lifecycleStatus === 'ativa' ? 'Ativa' : 'Inativa'}</span>
-        <span class="badge-status" style="font-size:11px;">${escapeEmpresaCategoryLabel(formatEmpresaCategoriaEfetivo(e))}</span>
-        ${inicioObra ? `<span style="font-size:11px;color:var(--text2);align-self:center;">Início: ${inicioObra}</span>` : ''}
-        ${fimObra ? `<span style="font-size:11px;color:var(--text2);align-self:center;">Encerramento: ${fimObra}</span>` : ''}
+      </td>
+      <td><span class="company-period">${periodLabel}</span></td>
+      <td><span class="company-people"><strong>${funkCount}</strong> ${funkCount === 1 ? 'colaborador' : 'colaboradores'}</span></td>
+      <td><div class="company-documents" aria-label="Situação dos documentos da empresa">
         ${['pgr','pcmso','art'].map(k=>{
           const d = docs[k]||{status:'Pendente'};
           const label = {pgr:'PGR',pcmso:'PCMSO',art:'ART'}[k];
-          return `<span class="badge-status ${getDocumentStatusBadgeClass(d.status)}" style="font-size:11px;">${label}</span>`;
+          return `<span class="company-document ${getDocumentStatusBadgeClass(d.status)}" title="${label}: ${escapeEmpresaCategoryLabel(normalizeEmpresaStatusValue(d.status))}">${label}</span>`;
         }).join('')}
-      </div>
-    </div>`;
+      </div></td>
+      <td><div class="action-btns company-actions">
+        ${renderEditActionButton(`openEmpresaModal(${JSON.stringify(e.id)})`)}
+        ${lifecycleStatus === 'ativa' ? `<button class="btn btn-danger btn-sm empresa-lifecycle-action company-deactivate-action" type="button" title="Inativar empresa" onclick='openInativarEmpresaModal(${JSON.stringify(e.id)})'>Inativar</button>` : ''}
+        ${renderDeleteActionButton(`removeEmpresa(${JSON.stringify(e.id)})`)}
+      </div></td>
+    </tr>`;
   }).join('');
+  el.innerHTML = `<table class="companies-table">
+    <thead><tr><th>Empresa</th><th>Situação</th><th>Categoria</th><th>Período na obra</th><th>Colaboradores</th><th>Documentos</th><th>Ações</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 }
 // Firebase CRUD now handles removeEmpresa in js/main.js
 
@@ -2447,21 +2579,23 @@ function filterTable(table, val, el){
   filters[table] = val;
   el.closest('.filters').querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
-  renderTerceirizados();
-  renderAtacarejo();
+  if(table === 'terceirizados') renderTerceirizados();
+  if(table === 'atacarejo') renderAtacarejo();
 }
 function renderTerceirizados() {
   const tbody = document.getElementById('tercTable');
   if (!tbody) return;
 
-  let list = (DB.funcionarios || []).filter(f => f.tipo === 'Terceirizado');
+  const fullList = (DB.funcionarios || []).filter(f => f.tipo === 'Terceirizado');
+  let list = fullList;
 
   if (filters.terceirizados !== 'todos') {
     list = list.filter(f => computeStatus(f) === filters.terceirizados);
   }
 
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">${SVG_EMPTY_STATE}</div><p>Nenhum resultado</p></div></td></tr>`;
+    const isFiltered = filters.terceirizados !== 'todos' && fullList.length > 0;
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state employee-empty-state"><div class="icon">${SVG_EMPTY_STATE}</div><strong>${isFiltered ? 'Nenhum resultado neste status' : 'Nenhum terceirizado cadastrado'}</strong><p>${isFiltered ? 'Selecione outro filtro para consultar os colaboradores.' : 'Os colaboradores terceirizados aparecerão aqui após o cadastro.'}</p></div></td></tr>`;
     return;
   }
 
@@ -2474,16 +2608,17 @@ function renderTerceirizados() {
     return `<tr class="${rowClass}">
       <td>${i + 1}</td>
       <td><strong>${f.nome || ''}</strong></td>
-      <td><code style="font-size:11px;">${f.cpf || ''}</code></td>
+      <td><code class="employee-cpf">${f.cpf || ''}</code></td>
       <td>${f.empresa || ''}</td>
       <td>${f.funcao || ''}</td>
       <td><span class="badge-status ${status === 'conforme' ? 'conforme' : status === 'pendente' ? 'pendente' : 'irregular'}">${statusLabel(status)}</span></td>
       <td>
-        <div style="min-width:80px;">${done}/${total}
+        <div class="employee-doc-progress" aria-label="${done} de ${total} documentos resolvidos">
+          <div class="employee-doc-progress__label"><strong>${done}</strong><span>/${total}</span></div>
           <div class="progress-bar"><div class="progress-fill ${pct === 100 ? 'green' : pct > 50 ? 'yellow' : 'red'}" style="width:${pct}%"></div></div>
         </div>
       </td>
-      <td>${deadlineStr || ''}</td>
+      <td><span class="employee-deadline${deadlineStr ? '' : ' is-empty'}">${deadlineStr || '—'}</span></td>
       <td><div class="action-btns">
         ${renderEditActionButton(`editFuncionario(${JSON.stringify(f.id)})`)}
         ${renderDeleteActionButton(`removeFuncionario(${JSON.stringify(f.id)})`)}
@@ -2495,14 +2630,16 @@ function renderAtacarejo() {
   const tbody = document.getElementById('atacTable');
   if (!tbody) return;
 
-  let list = (DB.funcionarios || []).filter(f => f.tipo === 'Novo Atacarejo');
+  const fullList = (DB.funcionarios || []).filter(f => f.tipo === 'Novo Atacarejo');
+  let list = fullList;
 
   if (filters.atacarejo !== 'todos') {
     list = list.filter(f => computeStatus(f) === filters.atacarejo);
   }
 
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">${SVG_EMPTY_STATE}</div><p>Nenhum resultado</p></div></td></tr>`;
+    const isFiltered = filters.atacarejo !== 'todos' && fullList.length > 0;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state employee-empty-state"><div class="icon">${SVG_EMPTY_STATE}</div><strong>${isFiltered ? 'Nenhum resultado neste status' : 'Nenhum funcionário da obra cadastrado'}</strong><p>${isFiltered ? 'Selecione outro filtro para consultar os colaboradores.' : 'A equipe própria aparecerá aqui após o cadastro.'}</p></div></td></tr>`;
     return;
   }
 
@@ -2514,12 +2651,13 @@ function renderAtacarejo() {
     return `<tr class="${rowClass}">
       <td>${i + 1}</td>
       <td><strong>${f.nome || ''}</strong></td>
-      <td><code style="font-size:11px;">${f.cpf || ''}</code></td>
+      <td><code class="employee-cpf">${f.cpf || ''}</code></td>
       <td>${f.empresa || ''}</td>
       <td>${f.funcao || ''}</td>
       <td><span class="badge-status ${status === 'conforme' ? 'conforme' : status === 'pendente' ? 'pendente' : 'irregular'}">${statusLabel(status)}</span></td>
       <td>
-        <div style="min-width:80px;">${done}/${total}
+        <div class="employee-doc-progress" aria-label="${done} de ${total} documentos resolvidos">
+          <div class="employee-doc-progress__label"><strong>${done}</strong><span>/${total}</span></div>
           <div class="progress-bar"><div class="progress-fill ${pct === 100 ? 'green' : pct > 50 ? 'yellow' : 'red'}" style="width:${pct}%"></div></div>
         </div>
       </td>
@@ -2580,6 +2718,7 @@ function refreshDashboard(){
   const irregulares = all.filter(f=>computeStatus(f)==='irregular').length;
   const total = all.length;
   const capacityLimit = 350;
+  const capacityAvailable = Math.max(0, capacityLimit - total);
   const rawPct = capacityLimit > 0 ? Math.round(total / capacityLimit * 100) : 0;
   const pct = Math.min(100, Math.max(0, Number.isFinite(rawPct) ? rawPct : 0));
   const capacityState = pct >= 85 ? 'is-danger' : pct >= 60 ? 'is-warning' : 'is-safe';
@@ -2591,6 +2730,11 @@ function refreshDashboard(){
   const capacityText = document.getElementById('capacityText');
   const capacityPercent = document.getElementById('capacityPercent');
   const capacityCount = document.getElementById('capacityCount');
+  const capacityTotal = document.getElementById('capacityTotal');
+  const capacityCurrent = document.getElementById('capacityCurrent');
+  const capacityAvailableEl = document.getElementById('capacityAvailable');
+  const capacityAvailableInline = document.getElementById('capacityAvailableInline');
+  const capacityContext = document.getElementById('dashboardCapacityContext');
   const capacityTrack = capacityBar?.parentElement;
   if (capacityBar) {
     capacityBar.style.width = pct + '%';
@@ -2600,9 +2744,51 @@ function refreshDashboard(){
     capacityTrack.setAttribute('aria-valuenow', String(pct));
     capacityTrack.setAttribute('aria-valuetext', `${pct}% da capacidade utilizada`);
   }
-  if (capacityText) capacityText.textContent = 'Capacidade utilizada';
+  if (capacityText) capacityText.textContent = 'Capacidade da obra';
   if (capacityPercent) capacityPercent.textContent = `${pct}%`;
   if (capacityCount) capacityCount.textContent = `${total} / ${capacityLimit}`;
+  if (capacityTotal) capacityTotal.textContent = capacityLimit;
+  if (capacityCurrent) capacityCurrent.textContent = total;
+  if (capacityAvailableEl) capacityAvailableEl.textContent = capacityAvailable;
+  if (capacityAvailableInline) capacityAvailableInline.textContent = capacityAvailable;
+  if (capacityContext) capacityContext.textContent = `De ${capacityLimit} vagas na obra`;
+
+  const obraMeta = typeof getActiveObraMeta === 'function' ? getActiveObraMeta() : null;
+  const obraName = document.getElementById('dashboardObraName');
+  const obraLocation = document.getElementById('dashboardObraLocation');
+  if (obraName) obraName.textContent = obraMeta?.nome || 'Obra ativa';
+  if (obraLocation) {
+    obraLocation.textContent = [obraMeta?.cidade, obraMeta?.uf].filter(Boolean).join(' — ') || 'Localização não informada';
+  }
+
+  const attentionPanel = document.getElementById('dashboardAttention');
+  const attentionStateLabel = document.getElementById('attentionStateLabel');
+  const attentionTitle = document.getElementById('attentionMessageTitle');
+  const attentionText = document.getElementById('attentionMessageText');
+  const attentionPending = document.getElementById('attentionPendingCount');
+  const attentionIrregular = document.getElementById('attentionIrregularCount');
+  if (attentionPending) attentionPending.textContent = pendentes;
+  if (attentionIrregular) attentionIrregular.textContent = irregulares;
+
+  if (attentionPanel) {
+    attentionPanel.classList.toggle('is-regular', pendentes === 0 && irregulares === 0);
+    attentionPanel.classList.toggle('has-attention', pendentes > 0 && irregulares === 0);
+    attentionPanel.classList.toggle('has-irregular', irregulares > 0);
+  }
+
+  if (irregulares > 0) {
+    if (attentionStateLabel) attentionStateLabel.textContent = 'Ação imediata';
+    if (attentionTitle) attentionTitle.textContent = 'Existem colaboradores irregulares';
+    if (attentionText) attentionText.textContent = `${irregulares} irregular(es) e ${pendentes} pendente(s) exigem acompanhamento.`;
+  } else if (pendentes > 0) {
+    if (attentionStateLabel) attentionStateLabel.textContent = 'Atenção necessária';
+    if (attentionTitle) attentionTitle.textContent = 'Existem documentos pendentes';
+    if (attentionText) attentionText.textContent = `${pendentes} colaborador(es) aguardam regularização documental.`;
+  } else {
+    if (attentionStateLabel) attentionStateLabel.textContent = 'Situação regular';
+    if (attentionTitle) attentionTitle.textContent = 'Nenhuma pendência ou irregularidade';
+    if (attentionText) attentionText.textContent = 'Toda a documentação está em dia e não há bloqueios de acesso.';
+  }
   updateFuncionarioBadges();
 }
 
