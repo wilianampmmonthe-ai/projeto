@@ -1,0 +1,515 @@
+/* Fase 6G - Login, Dados da Obra, Atas e Administracao. Escopo isolado. */
+
+/* Login institucional */
+#loginScreen {
+  min-height: 100vh;
+  padding: 28px;
+  display: grid;
+  place-items: center;
+  overflow-x: hidden;
+  background: var(--canvas);
+}
+
+.login-shell {
+  width: min(1040px, 100%);
+  min-height: 620px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.14fr) minmax(360px, 0.86fr);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border-ui);
+  border-radius: 6px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+}
+
+.login-institution {
+  min-width: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 42px 46px;
+  overflow: hidden;
+  color: #e8edf4;
+  background: #0c1218;
+  border-right: 1px solid #2a3544;
+}
+
+.login-institution__brand {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: #a5b2c3;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.login-institution__mark {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  color: #9fc3ff;
+  background: rgba(57, 120, 232, 0.2);
+  border: 1px solid rgba(102, 160, 255, 0.24);
+  border-radius: 4px;
+}
+
+.login-institution__mark svg { width: 22px; height: 22px; }
+
+.login-institution__content {
+  max-width: 480px;
+  position: relative;
+  z-index: 2;
+  margin: auto 0;
+}
+
+.login-institution__eyebrow,
+.login-card__heading > span,
+.ata-page-header__eyebrow,
+.admin-page-header__eyebrow,
+.obra-modal__eyebrow {
+  display: block;
+  color: #7facf5;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.login-institution__content h1 {
+  max-width: 430px;
+  margin: 14px 0 18px;
+  color: #f4f7fb;
+  font: 700 clamp(38px, 5vw, 60px)/1.02 var(--font-head);
+  letter-spacing: -0.045em;
+}
+
+.login-institution__content h1 span {
+  display: block;
+  color: #a5b2c3;
+  font-size: 0.48em;
+  font-weight: 550;
+  letter-spacing: -0.02em;
+}
+
+.login-institution__content p {
+  max-width: 440px;
+  margin: 0;
+  color: #a5b2c3;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.login-institution__features {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid #2a3544;
+}
+
+.login-institution__features span {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #a5b2c3;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.login-institution__features i {
+  color: #66a0ff;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.login-institution__drawing {
+  position: absolute;
+  right: -80px;
+  bottom: 94px;
+  width: 310px;
+  height: 310px;
+  opacity: 0.18;
+  transform: rotate(45deg);
+  border: 1px solid #66a0ff;
+}
+
+.login-institution__drawing::before,
+.login-institution__drawing::after,
+.login-institution__drawing span {
+  content: "";
+  position: absolute;
+  border: 1px solid #66a0ff;
+}
+
+.login-institution__drawing::before { inset: 44px; }
+.login-institution__drawing::after { inset: 88px; }
+.login-institution__drawing span:nth-child(1) { left: 50%; top: -70px; bottom: -70px; }
+.login-institution__drawing span:nth-child(2) { top: 50%; left: -70px; right: -70px; }
+.login-institution__drawing span:nth-child(3) { inset: 122px; background: #3978e8; }
+
+#loginScreen .login-card {
+  width: auto;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 58px 52px;
+  background: var(--surface);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  animation-name: none;
+}
+
+#loginScreen .login-logo { margin-bottom: 42px; }
+#loginScreen .login-logo .badge {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #fff;
+  background: var(--action);
+  border-radius: 4px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+#loginScreen .login-logo .obra-info h2 {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+#loginScreen .login-logo .obra-info p {
+  margin: 2px 0 0;
+  color: var(--text-helper);
+  font-size: 10px;
+}
+
+.login-card__heading { margin-bottom: 28px; }
+.login-card__heading > span { color: var(--action); }
+#loginScreen .login-card__heading h2 {
+  margin: 7px 0 5px;
+  color: var(--text-primary);
+  font: 700 26px/1.2 var(--font-head);
+}
+#loginScreen .login-card__heading p { margin: 0; color: var(--text-secondary); font-size: 12px; }
+
+#loginScreen .field { margin-bottom: 16px; }
+#loginScreen .field label { color: var(--text-secondary); font-size: 11px; }
+#loginScreen .field input {
+  min-height: 44px;
+  color: var(--text-primary);
+  background: var(--surface-2);
+  border-color: var(--border-ui);
+  border-radius: 4px;
+}
+#loginScreen .field input:hover { border-color: var(--border-strong); }
+#loginScreen .field input:focus { border-color: var(--action); }
+#loginScreen .login-submit { min-height: 44px; margin-top: 4px; border-radius: 4px; box-shadow: none; }
+#loginScreen .login-submit:hover { transform: none; box-shadow: none; }
+#loginScreen .login-submit:disabled { opacity: 0.58; cursor: wait; }
+#loginScreen .login-hint { margin: 16px 0 0; color: var(--text-helper); font-size: 10px; }
+
+/* Atas */
+.ata-page { min-width: 0; }
+.ata-page-header,
+.admin-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-ui);
+}
+
+.ata-page-header__copy h2,
+.admin-page-header h2 {
+  margin: 5px 0 4px;
+  color: var(--text-primary);
+  font: 650 20px/1.25 var(--font-head);
+}
+
+.ata-page-header__copy p,
+.admin-page-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.ata-page-actions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ata-date-control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ata-date-control > span {
+  color: var(--text-helper);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.ata-page .ata-date-input {
+  min-width: 150px;
+  min-height: 32px;
+  height: 32px;
+  padding: 4px 9px;
+  background: var(--surface);
+  border: 1px solid var(--border-ui);
+  border-radius: 3px;
+  box-shadow: none;
+  font-size: 10px;
+}
+
+.ata-page .btn { min-height: 32px; border-radius: 3px; }
+.ata-page-note,
+.admin-page-note {
+  margin-bottom: 12px;
+  padding: 9px 11px;
+  color: var(--text-secondary);
+  background: var(--surface-3);
+  border: 1px solid var(--border-ui);
+  border-left: 3px solid var(--action);
+  border-radius: 3px;
+  font-size: 10px;
+}
+.ata-page-note strong { color: var(--text-primary); }
+.ata-workspace { min-width: 0; overflow-x: auto; }
+.ata-page .ata-preview {
+  min-width: 760px;
+  padding: 22px;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border-ui);
+  border-radius: 4px;
+  box-shadow: none;
+}
+.ata-page .ata-head { gap: 7px; margin-bottom: 12px; }
+.ata-page .ata-head-item {
+  padding: 8px 10px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-ui);
+  border-radius: 3px;
+}
+.ata-page .ata-head-item span { color: var(--text-helper); font-size: 9px; }
+.ata-page .ata-head-item strong { color: var(--text-primary); font-size: 11px; }
+.ata-page .ata-preview h2 { color: var(--text-primary); font-size: 15px; }
+.ata-page .ata-preview p.ata-sub { color: var(--text-secondary); font-size: 11px; }
+.ata-page .ata-table { border-color: var(--border-ui); border-radius: 3px; font-size: 11px; }
+.ata-page .ata-table th {
+  padding: 7px 6px;
+  color: var(--text-secondary);
+  background: var(--surface-3);
+  border-color: var(--border-ui);
+  font-size: 9px;
+  letter-spacing: 0.045em;
+}
+.ata-page .ata-table td { padding: 6px; color: var(--text-primary); border-color: var(--border-ui); }
+.ata-page .ata-table tbody tr:nth-child(even) td { background: var(--surface-muted); }
+.ata-page .ata-table tbody tr:hover td { background: var(--surface-hover); }
+.ata-page .ata-sign-line,
+.ata-page .ata-emit { color: var(--text-helper); font-size: 10px; }
+
+/* Administracao */
+.admin-page-header { align-items: center; }
+.admin-page-header__eyebrow { color: var(--action); }
+.admin-page-header__restricted {
+  padding: 5px 8px;
+  color: var(--warning);
+  background: var(--amber-lt);
+  border: 1px solid rgba(229, 180, 94, 0.4);
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.admin-users,
+.admin-backup {
+  margin-bottom: 14px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border-ui);
+  border-radius: 4px;
+}
+.admin-section-heading {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  background: var(--surface-3);
+  border-bottom: 1px solid var(--border-ui);
+}
+.admin-section-heading div { display: flex; flex-direction: column; gap: 2px; }
+.admin-section-heading strong { color: var(--text-primary); font-size: 11px; }
+.admin-section-heading span { color: var(--text-helper); font-size: 10px; }
+.admin-table-wrap { margin: 0; border: 0; border-radius: 0; box-shadow: none; }
+.admin-users-table th {
+  padding: 8px 10px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border-color: var(--border-ui);
+  font-size: 9px;
+}
+.admin-users-table td { padding: 8px 10px; border-color: var(--border-ui); font-size: 11px; }
+.admin-users-table td:first-child { color: var(--text-primary); font-weight: 600; }
+.admin-users-table td:nth-child(2) {
+  max-width: 210px;
+  overflow: hidden;
+  color: var(--text-helper);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-access { display: flex; flex-direction: column; gap: 2px; min-width: 130px; }
+.admin-access strong { color: var(--text-primary); font-size: 10px; font-weight: 600; }
+.admin-access small { color: var(--text-helper); font-size: 9px; font-weight: 650; }
+.admin-access small.allowed { color: var(--success); }
+.admin-access small.blocked { color: var(--danger); }
+.admin-users-table .admin-inline-select {
+  min-width: 112px;
+  min-height: 30px;
+  height: 30px;
+  padding: 3px 26px 3px 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-ui);
+  border-radius: 3px;
+  box-shadow: none;
+  font-size: 11px;
+}
+.admin-users-table .btn { min-height: 30px; border-radius: 3px; }
+.admin-backup__actions { display: flex; gap: 7px; padding: 12px; flex-wrap: wrap; }
+.admin-backup .backup-btn {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-ui);
+  border-radius: 3px;
+  box-shadow: none;
+  font-size: 11px;
+  cursor: pointer;
+}
+.admin-backup .backup-btn:hover { color: var(--action); border-color: var(--action); transform: none; }
+.admin-backup .backup-btn.restore:hover { color: var(--danger); border-color: var(--danger); }
+
+/* Dados da Obra */
+#modalObra .obra-modal {
+  width: min(820px, calc(100vw - 28px));
+  max-width: 820px;
+  max-height: min(88vh, 780px);
+  border-radius: 5px;
+}
+#modalObra .modal-header { align-items: flex-start; padding: 15px 18px; }
+.obra-modal__heading { min-width: 0; }
+.obra-modal__eyebrow { margin-bottom: 4px; color: var(--action); }
+#modalObra .obra-modal__heading h3 { display: flex; align-items: center; gap: 7px; margin: 0; }
+#modalObra .obra-modal__heading h3 svg { width: 17px; height: 17px; color: var(--action); }
+.obra-modal__heading p { margin: 4px 0 0; color: var(--text-helper); font-size: 10px; }
+#modalObra .modal-body { padding: 0 18px 18px; }
+#modalObra .tabs {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  gap: 2px;
+  margin: 0 -18px 15px;
+  padding: 8px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-ui);
+}
+#modalObra .tab-btn { min-height: 32px; padding: 6px 9px; border-radius: 3px; font-size: 10px; }
+#modalObra .tab-btn svg { width: 14px; height: 14px; }
+#modalObra .tab-btn.active { color: var(--action); background: var(--blue-lt); border-color: var(--blue-md); }
+.obra-form-section {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0 0 10px;
+  padding: 0 0 7px;
+  border-bottom: 1px solid var(--border-ui);
+}
+.obra-form-section--spaced { margin-top: 15px; }
+.obra-form-section h4 { margin: 0; color: var(--text-primary); font-size: 10px; }
+.obra-form-section h4 svg { width: 14px; height: 14px; color: var(--action); }
+.obra-form-section > span { color: var(--text-helper); font-size: 9px; }
+#modalObra .field { margin-bottom: 10px; }
+#modalObra .field input,
+#modalObra .field select { min-height: 38px; border-radius: 4px; }
+#modalObra .eng-member,
+#modalObra .sst-member {
+  margin-bottom: 9px !important;
+  padding: 12px !important;
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border-ui) !important;
+  border-radius: 4px !important;
+}
+#modalObra .eng-member .btn-danger,
+#modalObra .sst-member .btn-danger { margin-top: 2px !important; min-height: 30px; border-radius: 3px; }
+#modalObra .modal-footer { padding: 11px 18px; }
+#modalObra .modal-footer .btn { min-height: 34px; border-radius: 3px; }
+
+body.light .login-institution { color-scheme: dark; }
+
+@media (max-width: 820px) {
+  #loginScreen { padding: 0; align-items: stretch; }
+  .login-shell { min-height: 100vh; grid-template-columns: 1fr; border: 0; border-radius: 0; box-shadow: none; }
+  .login-institution { min-height: 220px; padding: 24px; border-right: 0; border-bottom: 1px solid #2a3544; }
+  .login-institution__content { margin: 28px 0 10px; }
+  .login-institution__content h1 { margin: 9px 0 10px; font-size: 34px; }
+  .login-institution__content p { max-width: 520px; font-size: 11px; line-height: 1.55; }
+  .login-institution__features { display: none; }
+  .login-institution__drawing { width: 190px; height: 190px; right: -70px; bottom: -65px; }
+  #loginScreen .login-card { padding: 38px 24px; justify-content: flex-start; }
+  #loginScreen .login-logo { display: none; }
+  .ata-page-header { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .ata-page-actions { width: 100%; justify-content: flex-start; }
+  .admin-page-header { align-items: flex-start; }
+}
+
+@media (max-width: 560px) {
+  .login-institution { min-height: 205px; padding: 20px; }
+  #loginScreen .login-card { padding: 30px 20px; }
+  .login-card__heading { margin-bottom: 22px; }
+  .ata-page-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ata-date-control { grid-column: 1 / -1; }
+  .ata-page .ata-date-input,
+  .ata-page-actions .btn { width: 100%; }
+  .admin-page-header { flex-direction: column; gap: 10px; }
+  .admin-table-wrap { overflow-x: auto; }
+  .admin-users-table { min-width: 820px; }
+  #modalObra .obra-modal { width: calc(100vw - 16px); max-height: 92vh; }
+  #modalObra .modal-header { padding: 13px 14px; }
+  #modalObra .modal-body { padding: 0 14px 14px; }
+  #modalObra .tabs { margin: 0 -14px 13px; padding: 7px 14px; overflow-x: auto; flex-wrap: nowrap; }
+  #modalObra .tab-btn { flex: 0 0 auto; }
+  .obra-form-section { align-items: flex-start; flex-direction: column; gap: 2px; }
+  #modalObra .grid-2 { grid-template-columns: 1fr; }
+  #modalObra .field.full-col { grid-column: auto; }
+}

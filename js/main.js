@@ -153,7 +153,6 @@ function logPermissionDebug(evento, detalhes) {
 function syncAppContext(user, profile) {
   const ctx = ensureAppContext();
   const obrasPermitidas = getPermittedObras(profile);
-  const obrasDisponiveis = getAvailableObrasForUser(profile);
   const obraAtivaId = normalizeObraId(resolveObraAtivaId(profile, obrasPermitidas));
   const accessResolution = resolveAccessForObra(profile, obraAtivaId);
 
@@ -169,13 +168,6 @@ function syncAppContext(user, profile) {
   logPermissionDebug("contexto-resolvido", {
     obrasPermitidas,
     canViewCurrentObra: ctx.canViewCurrentObra,
-  });
-  console.debug("[obra-selector] obras disponiveis", {
-    userId: ctx.userId,
-    obraIds: obrasDisponiveis,
-  });
-  console.debug("[obra-selector] obra ativa resolvida", {
-    obraAtivaId,
   });
   if (typeof window.updateDynamicObraLabels === "function") {
     window.updateDynamicObraLabels();
@@ -327,10 +319,7 @@ async function loadFriendlyObraNames(obraIds) {
 
     try {
       const ref = firebase.firestore().collection("obras").doc(obraId);
-      const path = `/${ref.path}`;
-      console.log("[LOGIN OBRA META] get:start", { path, obraId, operation: "get" });
       const snap = await ref.get();
-      console.log("[LOGIN OBRA META OK]", { path, obraId, operation: "get", exists: snap.exists });
       const data = snap.data() || {};
       const nome = String(data.nome || "").trim();
       const municipio = String(data.municipio || "").trim();
@@ -427,11 +416,6 @@ async function handleObraSelectorChange(event) {
   persistObraAtivaId(nextObraId);
   ctx.obraAtivaId = nextObraId;
 
-  console.debug("[obra-selector] troca de obra realizada", {
-    from: currentObraId,
-    to: nextObraId,
-  });
-
   updateObraSelectorLabel();
   updateDynamicObraLabels();
   updateTopbarTitle();
@@ -449,11 +433,6 @@ async function refreshObraSelector(profile) {
 
   const availableObras = getAvailableObrasForUser(profile);
   obraSelectorState.availableObras = availableObras.slice();
-
-  console.debug("[obra-selector] obras disponiveis", {
-    userId: String(user.uid || ""),
-    obraIds: availableObras,
-  });
 
   if (!availableObras.length) {
     resetObraSelectorUI();
@@ -482,9 +461,6 @@ async function refreshObraSelector(profile) {
   updateObraSelectorLabel();
   updateDynamicObraLabels();
 
-  console.debug("[obra-selector] obra ativa resolvida", {
-    obraAtivaId: normalizeObraId(ensureAppContext().obraAtivaId),
-  });
 }
 
 window.getAccessEntryForActiveObra = function getAccessEntryForActiveObra() {
@@ -680,6 +656,8 @@ const fb = {
 
 // --- LOGIN ---
 window.doLogin = async function doLogin() {
+  const submitButton = document.getElementById("loginSubmit");
+  let loading = false;
   try {
     const email = document.getElementById("loginUser")?.value?.trim();
     const pass = document.getElementById("loginPass")?.value;
@@ -689,6 +667,13 @@ window.doLogin = async function doLogin() {
       return;
     }
 
+    if (submitButton?.disabled) return;
+    loading = true;
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.setAttribute("aria-busy", "true");
+      submitButton.textContent = "Entrando...";
+    }
     await loginWithEmail(email, pass);
   } catch (e) {
     console.error("ERRO LOGIN:", e);
@@ -707,6 +692,12 @@ window.doLogin = async function doLogin() {
     }
 
     safeToast(msg, "error");
+  } finally {
+    if (loading && submitButton) {
+      submitButton.disabled = false;
+      submitButton.removeAttribute("aria-busy");
+      submitButton.textContent = "Entrar no Sistema";
+    }
   }
 };
 globalThis.doLogin = window.doLogin;
@@ -959,24 +950,14 @@ function updatePermissionUI() {
 }
 
 async function loadCurrentUserProfile(user) {
-  console.log("[LOGIN PROFILE 1] ensureUsuarioProfile:start", { uid: String(user?.uid || ""), path: `/usuarios/${String(user?.uid || "")}` });
   const profile = await ensureUsuarioProfile(user);
-  console.log("[LOGIN PROFILE 1 OK] ensureUsuarioProfile", profile);
-  console.log("[LOGIN PROFILE 2] normalizeUserProfile:start");
   const normalized = normalizeUserProfile(profile, user);
-  console.log("[LOGIN PROFILE 2 OK] normalizeUserProfile", normalized);
   window.currentUserProfile = normalized;
-  console.log("[LOGIN PROFILE 3] syncAppContext:start");
   syncAppContext(user, normalized);
-  console.log("[LOGIN PROFILE 3 OK] syncAppContext", ensureAppContext());
-  console.log("[LOGIN PROFILE 4] refreshObraSelector:start (async)");
   refreshObraSelector(normalized).catch((error) => {
     console.warn("[obra-selector] erro ao montar seletor", error);
   });
-  console.log("[LOGIN PROFILE 4 OK] refreshObraSelector:scheduled");
-  console.log("[LOGIN PROFILE 5] updatePermissionUI:start");
   updatePermissionUI();
-  console.log("[LOGIN PROFILE 5 OK] updatePermissionUI");
   return normalized;
 }
 
@@ -985,22 +966,28 @@ function renderAdminUsers() {
   if (!tbody) return;
 
   if (!window.canManageUsers()) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><p>Acesso restrito aos administradores.</p></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><p>Acesso restrito aos administradores.</p></td></tr>';
     return;
   }
 
   const users = Array.isArray(window.appUsers) ? window.appUsers : [];
   if (!users.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><p>Nenhum usuário encontrado.</p></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><p>Nenhum usuário encontrado.</p></td></tr>';
     return;
   }
 
+  const activeObraId = normalizeObraId(ensureAppContext().obraAtivaId);
+  const activeObraLabel = DB.obra?.nome || activeObraId || "Obra ativa";
   tbody.innerHTML = users.map((user) => {
     const role = String(user.role || "viewer");
     const status = String(user.status || "active");
+    const activeAccess = activeObraId ? normalizeAccessMap(user.acessos)[activeObraId] : null;
+    const accessState = !activeAccess ? "Não informado" : activeAccess.enabled === false ? "Bloqueado" : "Liberado";
+    const accessClass = !activeAccess ? "neutral" : activeAccess.enabled === false ? "blocked" : "allowed";
     return `<tr>
       <td>${user.email || ""}</td>
       <td>${user.id || ""}</td>
+      <td><span class="admin-access"><strong>${activeObraLabel}</strong><small class="${accessClass}">${accessState}</small></span></td>
       <td>
         <select class="admin-inline-select" id="admin-role-${user.id}">
           <option value="admin" ${role === "admin" ? "selected" : ""}>admin</option>
@@ -1151,13 +1138,11 @@ function syncFrequenciaListener() {
   }
 
   if (typeof window.freqGetPeriodoKey !== "function") {
-    console.log("[LOGIN WIRE 7 SKIP] frequencia", { reason: "freqGetPeriodoKey indisponivel" });
     return;
   }
 
   const pk = window.freqGetPeriodoKey();
   if (!pk) {
-    console.log("[LOGIN WIRE 7 SKIP] frequencia", { reason: "periodoKey vazio", obraAtivaId: window.APP_CTX?.obraAtivaId || null });
     return;
   }
 
@@ -1199,16 +1184,11 @@ function syncFrequenciaListener() {
 window.syncFrequenciaListener = syncFrequenciaListener;
 
 function wireRealtimeForUser() {
-  console.log("[LOGIN WIRE 1] stopRealtime:start");
   stopRealtime();
-  console.log("[LOGIN WIRE 1 OK] stopRealtime");
-  console.log("[LOGIN WIRE 2] preparar estado:start");
   ensureDB();
   ensureAppContext();
   window.appUsers = window.appUsers || [];
-  console.log("[LOGIN WIRE 2 OK] preparar estado", ensureAppContext());
 
-  console.log("[LOGIN WIRE 3] listenFuncionarios:register");
   unsubFuncionarios = listenFuncionarios((rows) => {
     window.DB.funcionarios = rows;
     console.log("[freq] funcionarios:received", {
@@ -1219,49 +1199,34 @@ function wireRealtimeForUser() {
     if (typeof window.updateFuncionarioBadges === "function") window.updateFuncionarioBadges();
     window.appRenderLifecycle?.notify("funcionarios");
   });
-  console.log("[LOGIN WIRE 3 OK] listenFuncionarios:registered");
 
-  console.log("[LOGIN WIRE 4] listenEmpresas:register");
   unsubEmpresas = listenEmpresas((rows) => {
     window.DB.empresas = rows;
     window.appRenderLifecycle?.notify("empresas");
   });
-  console.log("[LOGIN WIRE 4 OK] listenEmpresas:registered");
 
-  console.log("[LOGIN WIRE 4.1] listenEfetivoCategorias:register");
   unsubEfetivoCategorias = listenEfetivoCategorias((payload) => {
     if (typeof window.applyEfetivoCategoriesPayload === "function") {
       window.applyEfetivoCategoriesPayload(payload);
     }
     window.appRenderLifecycle?.notify("categorias");
   });
-  console.log("[LOGIN WIRE 4.1 OK] listenEfetivoCategorias:registered");
 
-  console.log("[LOGIN WIRE 5] listenObra:register");
   unsubObra = listenObra((obra) => {
     window.DB.obra = obra;
     if (typeof window.updateObraInterface === "function") window.updateObraInterface();
     window.appRenderLifecycle?.notify("obra");
   });
-  console.log("[LOGIN WIRE 5 OK] listenObra:registered");
 
   if (window.canManageUsers()) {
-    console.log("[LOGIN WIRE 6] ouvirUsuarios:register", { path: "/usuarios", obraAtivaId: ensureAppContext().obraAtivaId });
     unsubUsuarios = ouvirUsuarios((rows) => {
       window.appUsers = rows.map((row) => normalizeUserProfile(row));
       window.appRenderLifecycle?.notify("usuarios");
     });
-    console.log("[LOGIN WIRE 6 OK] ouvirUsuarios:registered");
-  } else {
-    console.log("[LOGIN WIRE 6 SKIP] ouvirUsuarios", { canManageUsers: false });
   }
 
-  console.log("[LOGIN WIRE 7] syncFrequenciaListener:start");
   syncFrequenciaListener();
-  console.log("[LOGIN WIRE 7 OK] syncFrequenciaListener");
-  console.log("[LOGIN WIRE 8] updatePermissionUI:start");
   updatePermissionUI();
-  console.log("[LOGIN WIRE 8 OK] updatePermissionUI");
 }
 
 // --- SESSÃO ---
@@ -1288,12 +1253,9 @@ watchSession(async (user) => {
   let loginStage = "inicializacao";
   try {
     loginStage = "loadCurrentUserProfile";
-    console.log("[LOGIN 1] loadCurrentUserProfile:start", { uid: String(user.uid || "") });
     const profile = await loadCurrentUserProfile(user);
-    console.log("[LOGIN 1 OK] loadCurrentUserProfile", profile);
 
     loginStage = "validacao-status";
-    console.log("[LOGIN 2] validacao-status:start", { status: profile.status });
     if (profile.status === "blocked") {
       alert("Acesso bloqueado");
       await logout();
@@ -1305,15 +1267,11 @@ watchSession(async (user) => {
       await logout();
       return;
     }
-    console.log("[LOGIN 2 OK] validacao-status", { status: profile.status });
 
     loginStage = "ensureValidObraAtiva";
-    console.log("[LOGIN 3] ensureValidObraAtiva:start", ensureAppContext());
     ensureValidObraAtiva(user, profile);
-    console.log("[LOGIN 3 OK] ensureValidObraAtiva", ensureAppContext());
 
     loginStage = "canViewCurrentObra";
-    console.log("[LOGIN 4] canViewCurrentObra:start", ensureAppContext());
     if (!window.canViewCurrentObra()) {
       logPermissionDebug("sem-acesso-a-obra", {
         userId: user.uid,
@@ -1322,22 +1280,15 @@ watchSession(async (user) => {
       await logout();
       return;
     }
-    console.log("[LOGIN 4 OK] canViewCurrentObra", { canView: true, obraAtivaId: ensureAppContext().obraAtivaId });
 
     loginStage = "setLoggedIn";
-    console.log("[LOGIN 5] setLoggedIn:start");
     setLoggedIn(true);
-    console.log("[LOGIN 5 OK] setLoggedIn");
     loginStage = "wireRealtimeForUser";
-    console.log("[LOGIN 6] wireRealtimeForUser:start", ensureAppContext());
     wireRealtimeForUser();
-    console.log("[LOGIN 6 OK] wireRealtimeForUser:listeners-registered");
     loginStage = "invalidateAdmin";
     window.appRenderLifecycle?.mark("admin");
     loginStage = "safeToast";
-    console.log("[LOGIN 8] safeToast:start");
     safeToast("Sessão autenticada.", "success");
-    console.log("[LOGIN 8 OK] safeToast");
   } catch (e) {
     console.error("ERRO AO CARREGAR PERFIL:", {
       loginStage,

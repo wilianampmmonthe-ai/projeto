@@ -16,31 +16,56 @@
 <link rel="stylesheet" href="./css/dashboard.css">
 <link rel="stylesheet" href="./css/employees.css">
 <link rel="stylesheet" href="./css/companies.css">
+<link rel="stylesheet" href="./css/remaining.css">
 </head>
 <body>
 
 <!-- LOGIN -->
 <div id="loginScreen">
-  <div class="login-card">
-    <div class="login-logo">
-      <div class="badge">ST</div>
-      <div class="obra-info">
-        <h2>Portal de Segurança do Trabalho</h2>
-        <p>Acesso central ao sistema multiobra</p>
+  <div class="login-shell">
+    <section class="login-institution" aria-labelledby="login-product-title">
+      <div class="login-institution__brand">
+        <span class="login-institution__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 19 6v5c0 4.8-2.8 8.1-7 10-4.2-1.9-7-5.2-7-10V6l7-3Z"/><path d="m9.2 12 1.8 1.8 3.8-4"/></svg>
+        </span>
+        <span>Segurança do Trabalho</span>
       </div>
-    </div>
-    <h1>Segurança do Trabalho</h1>
-    <p>Sistema de Gestão de Liberação de Funcionários</p>
-    <div class="field">
-      <label>E-mail</label>
-      <input type="email" id="loginUser" placeholder="seuemail@empresa.com" autocomplete="username">
-    </div>
-    <div class="field">
-      <label>Senha</label>
-      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
-    </div>
-    <button class="btn btn-primary btn-full" onclick="window.doLogin && window.doLogin()">Entrar no Sistema</button>
-    <p class="login-hint">Acesso seguro via Firebase Authentication.</p>
+      <div class="login-institution__content">
+        <span class="login-institution__eyebrow">Gestão operacional em obras</span>
+        <h1 id="login-product-title"><span>Sistema de</span> Liberação</h1>
+        <p>Controle central de pessoas, documentos e rotinas de segurança para uma operação de obra mais clara.</p>
+      </div>
+      <div class="login-institution__features" aria-label="Recursos do sistema">
+        <span><i aria-hidden="true">01</i> Acesso por perfil</span>
+        <span><i aria-hidden="true">02</i> Gestão multiobra</span>
+        <span><i aria-hidden="true">03</i> Controle documental e frequência</span>
+      </div>
+      <div class="login-institution__drawing" aria-hidden="true"><span></span><span></span><span></span></div>
+    </section>
+    <section class="login-card" aria-labelledby="login-title">
+      <div class="login-logo">
+        <div class="badge" aria-hidden="true">SL</div>
+        <div class="obra-info">
+          <h2>Sistema de Liberação</h2>
+          <p>Portal de acesso seguro</p>
+        </div>
+      </div>
+      <div class="login-card__heading">
+        <span>Acesso ao sistema</span>
+        <h2 id="login-title">Bem-vindo</h2>
+        <p>Use suas credenciais para continuar.</p>
+      </div>
+      <div class="field">
+        <label for="loginUser">E-mail</label>
+        <input type="email" id="loginUser" placeholder="seuemail@empresa.com" autocomplete="username" inputmode="email">
+      </div>
+      <div class="field">
+        <label for="loginPass">Senha</label>
+        <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-full login-submit" id="loginSubmit" type="button" onclick="window.doLogin && window.doLogin()">Entrar no Sistema</button>
+      <p class="login-hint">Autenticação protegida pelo ambiente corporativo.</p>
+    </section>
   </div>
 </div>
 
@@ -157,7 +182,7 @@
       </div>
       <div class="topbar-search">
         <span class="s-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
-        <input type="text" id="globalSearch" placeholder="Buscar por nome, CPF, empresa..." oninput="handleSearch(this.value)">
+        <input type="text" id="globalSearch" aria-label="Buscar por nome, CPF ou empresa" placeholder="Buscar por nome, CPF, empresa..." oninput="handleSearch(this.value)">
       </div>
       <!-- Backup buttons -->
       <button class="backup-btn" style="display:none;" onclick="exportBackup()" title="Exportar backup completo do sistema">Backup</button>
@@ -375,31 +400,43 @@
       </div>
 
       <!-- ATA TERCEIROS -->
-      <div class="page" id="page-ata-terc">
-        <div class="section-header">
-          <h2>Ata de Liberação de Terceiros</h2>
-          <div style="display:flex;gap:8px;">
+      <div class="page ata-page" id="page-ata-terc">
+        <header class="ata-page-header">
+          <div class="ata-page-header__copy">
+            <span class="ata-page-header__eyebrow">Documentação operacional</span>
+            <h2>Ata de Liberação de Terceiros</h2>
+            <p>Relação de colaboradores terceirizados liberados para a data selecionada.</p>
+          </div>
+          <div class="ata-page-actions">
+            <label class="ata-date-control" for="ataDateTerc"><span>Data de referência</span>
             <input type="date" id="ataDateTerc" class="ata-date-input" onchange="renderAta('terceirizado')">
+            </label>
             <button class="btn btn-outline btn-sm has-icon" id="btnAtaTercExcel" onclick="exportAtaExcel('terceirizado')"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M9 4v16"/><path d="M15 10v10"/></svg>Excel</button>
             <button class="btn btn-primary btn-sm has-icon" id="btnAtaTercPDF" onclick="exportAtaPDF('terceirizado')"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/><path d="M9 9h1"/></svg>PDF</button>
           </div>
-        </div>
-        <div class="info-box">Apenas funcionários com documentação concluída (<strong>Conforme</strong> ou <strong>Não se aplica</strong>) são incluídos na ata.</div>
-        <div id="ataTerc"></div>
+        </header>
+        <div class="info-box ata-page-note">Apenas funcionários com documentação concluída (<strong>Conforme</strong> ou <strong>Não se aplica</strong>) são incluídos na ata.</div>
+        <div class="ata-workspace" id="ataTerc"></div>
       </div>
 
       <!-- ATA ATACAREJO -->
-      <div class="page" id="page-ata-atac">
-        <div class="section-header">
-          <h2 data-dynamic-label="obra-ata-completo">Ata de Liberação - Obra</h2>
-          <div style="display:flex;gap:8px;">
+      <div class="page ata-page" id="page-ata-atac">
+        <header class="ata-page-header">
+          <div class="ata-page-header__copy">
+            <span class="ata-page-header__eyebrow">Documentação operacional</span>
+            <h2 data-dynamic-label="obra-ata-completo">Ata de Liberação - Obra</h2>
+            <p>Relação da equipe própria liberada para a data selecionada.</p>
+          </div>
+          <div class="ata-page-actions">
+            <label class="ata-date-control" for="ataDateAtac"><span>Data de referência</span>
             <input type="date" id="ataDateAtac" class="ata-date-input" onchange="renderAta('Novo Atacarejo')">
+            </label>
             <button class="btn btn-outline btn-sm has-icon" id="btnAtaAtacExcel" onclick="exportAtaExcel('Novo Atacarejo')"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M9 4v16"/><path d="M15 10v10"/></svg>Excel</button>
             <button class="btn btn-primary btn-sm has-icon" id="btnAtaAtacPDF" onclick="exportAtaPDF('Novo Atacarejo')"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/><path d="M9 9h1"/></svg>PDF</button>
           </div>
-        </div>
-        <div class="info-box">Apenas funcionários com documentação concluída (<strong>Conforme</strong> ou <strong>Não se aplica</strong>) são incluídos na ata.</div>
-        <div id="ataAtac"></div>
+        </header>
+        <div class="info-box ata-page-note">Apenas funcionários com documentação concluída (<strong>Conforme</strong> ou <strong>Não se aplica</strong>) são incluídos na ata.</div>
+        <div class="ata-workspace" id="ataAtac"></div>
       </div>
 
       <!-- FREQUÊNCIA -->
@@ -415,8 +452,8 @@
         <div class="freq-topbar">
           <div class="freq-title"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>Controle de Frequência</div>
           <div class="freq-month-ctrl">
-            <label style="font-size:12px;color:var(--text2);margin-right:4px;">Mês/Ano:</label>
-            <select id="freqMesSelect" onchange="freqChangePeriod()"></select>
+            <label for="freqMesSelect">Competência</label>
+            <select id="freqMesSelect" aria-label="Competência da frequência" onchange="freqChangePeriod()"></select>
           </div>
           <div class="freq-counter">
             <span class="total" id="freqCountTotal">0</span>
@@ -426,7 +463,7 @@
             <span id="freqCountAtac" style="color:var(--accent);">0 Obra</span>
             <span class="sub" style="margin-left:4px;">funcionários</span>
           </div>
-          <span id="freqSyncStatus" class="freq-sync-status" data-state="saved" aria-live="polite">✓ Salvo</span>
+          <span id="freqSyncStatus" class="freq-sync-status" data-state="saved" role="status" aria-live="polite">✓ Salvo</span>
         </div>
 
         <!-- Tabela Terceirizados -->
@@ -437,9 +474,9 @@
           </div>
           <div class="freq-filter-bar">
             <label><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Filtrar:</label>
-            <input class="freq-filter-input" id="ffNomeTerc"    placeholder="Nome..."    oninput="freqApplyFilter()">
-            <input class="freq-filter-input" id="ffEmpresaTerc" placeholder="Empresa..." oninput="freqApplyFilter()">
-            <input class="freq-filter-input" id="ffFuncaoTerc"  placeholder="Função..."  oninput="freqApplyFilter()">
+            <input class="freq-filter-input" id="ffNomeTerc" aria-label="Filtrar terceirizados por nome" placeholder="Nome..." oninput="freqApplyFilter()">
+            <input class="freq-filter-input" id="ffEmpresaTerc" aria-label="Filtrar terceirizados por empresa" placeholder="Empresa..." oninput="freqApplyFilter()">
+            <input class="freq-filter-input" id="ffFuncaoTerc" aria-label="Filtrar terceirizados por função" placeholder="Função..." oninput="freqApplyFilter()">
             <button class="freq-filter-clear" onclick="freqClearFilter('terc')">Limpar</button>
             <span class="freq-filter-count" id="ffCountTerc"></span>
           </div>
@@ -456,9 +493,9 @@
           </div>
           <div class="freq-filter-bar">
             <label><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Filtrar:</label>
-            <input class="freq-filter-input" id="ffNomeAtac"    placeholder="Nome..."    oninput="freqApplyFilter()">
-            <input class="freq-filter-input" id="ffEmpresaAtac" placeholder="Empresa..." oninput="freqApplyFilter()">
-            <input class="freq-filter-input" id="ffFuncaoAtac"  placeholder="Função..."  oninput="freqApplyFilter()">
+            <input class="freq-filter-input" id="ffNomeAtac" aria-label="Filtrar funcionários da obra por nome" placeholder="Nome..." oninput="freqApplyFilter()">
+            <input class="freq-filter-input" id="ffEmpresaAtac" aria-label="Filtrar funcionários da obra por empresa" placeholder="Empresa..." oninput="freqApplyFilter()">
+            <input class="freq-filter-input" id="ffFuncaoAtac" aria-label="Filtrar funcionários da obra por função" placeholder="Função..." oninput="freqApplyFilter()">
             <button class="freq-filter-clear" onclick="freqClearFilter('atac')">Limpar</button>
             <span class="freq-filter-count" id="ffCountAtac"></span>
           </div>
@@ -515,7 +552,7 @@
               <span class="efetivo-module__status" id="efetivo-status">Aguardando carregamento.</span>
             </div>
             <div class="efetivo-module__actions">
-              <input id="efetivo-file-input" type="file" accept=".csv,.xlsx,.xls" hidden>
+              <input id="efetivo-file-input" type="file" accept=".csv,.xlsx,.xls" aria-label="Selecionar histórico do efetivo" hidden>
               <button class="efetivo-module__button efetivo-module__button--primary" id="efetivo-import-button" type="button">
                 <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 15v4h14v-4"/></svg>
                 Importar histórico
@@ -598,29 +635,37 @@
         </section>
       </div>
 
-      <div class="page" id="page-admin">
-        <div class="section-header">
-          <h2>Administração de Usuários</h2>
-        </div>
-        <div class="info-box" style="margin-bottom:16px;">Somente administradores podem alterar perfis, status e executar backup/importação.</div>
-        <div class="table-wrap" style="margin-bottom:20px;">
-          <table>
-            <thead><tr><th>E-mail</th><th>UID</th><th>Role</th><th>Status</th><th>Ação</th></tr></thead>
-            <tbody id="adminUsersTableBody"><tr><td colspan="5" class="empty-state"><p>Carregando usuários...</p></td></tr></tbody>
-          </table>
-        </div>
-        <div id="adminBackupSection" style="display:none;">
-          <div class="section-header">
-            <h2>Backup e Importação</h2>
+      <div class="page admin-page" id="page-admin">
+        <header class="admin-page-header">
+          <div>
+            <span class="admin-page-header__eyebrow">Controle de acesso</span>
+            <h2>Administração de Usuários</h2>
+            <p>Gerencie papéis, status e acesso à obra ativa sem alterar a arquitetura de autorização.</p>
           </div>
-          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <span class="admin-page-header__restricted">Área restrita</span>
+        </header>
+        <div class="info-box admin-page-note">Somente administradores podem alterar perfis, status e executar backup/importação.</div>
+        <section class="admin-users" aria-labelledby="admin-users-title">
+          <div class="admin-section-heading"><div><strong id="admin-users-title">Usuários cadastrados</strong><span>Papéis e status aplicados à obra ativa</span></div></div>
+          <div class="table-wrap admin-table-wrap">
+          <table class="admin-users-table">
+            <thead><tr><th>E-mail</th><th>UID</th><th>Obra / acesso</th><th>Role</th><th>Status</th><th>Ação</th></tr></thead>
+            <tbody id="adminUsersTableBody"><tr><td colspan="6" class="empty-state"><p>Carregando usuários...</p></td></tr></tbody>
+          </table>
+          </div>
+        </section>
+        <section class="admin-backup" id="adminBackupSection" style="display:none;" aria-labelledby="admin-backup-title">
+          <div class="admin-section-heading">
+            <div><strong id="admin-backup-title">Backup e Importação</strong><span>Ações administrativas sensíveis</span></div>
+          </div>
+          <div class="admin-backup__actions">
             <button class="backup-btn" onclick="exportBackup()" title="Exportar backup completo do sistema">Backup</button>
             <label class="backup-btn restore" title="Restaurar backup de arquivo .json">
               Restaurar
               <input type="file" id="backupFileInputAdmin" accept=".json" style="display:none;" onchange="importBackup(this)">
             </label>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   </main>
@@ -649,30 +694,30 @@
         <section class="employee-form-section">
           <div class="employee-form-section__head"><strong>Dados do colaborador</strong><span>Identificação e admissão</span></div>
           <div class="grid-2">
-            <div class="field full-col"><label>Nome Completo <span class="required-mark">*</span></label><input type="text" id="f-nome" placeholder="Nome completo do funcionário"></div>
-            <div class="field"><label>CPF <span class="required-mark">*</span></label><input type="text" id="f-cpf" placeholder="000.000.000-00" oninput="formatCPF(this)"></div>
-            <div class="field"><label>Data de Admissão</label><input type="date" id="f-admissao"></div>
+            <div class="field full-col"><label for="f-nome">Nome Completo <span class="required-mark">*</span></label><input type="text" id="f-nome" placeholder="Nome completo do funcionário"></div>
+            <div class="field"><label for="f-cpf">CPF <span class="required-mark">*</span></label><input type="text" id="f-cpf" placeholder="000.000.000-00" oninput="formatCPF(this)"></div>
+            <div class="field"><label for="f-admissao">Data de Admissão</label><input type="date" id="f-admissao"></div>
           </div>
         </section>
         <section class="employee-form-section">
           <div class="employee-form-section__head"><strong>Vínculo e função</strong><span>Tipo, empresa e atividade exercida</span></div>
           <div class="grid-2">
-            <div class="field"><label>Tipo de Funcionário <span class="required-mark">*</span></label>
+            <div class="field"><label for="f-tipo">Tipo de Funcionário <span class="required-mark">*</span></label>
               <select id="f-tipo" onchange="updateDocFields()">
                 <option value="">Selecione...</option>
                 <option value="Terceirizado">Terceirizado</option>
                 <option value="Novo Atacarejo" data-dynamic-label="obra">Obra</option>
               </select>
             </div>
-            <div class="field"><label>Empresa <span class="required-mark">*</span></label><select id="f-empresa" required><option value="">Selecione uma empresa...</option></select></div>
-            <div class="field full-col"><label>Função <span class="required-mark">*</span></label><input type="text" id="f-funcao" placeholder="Cargo / função"></div>
+            <div class="field"><label for="f-empresa">Empresa <span class="required-mark">*</span></label><select id="f-empresa" required><option value="">Selecione uma empresa...</option></select></div>
+            <div class="field full-col"><label for="f-funcao">Função <span class="required-mark">*</span></label><input type="text" id="f-funcao" placeholder="Cargo / função"></div>
           </div>
         </section>
         <section class="employee-form-section">
           <div class="employee-form-section__head"><strong>Contato</strong><span>Informações opcionais</span></div>
           <div class="grid-2">
-            <div class="field"><label>Telefone</label><input type="text" id="f-tel" placeholder="(00) 00000-0000"></div>
-            <div class="field"><label>E-mail</label><input type="email" id="f-email" placeholder="email@empresa.com"></div>
+            <div class="field"><label for="f-tel">Telefone</label><input type="text" id="f-tel" placeholder="(00) 00000-0000"></div>
+            <div class="field"><label for="f-email">E-mail</label><input type="email" id="f-email" placeholder="email@empresa.com"></div>
           </div>
         </section>
       </div>
@@ -700,10 +745,10 @@
 
 <!-- MODAL DETALHE -->
 <div class="modal-overlay" id="modalDetalhe">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalDetalheTitle">
     <div class="modal-header">
       <h3 id="modalDetalheTitle">Detalhes do Funcionário</h3>
-      <button class="modal-close" onclick="closeModal('modalDetalhe')">×</button>
+      <button class="modal-close" type="button" aria-label="Fechar" onclick="closeModal('modalDetalhe')">×</button>
     </div>
     <div class="modal-body" id="modalDetalheBody"></div>
     <div class="modal-footer">
@@ -728,44 +773,44 @@
       <section class="company-form-section">
         <div class="company-form-section__head"><strong>Identificação</strong><span>Dados cadastrais da empresa</span></div>
         <div class="grid-2">
-          <div class="field full-col"><label>Nome da Empresa <span class="required-mark">*</span></label><input type="text" id="e-nome" placeholder="Razão social"></div>
-          <div class="field"><label>CNPJ <span class="required-mark">*</span></label><input type="text" id="e-cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" maxlength="18" oninput="formatCNPJ(this)"></div>
-          <div class="field"><label>Responsável</label><input type="text" id="e-resp" placeholder="Nome do responsável"></div>
+          <div class="field full-col"><label for="e-nome">Nome da Empresa <span class="required-mark">*</span></label><input type="text" id="e-nome" placeholder="Razão social"></div>
+          <div class="field"><label for="e-cnpj">CNPJ <span class="required-mark">*</span></label><input type="text" id="e-cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" maxlength="18" oninput="formatCNPJ(this)"></div>
+          <div class="field"><label for="e-resp">Responsável</label><input type="text" id="e-resp" placeholder="Nome do responsável"></div>
         </div>
       </section>
       <section class="company-form-section">
         <div class="company-form-section__head"><strong>Atuação na obra</strong><span>Status, categoria e período</span></div>
         <div class="grid-2">
           <div class="field">
-            <label>Status na obra <span class="required-mark">*</span></label>
+            <label for="e-status">Status na obra <span class="required-mark">*</span></label>
             <select id="e-status" onchange="toggleEmpresaLifecycleFields()">
               <option value="ativa">Ativa</option>
               <option value="inativa">Inativa</option>
             </select>
           </div>
           <div class="field">
-            <label>Categoria do efetivo <span class="required-mark">*</span></label>
+            <label for="e-categoria-efetivo">Categoria do efetivo <span class="required-mark">*</span></label>
             <select id="e-categoria-efetivo"></select>
           </div>
-          <div class="field"><label>Data de início na obra</label><input type="date" id="e-data-inicio-obra" onchange="toggleEmpresaLifecycleFields()"></div>
-          <div class="field" id="e-data-fim-obra-field"><label>Data de encerramento <span class="required-mark">*</span></label><input type="date" id="e-data-fim-obra"></div>
+          <div class="field"><label for="e-data-inicio-obra">Data de início na obra</label><input type="date" id="e-data-inicio-obra" onchange="toggleEmpresaLifecycleFields()"></div>
+          <div class="field" id="e-data-fim-obra-field"><label for="e-data-fim-obra">Data de encerramento <span class="required-mark">*</span></label><input type="date" id="e-data-fim-obra"></div>
         </div>
       </section>
       <section class="company-form-section company-form-section--documents">
         <div class="company-form-section__head"><strong>Documentos da empresa</strong><span>PGR, PCMSO e ART</span></div>
         <div class="doc-item">
           <span class="doc-name">PGR</span>
-          <select class="doc-status-sel" id="e-pgr"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option><option value="Não se aplica">Não se aplica</option></select>
+          <select class="doc-status-sel" id="e-pgr" aria-label="Status do PGR"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option><option value="Não se aplica">Não se aplica</option></select>
           <label class="file-upload-label"><input type="file" accept=".pdf" onchange="handleEmpresaDoc(this,'pgr')">Anexar</label>
         </div>
         <div class="doc-item">
           <span class="doc-name">PCMSO</span>
-          <select class="doc-status-sel" id="e-pcmso"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option><option value="Não se aplica">Não se aplica</option></select>
+          <select class="doc-status-sel" id="e-pcmso" aria-label="Status do PCMSO"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option><option value="Não se aplica">Não se aplica</option></select>
           <label class="file-upload-label"><input type="file" accept=".pdf" onchange="handleEmpresaDoc(this,'pcmso')">Anexar</label>
         </div>
         <div class="doc-item">
           <span class="doc-name">ART dos Programas</span>
-          <select class="doc-status-sel" id="e-art"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option><option value="Não se aplica">Não se aplica</option></select>
+          <select class="doc-status-sel" id="e-art" aria-label="Status da ART dos Programas"><option value="Pendente">Pendente</option><option value="Conforme">Conforme</option><option value="Não Conforme">Não Conforme</option><option value="Não se aplica">Não se aplica</option></select>
           <label class="file-upload-label"><input type="file" accept=".pdf" onchange="handleEmpresaDoc(this,'art')">Anexar</label>
         </div>
       </section>
@@ -822,7 +867,7 @@
       <p class="company-deactivate-modal__message" id="inativarEmpresaMessage"></p>
       <div class="field">
         <label>Data de encerramento *</label>
-        <input type="date" id="e-inativar-data-fim-obra" required>
+        <input type="date" id="e-inativar-data-fim-obra" aria-label="Data de encerramento da empresa" required>
       </div>
     </div>
     <div class="modal-footer">
@@ -834,10 +879,14 @@
 
 <!-- MODAL OBRA -->
 <div class="modal-overlay" id="modalObra">
-  <div class="modal" style="max-width:800px;">
+  <div class="modal obra-modal" role="dialog" aria-modal="true" aria-labelledby="modalObraTitle">
     <div class="modal-header">
-      <h3 id="modalObraTitle"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>Cadastro da Obra</h3>
-      <button class="modal-close" onclick="closeModal('modalObra')">×</button>
+      <div class="obra-modal__heading">
+        <span class="obra-modal__eyebrow">Configuração da obra</span>
+        <h3 id="modalObraTitle"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>Cadastro da Obra</h3>
+        <p>Dados cadastrais e equipes responsáveis pela operação.</p>
+      </div>
+      <button class="modal-close" aria-label="Fechar" onclick="closeModal('modalObra')">×</button>
     </div>
     <div class="modal-body">
       <div class="tabs">
@@ -848,19 +897,19 @@
 
       <!-- TAB DADOS DA OBRA -->
       <div class="tab-panel active" id="tab-obra-dados">
-        <div class="doc-section"><h4><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>Informações Cadastrais</h4></div>
+        <div class="doc-section obra-form-section"><h4><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>Informações Cadastrais</h4><span>Identificação legal da empresa responsável</span></div>
         <div class="grid-2">
-          <div class="field"><label>Número de Inscrição (CNPJ) *</label><input type="text" id="o-cnpj" placeholder="00.000.000/0000-00" oninput="formatCNPJ(this)"></div>
-          <div class="field full-col"><label>Nome Empresarial / Razão Social *</label><input type="text" id="o-nome" placeholder="Nome oficial da empresa"></div>
+          <div class="field"><label for="o-cnpj">Número de Inscrição (CNPJ) *</label><input type="text" id="o-cnpj" placeholder="00.000.000/0000-00" oninput="formatCNPJ(this)"></div>
+          <div class="field full-col"><label for="o-nome">Nome Empresarial / Razão Social *</label><input type="text" id="o-nome" placeholder="Nome oficial da empresa"></div>
         </div>
-        <div class="doc-section" style="margin-top:16px;"><h4>📍 Endereço da Obra</h4></div>
+        <div class="doc-section obra-form-section obra-form-section--spaced"><h4>Endereço da Obra</h4><span>Localização completa da operação</span></div>
         <div class="grid-2">
-          <div class="field full-col"><label>Logradouro / Endereço *</label><input type="text" id="o-logradouro" placeholder="Rua, Avenida, etc."></div>
-          <div class="field"><label>Número *</label><input type="text" id="o-numero" placeholder="123"></div>
-          <div class="field"><label>CEP *</label><input type="text" id="o-cep" placeholder="00000-000" oninput="formatCEP(this)"></div>
-          <div class="field"><label>Bairro / Distrito *</label><input type="text" id="o-bairro" placeholder="Bairro"></div>
-          <div class="field"><label>Município *</label><input type="text" id="o-municipio" placeholder="Cidade"></div>
-          <div class="field"><label>UF / Estado *</label>
+          <div class="field full-col"><label for="o-logradouro">Logradouro / Endereço *</label><input type="text" id="o-logradouro" placeholder="Rua, Avenida, etc."></div>
+          <div class="field"><label for="o-numero">Número *</label><input type="text" id="o-numero" placeholder="123"></div>
+          <div class="field"><label for="o-cep">CEP *</label><input type="text" id="o-cep" placeholder="00000-000" oninput="formatCEP(this)"></div>
+          <div class="field"><label for="o-bairro">Bairro / Distrito *</label><input type="text" id="o-bairro" placeholder="Bairro"></div>
+          <div class="field"><label for="o-municipio">Município *</label><input type="text" id="o-municipio" placeholder="Cidade"></div>
+          <div class="field"><label for="o-uf">UF / Estado *</label>
             <select id="o-uf">
               <option value="">Selecione...</option>
               <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option>
@@ -881,9 +930,9 @@
         <div id="engTeamContainer">
           <div class="eng-member" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;">
             <div class="grid-2">
-              <div class="field full-col"><label>Nome Completo *</label><input type="text" class="eng-nome" placeholder="Nome do profissional"></div>
+              <div class="field full-col"><label>Nome Completo *</label><input type="text" class="eng-nome" aria-label="Nome do membro da engenharia" placeholder="Nome do profissional"></div>
               <div class="field"><label>Função / Cargo *</label>
-                <select class="eng-funcao">
+                <select class="eng-funcao" aria-label="Função do membro da engenharia">
                   <option value="">Selecione...</option>
                   <option value="Engenheiro Responsável">Engenheiro Responsável</option>
                   <option value="Engenheiro de Segurança">Engenheiro de Segurança</option>
@@ -895,9 +944,9 @@
                   <option value="Técnico de Segurança">Técnico de Segurança</option>
                 </select>
               </div>
-              <div class="field"><label>CREA *</label><input type="text" class="eng-crea" placeholder="000000-0/UF"></div>
-              <div class="field"><label>Telefone para Contato *</label><input type="text" class="eng-telefone" placeholder="(00) 00000-0000" oninput="formatPhone(this)"></div>
-              <div class="field full-col"><label>Nome Fantasia da Empresa do Engenheiro *</label><input type="text" class="eng-empresa" placeholder="Empresa contratada"></div>
+              <div class="field"><label>CREA *</label><input type="text" class="eng-crea" aria-label="CREA do membro da engenharia" placeholder="000000-0/UF"></div>
+              <div class="field"><label>Telefone para Contato *</label><input type="text" class="eng-telefone" aria-label="Telefone do membro da engenharia" placeholder="(00) 00000-0000" oninput="formatPhone(this)"></div>
+              <div class="field full-col"><label>Nome Fantasia da Empresa do Engenheiro *</label><input type="text" class="eng-empresa" aria-label="Empresa do membro da engenharia" placeholder="Empresa contratada"></div>
             </div>
             <button type="button" class="btn btn-danger btn-sm" style="margin-top:12px;" onclick="this.closest('.eng-member').remove()">Remover Membro</button>
           </div>
@@ -911,9 +960,9 @@
         <div id="sstTeamContainer">
           <div class="sst-member" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;">
             <div class="grid-2">
-              <div class="field full-col"><label>Nome Completo *</label><input type="text" class="sst-nome" placeholder="Nome do profissional de SST"></div>
+              <div class="field full-col"><label>Nome Completo *</label><input type="text" class="sst-nome" aria-label="Nome do membro de SST" placeholder="Nome do profissional de SST"></div>
               <div class="field"><label>Função *</label>
-                <select class="sst-funcao">
+                <select class="sst-funcao" aria-label="Função do membro de SST">
                   <option value="">Selecione...</option>
                   <option value="Técnico de Segurança">Técnico de Segurança</option>
                   <option value="Engenheiro de Segurança">Engenheiro de Segurança</option>
@@ -924,14 +973,14 @@
                 </select>
               </div>
               <div class="field"><label>Departamento *</label>
-                <select class="sst-depto">
+                <select class="sst-depto" aria-label="Departamento do membro de SST">
                   <option value="">Selecione...</option>
                   <option value="Administrativo">Administrativo</option>
                   <option value="Campo">Campo</option>
                 </select>
               </div>
-              <div class="field"><label>Telefone para Contato *</label><input type="text" class="sst-telefone" placeholder="(00) 00000-0000" oninput="formatPhone(this)"></div>
-              <div class="field full-col"><label>Registro no MTE *</label><input type="text" class="sst-mte" placeholder="Número de registro no Ministério do Trabalho"></div>
+              <div class="field"><label>Telefone para Contato *</label><input type="text" class="sst-telefone" aria-label="Telefone do membro de SST" placeholder="(00) 00000-0000" oninput="formatPhone(this)"></div>
+              <div class="field full-col"><label>Registro no MTE *</label><input type="text" class="sst-mte" aria-label="Registro no MTE do membro de SST" placeholder="Número de registro no Ministério do Trabalho"></div>
             </div>
             <button type="button" class="btn btn-danger btn-sm" style="margin-top:12px;" onclick="this.closest('.sst-member').remove()">Remover Membro</button>
           </div>
@@ -948,10 +997,10 @@
 
 <!-- MODAL PDF VIEWER -->
 <div class="modal-overlay" id="modalPdf">
-  <div class="modal pdf-viewer-modal">
+  <div class="modal pdf-viewer-modal" role="dialog" aria-modal="true" aria-labelledby="pdfTitle">
     <div class="modal-header">
       <h3 id="pdfTitle">Visualizar Documento</h3>
-      <button class="modal-close" onclick="closeModal('modalPdf')">×</button>
+      <button class="modal-close" type="button" aria-label="Fechar" onclick="closeModal('modalPdf')">×</button>
     </div>
     <div class="modal-body" style="padding:16px;">
       <iframe id="pdfViewerFrame" src=""></iframe>
@@ -961,15 +1010,15 @@
 
 <!-- FERIADO OBSERVAÇÃO MODAL -->
 <div class="modal-overlay" id="modalFeriadoObs">
-  <div class="modal" style="max-width:380px;">
+  <div class="modal" style="max-width:380px;" role="dialog" aria-modal="true" aria-labelledby="modalFeriadoObsTitle">
     <div class="modal-header">
-      <h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>Identificar Feriado</h3>
-      <button class="modal-close" onclick="feriadoObsCancel()">×</button>
+      <h3 id="modalFeriadoObsTitle"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>Identificar Feriado</h3>
+      <button class="modal-close" type="button" aria-label="Fechar" onclick="feriadoObsCancel()">×</button>
     </div>
     <div class="modal-body">
       <div class="field">
         <label>Nome do Feriado <span style="color:var(--text2);font-weight:400;">(opcional)</span></label>
-        <input type="text" id="feriadoObsInput" placeholder="Ex: Natal, Carnaval, São João..."
+        <input type="text" id="feriadoObsInput" aria-label="Nome do feriado" placeholder="Ex: Natal, Carnaval, São João..."
                style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
                       color:var(--text);font-family:var(--font-body);font-size:14px;padding:10px 14px;outline:none;"
                onkeydown="if(event.key==='Enter') feriadoObsConfirm()">
@@ -1038,10 +1087,10 @@
 
 <!-- FERIADO MODAL -->
 <div class="modal-overlay" id="modalFeriado">
-  <div class="modal" style="max-width:480px;">
+  <div class="modal" style="max-width:480px;" role="dialog" aria-modal="true" aria-labelledby="modalFeriadoTitle">
     <div class="modal-header">
-      <h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>Gerenciar Feriados</h3>
-      <button class="modal-close" onclick="closeModal('modalFeriado')">×</button>
+      <h3 id="modalFeriadoTitle"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>Gerenciar Feriados</h3>
+      <button class="modal-close" type="button" aria-label="Fechar" onclick="closeModal('modalFeriado')">×</button>
     </div>
     <div class="modal-body">
       <div class="info-box" style="margin-bottom:16px;">
@@ -1050,11 +1099,11 @@
       <div class="grid-2">
         <div class="field">
           <label>Data do Feriado</label>
-          <input type="date" id="feriadoDateInput">
+          <input type="date" id="feriadoDateInput" aria-label="Data do feriado">
         </div>
         <div class="field">
           <label>Nome do Feriado <span style="color:var(--text2);font-weight:400;">(opcional)</span></label>
-          <input type="text" id="feriadoDateObsInput" placeholder="Ex: Natal, São João..." style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-body);font-size:13px;padding:8px 12px;outline:none;">
+          <input type="text" id="feriadoDateObsInput" aria-label="Nome do feriado" placeholder="Ex: Natal, São João..." style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-body);font-size:13px;padding:8px 12px;outline:none;">
         </div>
       </div>
       <button class="btn btn-primary btn-full" style="margin-bottom:16px;" onclick="feriadoAddDate()">+ Adicionar Data</button>
@@ -1072,10 +1121,10 @@
 
 <!-- MODAL OBSERVAÇÃO DIÁRIA (Novo Atacarejo) -->
 <div class="modal-overlay" id="modalCellObs">
-  <div class="modal" style="max-width:440px;" id="modalCellObsInner">
+  <div class="modal" style="max-width:440px;" id="modalCellObsInner" role="dialog" aria-modal="true" aria-labelledby="modalCellObsTitle">
     <div class="modal-header">
-      <h3>📝 Observação Diária</h3>
-      <button class="modal-close" onclick="cellObsCancel()">×</button>
+      <h3 id="modalCellObsTitle">📝 Observação Diária</h3>
+      <button class="modal-close" type="button" aria-label="Fechar" onclick="cellObsCancel()">×</button>
     </div>
     <div class="modal-body">
       <div style="margin-bottom:14px;font-size:13px;color:var(--text2);">
@@ -1084,7 +1133,7 @@
       </div>
       <div class="field">
         <label>Observação <span style="font-weight:400;color:var(--text2);">(opcional — não afeta totais)</span></label>
-        <textarea id="cellObsInput" rows="3" placeholder="Ex: Atraso de 20 min, Saiu mais cedo, Falta de EPI..."
+        <textarea id="cellObsInput" rows="3" aria-label="Observação diária" placeholder="Ex: Atraso de 20 min, Saiu mais cedo, Falta de EPI..."
           style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
                  color:var(--text);font-family:var(--font-body);font-size:13px;padding:10px 14px;
                  outline:none;resize:vertical;"
@@ -1114,10 +1163,10 @@
 
 <!-- MODAL FERIADO PARA TODOS -->
 <div class="modal-overlay" id="modalFeriadoTodos">
-  <div class="modal" style="max-width:420px;">
+  <div class="modal" style="max-width:420px;" role="dialog" aria-modal="true" aria-labelledby="modalFeriadoTodosTitle">
     <div class="modal-header">
-      <h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>Marcar Feriado para Todos</h3>
-      <button class="modal-close" onclick="closeModal('modalFeriadoTodos')">×</button>
+      <h3 id="modalFeriadoTodosTitle"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>Marcar Feriado para Todos</h3>
+      <button class="modal-close" type="button" aria-label="Fechar" onclick="closeModal('modalFeriadoTodos')">×</button>
     </div>
     <div class="modal-body">
       <div class="info-box" style="margin-bottom:16px;">
@@ -1126,11 +1175,11 @@
       <div class="grid-2">
         <div class="field">
           <label>Data do Feriado</label>
-          <input type="date" id="feriadoTodosDateInput">
+          <input type="date" id="feriadoTodosDateInput" aria-label="Data do feriado para todos">
         </div>
         <div class="field">
           <label>Nome do Feriado</label>
-          <input type="text" id="feriadoTodosNomeInput" placeholder="Ex: Carnaval, Natal..."
+          <input type="text" id="feriadoTodosNomeInput" aria-label="Nome do feriado para todos" placeholder="Ex: Carnaval, Natal..."
             style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
                    color:var(--text);font-family:var(--font-body);font-size:13px;padding:8px 12px;outline:none;">
         </div>
@@ -2250,9 +2299,9 @@ function openObraModal(){
 function createEngMemberHTML(m, index){
   return `<div class="eng-member" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;">
     <div class="grid-2">
-      <div class="field full-col"><label>Nome Completo *</label><input type="text" class="eng-nome" value="${m.nome || ''}" placeholder="Nome do profissional"></div>
+      <div class="field full-col"><label>Nome Completo *</label><input type="text" class="eng-nome" value="${m.nome || ''}" aria-label="Nome do membro da engenharia" placeholder="Nome do profissional"></div>
       <div class="field"><label>Função / Cargo *</label>
-        <select class="eng-funcao">
+        <select class="eng-funcao" aria-label="Função do membro da engenharia">
           <option value="">Selecione...</option>
           <option value="Engenheiro Responsável" ${['Engenheiro Responsável','Engenheiro Respons?vel'].includes(m.funcao)?'selected':''}>Engenheiro Responsável</option>
           <option value="Engenheiro de Segurança" ${['Engenheiro de Segurança','Engenheiro de Seguran?a'].includes(m.funcao)?'selected':''}>Engenheiro de Segurança</option>
@@ -2264,9 +2313,9 @@ function createEngMemberHTML(m, index){
           <option value="Técnico de Segurança" ${['Técnico de Segurança','T?cnico de Seguran?a'].includes(m.funcao)?'selected':''}>Técnico de Segurança</option>
         </select>
       </div>
-      <div class="field"><label>CREA *</label><input type="text" class="eng-crea" value="${m.crea || ''}" placeholder="000000-0/UF"></div>
-      <div class="field"><label>Telefone para Contato *</label><input type="text" class="eng-telefone" value="${m.telefone || ''}" placeholder="(00) 00000-0000" oninput="formatPhone(this)"></div>
-      <div class="field full-col"><label>Nome Fantasia da Empresa do Engenheiro *</label><input type="text" class="eng-empresa" value="${m.empresa || ''}" placeholder="Empresa contratada"></div>
+      <div class="field"><label>CREA *</label><input type="text" class="eng-crea" value="${m.crea || ''}" aria-label="CREA do membro da engenharia" placeholder="000000-0/UF"></div>
+      <div class="field"><label>Telefone para Contato *</label><input type="text" class="eng-telefone" value="${m.telefone || ''}" aria-label="Telefone do membro da engenharia" placeholder="(00) 00000-0000" oninput="formatPhone(this)"></div>
+      <div class="field full-col"><label>Nome Fantasia da Empresa do Engenheiro *</label><input type="text" class="eng-empresa" value="${m.empresa || ''}" aria-label="Empresa do membro da engenharia" placeholder="Empresa contratada"></div>
     </div>
     <button type="button" class="btn btn-danger btn-sm" style="margin-top:12px;" onclick="this.closest('.eng-member').remove()">Remover Membro</button>
   </div>`;
@@ -2275,9 +2324,9 @@ function createEngMemberHTML(m, index){
 function createSSTMemberHTML(m, index){
   return `<div class="sst-member" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;">
     <div class="grid-2">
-      <div class="field full-col"><label>Nome Completo *</label><input type="text" class="sst-nome" value="${m.nome || ''}" placeholder="Nome do profissional de SST"></div>
+      <div class="field full-col"><label>Nome Completo *</label><input type="text" class="sst-nome" value="${m.nome || ''}" aria-label="Nome do membro de SST" placeholder="Nome do profissional de SST"></div>
       <div class="field"><label>Função *</label>
-        <select class="sst-funcao">
+        <select class="sst-funcao" aria-label="Função do membro de SST">
           <option value="">Selecione...</option>
           <option value="Técnico de Segurança" ${['Técnico de Segurança','T?cnico de Seguran?a'].includes(m.funcao)?'selected':''}>Técnico de Segurança</option>
           <option value="Engenheiro de Segurança" ${['Engenheiro de Segurança','Engenheiro de Seguran?a'].includes(m.funcao)?'selected':''}>Engenheiro de Segurança</option>
@@ -2288,14 +2337,14 @@ function createSSTMemberHTML(m, index){
         </select>
       </div>
       <div class="field"><label>Departamento *</label>
-        <select class="sst-depto">
+        <select class="sst-depto" aria-label="Departamento do membro de SST">
           <option value="">Selecione...</option>
           <option value="Administrativo" ${m.departamento==='Administrativo'?'selected':''}>Administrativo</option>
           <option value="Campo" ${m.departamento==='Campo'?'selected':''}>Campo</option>
         </select>
       </div>
-      <div class="field"><label>Telefone para Contato *</label><input type="text" class="sst-telefone" value="${m.telefone || ''}" placeholder="(00) 00000-0000" oninput="formatPhone(this)"></div>
-      <div class="field full-col"><label>Registro no MTE *</label><input type="text" class="sst-mte" value="${m.mte || ''}" placeholder="Número de registro no Ministério do Trabalho"></div>
+      <div class="field"><label>Telefone para Contato *</label><input type="text" class="sst-telefone" value="${m.telefone || ''}" aria-label="Telefone do membro de SST" placeholder="(00) 00000-0000" oninput="formatPhone(this)"></div>
+      <div class="field full-col"><label>Registro no MTE *</label><input type="text" class="sst-mte" value="${m.mte || ''}" aria-label="Registro no MTE do membro de SST" placeholder="Número de registro no Ministério do Trabalho"></div>
     </div>
     <button type="button" class="btn btn-danger btn-sm" style="margin-top:12px;" onclick="this.closest('.sst-member').remove()">Remover Membro</button>
   </div>`;
@@ -3077,7 +3126,7 @@ function showDashboardStats(status){
                 <td>
                   <div class="action-btns">
                     ${renderEditActionButton(`editFuncionario(${JSON.stringify(f.id)}); closeModal("modalDetalhe");`)}
-                    <button class="btn btn-primary btn-sm btn-icon" onclick='viewFuncionarioDetails(${JSON.stringify(f.id)})'><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
+                    <button class="btn btn-primary btn-sm btn-icon" type="button" title="Visualizar detalhes" aria-label="Visualizar detalhes" onclick='viewFuncionarioDetails(${JSON.stringify(f.id)})'><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
                   </div>
                 </td>
               </tr>`;
